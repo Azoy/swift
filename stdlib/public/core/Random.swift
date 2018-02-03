@@ -85,7 +85,7 @@ extension RandomNumberGenerator {
 /// Using the preferred way:
 ///
 ///     let random = UInt8.random(in: .min ... .max)
-///     let randomToTen = UInt32.random(in: 0 ... 128)
+///     let randomToTen = UInt32.random(in: 0 ..< 10)
 ///
 /// - Note: The default implementation of randomness is cryptographically secure.
 ///   It utilizes arc4random(3) on newer versions of macOS, iOS, etc. On older
