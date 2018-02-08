@@ -376,6 +376,19 @@ void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
   }
 }
 
+#elif defined(_WIN32) && !defined(__CYGWIN__)
+
+SWIFT_RUNTIME_STDLIB_INTERNAL
+void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
+  NTSTATUS status = BCryptGenRandom(nullptr,
+                                    static_cast<PUCHAR>(buf),
+                                    static_cast<ULONG>(nbytes),
+                                    BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+  if (!NT_SUCCESS(status)) {
+    fatalError(0, "Fatal error %#.8x in '%s'\n", status, __func__);
+  }
+}
+
 #elif defined(SWIFT_STDLIB_USING_GETENTROPY)
 
 SWIFT_RUNTIME_STDLIB_INTERNAL
@@ -389,19 +402,6 @@ void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
     }
     buf = static_cast<uint8_t *>(buf) + actual_nbytes;
     nbytes -= actual_nbytes;
-  }
-}
-
-#elif defined(_WIN32) && !defined(__CYGWIN__)
-
-SWIFT_RUNTIME_STDLIB_INTERNAL
-void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
-  NTSTATUS status = BCryptGenRandom(nullptr,
-                                    static_cast<PUCHAR>(buf),
-                                    static_cast<ULONG>(nbytes),
-                                    BCRYPT_USE_SYSTEM_PREFERRED_RNG);
-  if (!NT_SUCCESS(status)) {
-    fatalError(0, "Fatal error %#.8x in '%s'\n", status, __func__);
   }
 }
 
