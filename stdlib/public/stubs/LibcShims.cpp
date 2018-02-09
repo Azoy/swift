@@ -32,6 +32,7 @@
 #if defined(__linux__)
 #  include <linux/version.h>
 #  if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0))
+#    include <features.h>
 #    if defined(__BIONIC__) || (defined(__GLIBC_PREREQ) && __GLIBC_PREREQ(2,25))
 #      include <sys/random.h>
 #      define SWIFT_STDLIB_USING_GETRANDOM
