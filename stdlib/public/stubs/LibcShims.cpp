@@ -378,6 +378,7 @@ void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
 }
 
 #elif defined(_WIN32) && !defined(__CYGWIN__)
+#error TODO: link with Bcrypt.lib and test on Windows.
 
 SWIFT_RUNTIME_STDLIB_INTERNAL
 void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
@@ -423,11 +424,8 @@ void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
     __swift_ssize_t actual_nbytes = getrandom(buf, nbytes, 0);
 #endif
     if (actual_nbytes < 1) {
-      if (errno == EINTR) {
-        continue;
-      } else {
-        fatalError(0, "Fatal error %d in '%s'\n", errno, __func__);
-      }
+      if (errno == EINTR) { continue; }
+      fatalError(0, "Fatal error %d in '%s'\n", errno, __func__);
     }
     buf = static_cast<uint8_t *>(buf) + actual_nbytes;
     nbytes -= actual_nbytes;
