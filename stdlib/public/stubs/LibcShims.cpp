@@ -372,7 +372,7 @@ void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
   } else {
     OSStatus status = SecRandomCopyBytes(kSecRandomDefault, nbytes, buf);
     if (status != errSecSuccess) {
-      fatalError(0, "Fatal error %d in '%s'\n", status, __func__);
+      fatalError(0, "Fatal error: %d in '%s'\n", status, __func__);
     }
   }
 }
@@ -387,7 +387,7 @@ void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
                                     static_cast<ULONG>(nbytes),
                                     BCRYPT_USE_SYSTEM_PREFERRED_RNG);
   if (!NT_SUCCESS(status)) {
-    fatalError(0, "Fatal error %#.8x in '%s'\n", status, __func__);
+    fatalError(0, "Fatal error: %#.8x in '%s'\n", status, __func__);
   }
 }
 
@@ -400,7 +400,7 @@ void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
     __swift_size_t actual_nbytes = (nbytes < max_nbytes ?
                                     nbytes : max_nbytes);
     if (0 != getentropy(buf, actual_nbytes)) {
-      fatalError(0, "Fatal error %d in '%s'\n", errno, __func__);
+      fatalError(0, "Fatal error: %d in '%s'\n", errno, __func__);
     }
     buf = static_cast<uint8_t *>(buf) + actual_nbytes;
     nbytes -= actual_nbytes;
@@ -414,7 +414,7 @@ void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
 #if !defined(SWIFT_STDLIB_USING_GETRANDOM)
   static const int fd = _stdlib_open("/dev/urandom", O_RDONLY, 0);
   if (fd < 0) {
-    fatalError(0, "Fatal error %d in '%s'\n", errno, __func__);
+    fatalError(0, "Fatal error: %d in '%s'\n", errno, __func__);
   }
 #endif
   while (nbytes > 0) {
@@ -425,7 +425,7 @@ void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
 #endif
     if (actual_nbytes < 1) {
       if (errno == EINTR) { continue; }
-      fatalError(0, "Fatal error %d in '%s'\n", errno, __func__);
+      fatalError(0, "Fatal error: %d in '%s'\n", errno, __func__);
     }
     buf = static_cast<uint8_t *>(buf) + actual_nbytes;
     nbytes -= actual_nbytes;
