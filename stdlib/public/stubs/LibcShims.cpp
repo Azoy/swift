@@ -349,7 +349,9 @@ void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
   }
 }
 
-#elif defined(__Fuchsia__)
+#else
+
+static int getentropy_using_dev_urandom(void *buf, __swift_size_t nbytes);
 
 SWIFT_RUNTIME_STDLIB_INTERNAL
 void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
@@ -357,7 +359,11 @@ void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
     constexpr __swift_size_t max_nbytes = 256;
     __swift_size_t actual_nbytes = (nbytes < max_nbytes ?
                                     nbytes : max_nbytes);
-    if (0 != getentropy(buf, actual_nbytes)) {
+    if (
+#if __has_include(<sys/random.h>)
+    getentropy(buf, actual_nbytes) &&
+#endif
+    getentropy_using_dev_urandom(buf, actual_nbytes)) {
       fatalError(0, "Fatal error: %d in '%s'\n", errno, __func__);
     }
     buf = static_cast<uint8_t *>(buf) + actual_nbytes;
@@ -365,29 +371,19 @@ void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
   }
 }
 
-#else
-
-SWIFT_RUNTIME_STDLIB_INTERNAL
-void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
-#if !defined(GRND_RANDOM)
+static int getentropy_using_dev_urandom(void *buf, __swift_size_t nbytes) {
   static const int fd = _stdlib_open("/dev/urandom", O_RDONLY, 0);
-  if (fd < 0) {
-    fatalError(0, "Fatal error: %d in '%s'\n", errno, __func__);
-  }
-#endif
+  if (fd < 0) { return -1; }
   while (nbytes > 0) {
-#if !defined(GRND_RANDOM)
     __swift_ssize_t actual_nbytes = _stdlib_read(fd, buf, nbytes);
-#else
-    __swift_ssize_t actual_nbytes = getrandom(buf, nbytes, 0);
-#endif
     if (actual_nbytes < 1) {
       if (errno == EINTR) { continue; }
-      fatalError(0, "Fatal error: %d in '%s'\n", errno, __func__);
+      return -1;
     }
     buf = static_cast<uint8_t *>(buf) + actual_nbytes;
     nbytes -= actual_nbytes;
   }
+  return 0;
 }
 
 #endif
