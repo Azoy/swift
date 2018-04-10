@@ -16,30 +16,6 @@
 #  include <Security/Security.h>
 #endif
 
-#if defined(__CYGWIN__)
-#  include <cygwin/version.h>
-#  if (CYGWIN_VERSION_API_MAJOR > 0) || (CYGWIN_VERSION_API_MINOR >= 306)
-#    include <sys/random.h>
-#    define SWIFT_STDLIB_USING_GETRANDOM
-#  endif
-#endif
-
-#if defined(__Fuchsia__)
-#  include <sys/random.h>
-#  define SWIFT_STDLIB_USING_GETENTROPY
-#endif
-
-#if defined(__linux__)
-#  include <linux/version.h>
-#  if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0))
-#    include <features.h>
-#    if defined(__BIONIC__) || (defined(__GLIBC_PREREQ) && __GLIBC_PREREQ(2,25))
-#      include <sys/random.h>
-#      define SWIFT_STDLIB_USING_GETRANDOM
-#    endif
-#  endif
-#endif
-
 #if defined(_WIN32) && !defined(__CYGWIN__)
 #  include <io.h>
 #  define WIN32_LEAN_AND_MEAN
@@ -63,6 +39,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if __has_include(<sys/random.h>)
+#  include <sys/random.h>
+#endif
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <type_traits>
@@ -370,7 +349,7 @@ void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
   }
 }
 
-#elif defined(SWIFT_STDLIB_USING_GETENTROPY)
+#elif defined(__Fuchsia__)
 
 SWIFT_RUNTIME_STDLIB_INTERNAL
 void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
@@ -390,14 +369,14 @@ void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
 
 SWIFT_RUNTIME_STDLIB_INTERNAL
 void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
-#if !defined(SWIFT_STDLIB_USING_GETRANDOM)
+#if !defined(GRND_RANDOM)
   static const int fd = _stdlib_open("/dev/urandom", O_RDONLY, 0);
   if (fd < 0) {
     fatalError(0, "Fatal error: %d in '%s'\n", errno, __func__);
   }
 #endif
   while (nbytes > 0) {
-#if !defined(SWIFT_STDLIB_USING_GETRANDOM)
+#if !defined(GRND_RANDOM)
     __swift_ssize_t actual_nbytes = _stdlib_read(fd, buf, nbytes);
 #else
     __swift_ssize_t actual_nbytes = getrandom(buf, nbytes, 0);
