@@ -352,17 +352,20 @@ void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
 
 #else
 
-static int getentropy_using_dev_urandom(void *buf, __swift_size_t nbytes);
+#if __has_include(<sys/random.h>)
+#  define getentropy_using_system(...) getentropy(__VA_ARGS__)
+#else
+#  define getentropy_using_system(...) -1
+#endif
+
+static int getentropy_using_device(void *buf, __swift_size_t nbytes);
 
 SWIFT_RUNTIME_STDLIB_INTERNAL
 void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
   while (nbytes > 0) {
     __swift_size_t actual_nbytes = std::min(nbytes, __swift_size_t{256});
-    if (
-#if __has_include(<sys/random.h>)
-    getentropy(buf, actual_nbytes) &&
-#endif
-    getentropy_using_dev_urandom(buf, actual_nbytes)) {
+    if (getentropy_using_system(buf, actual_nbytes) &&
+        getentropy_using_device(buf, actual_nbytes)) {
       fatalError(0, "Fatal error: %d in '%s'\n", errno, __func__);
     }
     buf = static_cast<uint8_t *>(buf) + actual_nbytes;
@@ -370,7 +373,7 @@ void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
   }
 }
 
-static int getentropy_using_dev_urandom(void *buf, __swift_size_t nbytes) {
+static int getentropy_using_device(void *buf, __swift_size_t nbytes) {
   static const int fd = _stdlib_open("/dev/urandom", O_RDONLY, 0);
   if (fd < 0) { return -1; }
   while (nbytes > 0) {
