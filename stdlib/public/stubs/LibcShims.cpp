@@ -32,6 +32,7 @@
 #  include <unistd.h>
 #endif
 
+#include <algorithm>
 #include <cmath>
 #include <errno.h>
 #include <fcntl.h>
@@ -356,9 +357,7 @@ static int getentropy_using_dev_urandom(void *buf, __swift_size_t nbytes);
 SWIFT_RUNTIME_STDLIB_INTERNAL
 void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
   while (nbytes > 0) {
-    constexpr __swift_size_t max_nbytes = 256;
-    __swift_size_t actual_nbytes = (nbytes < max_nbytes ?
-                                    nbytes : max_nbytes);
+    __swift_size_t actual_nbytes = std::min(nbytes, __swift_size_t{256});
     if (
 #if __has_include(<sys/random.h>)
     getentropy(buf, actual_nbytes) &&
