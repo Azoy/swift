@@ -105,6 +105,9 @@ func floatingPointRangeTest<T: BinaryFloatingPoint>(_ type: T.Type)
 RandomTests.test("random floating points in ranges") {
   floatingPointRangeTest(Float.self)
   floatingPointRangeTest(Double.self)
+}
+
+RandomTests.test("Float80: random floating points in ranges") {
   floatingPointRangeTest(Float80.self)
 }
 
