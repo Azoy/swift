@@ -2487,8 +2487,9 @@ ${assignmentOperatorComment(x.operator, False)}
 %   exampleRange = '1..<100' if Range == 'Range' else '1...100'
 
 extension ${Range}
-where Bound: FixedWidthInteger,
-      Bound.Magnitude: UnsignedInteger {
+  where Bound: FixedWidthInteger, Bound.Stride : SignedInteger,
+  Bound.Magnitude: UnsignedInteger
+{
       
   /// Returns a random element of the range, using the given generator as
   /// a source for randomness.
