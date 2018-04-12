@@ -352,40 +352,35 @@ void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
 
 #else
 
-#if __has_include(<sys/random.h>)
-#  define getentropy_using_system(...) getentropy(__VA_ARGS__)
-#else
-#  define getentropy_using_system(...) -1
-#endif
-
-static int getentropy_using_device(void *buf, __swift_size_t nbytes);
+#undef  WHILE_EINTR
+#define WHILE_EINTR(expression) ({                                             \
+  decltype(expression) result = -1;                                            \
+  do { result = (expression); } while (result == -1 && errno == EINTR);        \
+  result;                                                                      \
+})
 
 SWIFT_RUNTIME_STDLIB_INTERNAL
 void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
   while (nbytes > 0) {
-    __swift_size_t actual_nbytes = std::min(nbytes, __swift_size_t{256});
-    if (getentropy_using_system(buf, actual_nbytes) &&
-        getentropy_using_device(buf, actual_nbytes)) {
+    __swift_size_t expected_nbytes = std::min(nbytes, __swift_size_t{256});
+    __swift_ssize_t actual_nbytes = -1;
+#if defined(GRND_RANDOM)
+    actual_nbytes = WHILE_EINTR(getrandom(buf, expected_nbytes, 0));
+#elif defined(__Fuchsia__)
+    actual_nbytes = getentropy(buf, expected_nbytes) ?: expected_nbytes;
+#endif
+    if (actual_nbytes == -1) {
+      static const int fd =
+        WHILE_EINTR(_stdlib_open("/dev/urandom", O_RDONLY, 0));
+      actual_nbytes = (fd == -1) ? -1 :
+        WHILE_EINTR(_stdlib_read(fd, buf, expected_nbytes));
+    }
+    if (actual_nbytes == -1) {
       fatalError(0, "Fatal error: %d in '%s'\n", errno, __func__);
     }
     buf = static_cast<uint8_t *>(buf) + actual_nbytes;
     nbytes -= actual_nbytes;
   }
-}
-
-static int getentropy_using_device(void *buf, __swift_size_t nbytes) {
-  static const int fd = _stdlib_open("/dev/urandom", O_RDONLY, 0);
-  if (fd < 0) { return -1; }
-  while (nbytes > 0) {
-    __swift_ssize_t actual_nbytes = _stdlib_read(fd, buf, nbytes);
-    if (actual_nbytes < 1) {
-      if (errno == EINTR) { continue; }
-      return -1;
-    }
-    buf = static_cast<uint8_t *>(buf) + actual_nbytes;
-    nbytes -= actual_nbytes;
-  }
-  return 0;
 }
 
 #endif
