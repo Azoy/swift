@@ -19,12 +19,9 @@
 #if defined(_WIN32) && !defined(__CYGWIN__)
 #  include <io.h>
 #  define WIN32_LEAN_AND_MEAN
-#  define WIN32_NO_STATUS
-#    include <Windows.h>
-#  undef WIN32_NO_STATUS
-#  include <Ntstatus.h>
-#  include <Ntdef.h>
+#  include <Windows.h>
 #  include <Bcrypt.h>
+#  pragma comment(lib, "Bcrypt.lib")
 #else
 #  include <pthread.h>
 #  include <semaphore.h>
@@ -337,7 +334,7 @@ void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
 }
 
 #elif defined(_WIN32) && !defined(__CYGWIN__)
-// TODO: Test on Windows
+#error TODO: Test on Windows
 
 SWIFT_RUNTIME_STDLIB_INTERNAL
 void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
@@ -345,8 +342,8 @@ void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
                                     static_cast<PUCHAR>(buf),
                                     static_cast<ULONG>(nbytes),
                                     BCRYPT_USE_SYSTEM_PREFERRED_RNG);
-  if (!NT_SUCCESS(status)) {
-    fatalError(0, "Fatal error: %#.8x in '%s'\n", status, __func__);
+  if (!BCRYPT_SUCCESS(status)) {
+    fatalError(0, "Fatal error: 0x%.8X in '%s'\n", status, __func__);
   }
 }
 
