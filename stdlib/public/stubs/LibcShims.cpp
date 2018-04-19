@@ -13,7 +13,6 @@
 #if defined(__APPLE__)
 #  define _REENTRANT
 #  include <math.h>
-#  include <Security/Security.h>
 #endif
 
 #if defined(_WIN32) && !defined(__CYGWIN__)
@@ -319,22 +318,8 @@ swift::_stdlib_cxx11_mt19937_uniform(__swift_uint32_t upper_bound) {
   return RandomUniform(getGlobalMT19937());
 }
 
-#if defined(__APPLE__)
-
-SWIFT_RUNTIME_STDLIB_INTERNAL
-void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
-  if (__builtin_available(macOS 10.12, iOS 10, tvOS 10, watchOS 3, *)) {
-    arc4random_buf(buf, nbytes);
-  } else {
-    OSStatus status = SecRandomCopyBytes(kSecRandomDefault, nbytes, buf);
-    if (status != errSecSuccess) {
-      fatalError(0, "Fatal error: %d in '%s'\n", status, __func__);
-    }
-  }
-}
-
-#elif defined(_WIN32) && !defined(__CYGWIN__)
-#error TODO: Test on Windows
+#if defined(_WIN32) && !defined(__CYGWIN__)
+#error TODO: Test _stdlib_random on Windows
 
 SWIFT_RUNTIME_STDLIB_INTERNAL
 void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
@@ -359,18 +344,25 @@ void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
 SWIFT_RUNTIME_STDLIB_INTERNAL
 void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
   while (nbytes > 0) {
-    __swift_size_t expected_nbytes = std::min(nbytes, __swift_size_t{256});
     __swift_ssize_t actual_nbytes = -1;
 #if defined(GRND_RANDOM)
-    actual_nbytes = WHILE_EINTR(getrandom(buf, expected_nbytes, 0));
+    actual_nbytes = WHILE_EINTR(getrandom(buf, nbytes, 0));
 #elif defined(__Fuchsia__)
-    actual_nbytes = getentropy(buf, expected_nbytes) ?: expected_nbytes;
+    __swift_size_t getentropy_nbytes = std::min(nbytes, __swift_size_t{256});
+    if (0 == getentropy(buf, getentropy_nbytes)) {
+      actual_nbytes = getentropy_nbytes;
+    }
+#elif defined(__APPLE__)
+    if (__builtin_available(macOS 10.12, iOS 10, tvOS 10, watchOS 3, *)) {
+      arc4random_buf(buf, nbytes);
+      actual_nbytes = nbytes;
+    }
 #endif
     if (actual_nbytes == -1) {
       static const int fd =
         WHILE_EINTR(_stdlib_open("/dev/urandom", O_RDONLY, 0));
       actual_nbytes = (fd == -1) ? -1 :
-        WHILE_EINTR(_stdlib_read(fd, buf, expected_nbytes));
+        WHILE_EINTR(_stdlib_read(fd, buf, nbytes));
     }
     if (actual_nbytes == -1) {
       fatalError(0, "Fatal error: %d in '%s'\n", errno, __func__);
