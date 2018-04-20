@@ -47,6 +47,7 @@
 #include "swift/Basic/Lazy.h"
 #include "swift/Runtime/Config.h"
 #include "swift/Runtime/Debug.h"
+#include "swift/Runtime/Mutex.h"
 #include "../SwiftShims/LibcShims.h"
 
 using namespace swift;
@@ -361,8 +362,12 @@ void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
     if (actual_nbytes == -1) {
       static const int fd =
         WHILE_EINTR(_stdlib_open("/dev/urandom", O_RDONLY, 0));
-      actual_nbytes = (fd == -1) ? -1 :
-        WHILE_EINTR(_stdlib_read(fd, buf, nbytes));
+      if (fd != -1) {
+        static StaticMutex mutex;
+        mutex.withLock([&] {
+          actual_nbytes = WHILE_EINTR(_stdlib_read(fd, buf, nbytes));
+        });
+      }
     }
     if (actual_nbytes == -1) {
       fatalError(0, "Fatal error: %d in '%s'\n", errno, __func__);
