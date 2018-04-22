@@ -347,7 +347,11 @@ void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
   while (nbytes > 0) {
     __swift_ssize_t actual_nbytes = -1;
 #if defined(GRND_RANDOM)
-    actual_nbytes = WHILE_EINTR(getrandom(buf, nbytes, 0));
+    static const bool getrandom_available =
+      !(getrandom(nullptr, 0, 0) == -1 && errno == ENOSYS);
+    if (getrandom_available) {
+      actual_nbytes = WHILE_EINTR(getrandom(buf, nbytes, 0));
+    }
 #elif defined(__Fuchsia__)
     __swift_size_t getentropy_nbytes = std::min(nbytes, __swift_size_t{256});
     if (0 == getentropy(buf, getentropy_nbytes)) {
@@ -361,7 +365,7 @@ void swift::_stdlib_random(void *buf, __swift_size_t nbytes) {
 #endif
     if (actual_nbytes == -1) {
       static const int fd =
-        WHILE_EINTR(_stdlib_open("/dev/urandom", O_RDONLY, 0));
+        WHILE_EINTR(_stdlib_open("/dev/urandom", O_RDONLY | O_CLOEXEC, 0));
       if (fd != -1) {
         static StaticMutex mutex;
         mutex.withLock([&] {
