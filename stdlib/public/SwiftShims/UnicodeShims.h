@@ -29,7 +29,7 @@
 namespace swift { extern "C" {
 #endif
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 const __swift_uint8_t *_swift_stdlib_GraphemeClusterBreakPropertyTrie;
 
 struct _swift_stdlib_GraphemeClusterBreakPropertyTrieMetadataTy {
@@ -54,20 +54,20 @@ struct _swift_stdlib_GraphemeClusterBreakPropertyTrieMetadataTy {
   unsigned SuppDataBytesOffset;
 };
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 const struct _swift_stdlib_GraphemeClusterBreakPropertyTrieMetadataTy
 _swift_stdlib_GraphemeClusterBreakPropertyTrieMetadata;
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 const __swift_uint16_t *
 _swift_stdlib_ExtendedGraphemeClusterNoBoundaryRulesMatrix;
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 __swift_int32_t _swift_stdlib_unicode_strToUpper(
   __swift_uint16_t *Destination, __swift_int32_t DestinationCapacity,
   const __swift_uint16_t *Source, __swift_int32_t SourceLength);
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 __swift_int32_t _swift_stdlib_unicode_strToLower(
   __swift_uint16_t *Destination, __swift_int32_t DestinationCapacity,
   const __swift_uint16_t *Source, __swift_int32_t SourceLength);
@@ -387,10 +387,10 @@ typedef __swift_uint16_t __swift_stdlib_UChar;
 #endif
 #endif
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 void __swift_stdlib_ubrk_close(__swift_stdlib_UBreakIterator *bi);
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 __swift_stdlib_UBreakIterator *
 __swift_stdlib_ubrk_open(__swift_stdlib_UBreakIteratorType type,
                          const char *_Null_unspecified locale,
@@ -398,46 +398,46 @@ __swift_stdlib_ubrk_open(__swift_stdlib_UBreakIteratorType type,
                          __swift_int32_t textLength,
                          __swift_stdlib_UErrorCode *status);
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 void __swift_stdlib_ubrk_setText(__swift_stdlib_UBreakIterator *bi,
                                  const __swift_stdlib_UChar *text,
                                  __swift_int32_t textLength,
                                  __swift_stdlib_UErrorCode *status);
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 __swift_int32_t __swift_stdlib_ubrk_preceding(__swift_stdlib_UBreakIterator *bi,
                                               __swift_int32_t offset);
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 __swift_int32_t __swift_stdlib_ubrk_following(__swift_stdlib_UBreakIterator *bi,
                                               __swift_int32_t offset);
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 __swift_stdlib_UBool
 __swift_stdlib_unorm2_hasBoundaryBefore(const __swift_stdlib_UNormalizer2 *,
                                         __swift_stdlib_UChar32);
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 const __swift_stdlib_UNormalizer2 *
 __swift_stdlib_unorm2_getNFCInstance(__swift_stdlib_UErrorCode *);
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 __swift_int32_t
 __swift_stdlib_unorm2_normalize(const __swift_stdlib_UNormalizer2 *,
                                 const __swift_stdlib_UChar *, __swift_int32_t,
                                 __swift_stdlib_UChar *, __swift_int32_t,
                                 __swift_stdlib_UErrorCode *);
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 __swift_int32_t __swift_stdlib_unorm2_spanQuickCheckYes(
     const __swift_stdlib_UNormalizer2 *, const __swift_stdlib_UChar *,
     __swift_int32_t, __swift_stdlib_UErrorCode *);
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 __swift_stdlib_UBool
     __swift_stdlib_u_hasBinaryProperty(__swift_stdlib_UChar32,
                                        __swift_stdlib_UProperty);
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 __swift_stdlib_UBool
     __swift_stdlib_u_isdefined(__swift_stdlib_UChar32);
 
