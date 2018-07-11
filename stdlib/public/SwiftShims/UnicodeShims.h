@@ -399,29 +399,29 @@ __swift_stdlib_ubrk_open(__swift_stdlib_UBreakIteratorType type,
                          __swift_int32_t textLength,
                          __swift_stdlib_UErrorCode *status);
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 void __swift_stdlib_ubrk_setUText(__swift_stdlib_UBreakIterator *bi,
                                   __swift_stdlib_UText *text,
                                   __swift_stdlib_UErrorCode *status);
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 void __swift_stdlib_ubrk_setText(__swift_stdlib_UBreakIterator *bi,
                                  const __swift_stdlib_UChar *text,
                                  __swift_int32_t textLength,
                                  __swift_stdlib_UErrorCode *status);
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 __swift_stdlib_UText *
 __swift_stdlib_utext_openUTF8(__swift_stdlib_UText * _Nullable, const char *,
                               __swift_int64_t, __swift_stdlib_UErrorCode*);
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 __swift_stdlib_UText *
 __swift_stdlib_utext_openUChars(__swift_stdlib_UText * _Nullable,
                                 const __swift_stdlib_UChar *,
                                 __swift_int64_t, __swift_stdlib_UErrorCode*);
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 __swift_int32_t __swift_stdlib_ubrk_preceding(__swift_stdlib_UBreakIterator *bi,
                                               __swift_int32_t offset);
 
