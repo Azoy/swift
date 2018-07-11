@@ -3421,8 +3421,6 @@ DictionaryTestSuite.test("BridgedToObjC.Verbatim.getObjects:andKeys:count:") {
   for count in 0 ..< d.count + 2 {
     checkGetObjectsAndKeys(d, count: count)
   }
-  expectCrashLater()
-  checkGetObjectsAndKeys(d, count: -1)
 }
 
 //===---
@@ -3528,8 +3526,6 @@ DictionaryTestSuite.test("BridgedToObjC.Custom.getObjects:andKeys:count:") {
   for count in 0 ..< d.count + 2 {
     checkGetObjectsAndKeys(d, count: count)
   }
-  expectCrashLater()
-  checkGetObjectsAndKeys(d, count: -1)
 }
 
 func getBridgedNSDictionaryOfKey_ValueTypeCustomBridged() -> NSDictionary {
