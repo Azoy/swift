@@ -1103,7 +1103,10 @@ public:
   /// \param member The member whose type projection is being computed.
   /// \param baseTy The base type that will be substituted for the 'Self' of the
   /// member.
-  Type substMemberTypeWithBase(ModuleDecl *module, TypeDecl *member, Type baseTy);
+  /// \param useArchetypes Whether to use context archetypes for outer generic
+  /// parameters if the class is nested inside a generic function.
+  Type substMemberTypeWithBase(ModuleDecl *module, TypeDecl *member, Type baseTy,
+                              bool useArchetypes = true);
 
   /// \brief Retrieve the superclass type of the given type, or a null type if
   /// the type has no supertype.
@@ -1822,6 +1825,14 @@ public:
                          = [](Expr *expr, Type type) {
                            expr->setType(type);
                          });
+
+  /// \brief Add implicit load expression to given AST, this is sometimes
+  /// more complicated than simplify wrapping given root in newly created
+  /// `LoadExpr`, because `ForceValueExpr` and `ParenExpr` supposed to appear
+  /// only at certain positions in AST.
+  Expr *addImplicitLoadExpr(Expr *expr,
+                            std::function<Type(Expr *)> getType,
+                            std::function<void(Expr *, Type)> setType);
 
   /// Require that the library intrinsics for working with Optional<T>
   /// exist.
