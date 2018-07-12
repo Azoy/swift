@@ -515,41 +515,41 @@ __swift_stdlib_UBool
     __swift_stdlib_u_hasBinaryProperty(__swift_stdlib_UChar32,
                                        __swift_stdlib_UProperty);
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 void __swift_stdlib_u_charAge(
     __swift_stdlib_UChar32, __swift_stdlib_UVersionInfo _Nonnull);
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 __swift_int32_t
     __swift_stdlib_u_getIntPropertyValue(__swift_stdlib_UChar32,
                                          __swift_stdlib_UProperty);
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 __swift_int32_t __swift_stdlib_u_charName(
     __swift_stdlib_UChar32 code, __swift_stdlib_UCharNameChoice nameChoice,
     char *_Nullable buffer, __swift_int32_t bufferLength,
     __swift_stdlib_UErrorCode *pErrorCode);
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 __swift_int32_t __swift_stdlib_u_strToLower(
     __swift_stdlib_UChar *dest, __swift_int32_t destCapacity,
     const __swift_stdlib_UChar *src, __swift_int32_t srcLength,
     const char *locale, __swift_stdlib_UErrorCode *pErrorCode);
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 __swift_int32_t __swift_stdlib_u_strToTitle(
     __swift_stdlib_UChar *dest, __swift_int32_t destCapacity,
     const __swift_stdlib_UChar *src, __swift_int32_t srcLength,
     __swift_stdlib_UBreakIterator *_Nullable titleIter, const char *locale,
     __swift_stdlib_UErrorCode *pErrorCode);
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 __swift_int32_t __swift_stdlib_u_strToUpper(
     __swift_stdlib_UChar *dest, __swift_int32_t destCapacity,
     const __swift_stdlib_UChar *src, __swift_int32_t srcLength,
     const char *locale, __swift_stdlib_UErrorCode *pErrorCode);
 
-SWIFT_RUNTIME_STDLIB_INTERFACE
+SWIFT_RUNTIME_STDLIB_API
 double __swift_stdlib_u_getNumericValue(__swift_stdlib_UChar32 c);
 
 
