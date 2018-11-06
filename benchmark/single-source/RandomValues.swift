@@ -19,6 +19,8 @@ import TestsUtils
 //
 
 public let RandomValues = [
+  BenchmarkInfo(name: "RandomBytesDef", runFunction: run_RandomBytesDef, tags: [.api]),
+  BenchmarkInfo(name: "RandomBytesLCG", runFunction: run_RandomBytesLCG, tags: [.api]),
   BenchmarkInfo(name: "RandomIntegersDef", runFunction: run_RandomIntegersDef, tags: [.api]),
   BenchmarkInfo(name: "RandomIntegersLCG", runFunction: run_RandomIntegersLCG, tags: [.api]),
   BenchmarkInfo(name: "RandomDoubleDef", runFunction: run_RandomDoubleDef, tags: [.api]),
@@ -37,6 +39,30 @@ struct LCRNG: RandomNumberGenerator {
   mutating func next() -> UInt64 {
     state = 2862933555777941757 &* state &+ 3037000493
     return state
+  }
+}
+
+@inline(never)
+public func run_RandomBytesDef(_ N: Int) {
+  var g = SystemRandomNumberGenerator()
+  for _ in 0 ..< N {
+    var bytes = [UInt8](repeating: 0, count: 100)
+    for _ in 0 ..< 100_000 {
+      bytes.withUnsafeMutableBytes { g.fillBytes($0) }
+    }
+    blackHole(bytes)
+  }
+}
+
+@inline(never)
+public func run_RandomBytesLCG(_ N: Int) {
+  for _ in 0 ..< N {
+    var bytes = [UInt8](repeating: 0, count: 100)
+    var generator = LCRNG(seed: 0)
+    for _ in 0 ..< 100_000 {
+      bytes.withUnsafeMutableBytes { generator.fillBytes($0) }
+    }
+    blackHole(bytes)
   }
 }
 
