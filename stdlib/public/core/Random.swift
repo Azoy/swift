@@ -62,26 +62,11 @@ public protocol RandomNumberGenerator {
   /// - Returns: An unsigned 64-bit random value.
   mutating func next() -> UInt64
 
-  // FIXME: De-underscore after swift-evolution amendment
-  mutating func _fill(bytes buffer: UnsafeMutableRawBufferPointer)
-}
-
-extension RandomNumberGenerator {
-  @inlinable
-  public mutating func _fill(bytes buffer: UnsafeMutableRawBufferPointer) {
-    // FIXME: Optimize
-    var chunk: UInt64 = 0
-    var chunkBytes = 0
-    for i in 0..<buffer.count {
-      if chunkBytes == 0 {
-        chunk = next()
-        chunkBytes = UInt64.bitWidth / 8
-      }
-      buffer[i] = UInt8(truncatingIfNeeded: chunk)
-      chunk >>= UInt8.bitWidth
-      chunkBytes -= 1
-    }
-  }
+  /// Fills the given buffer with random bytes
+  ///
+  /// - Parameter buffer: `UnsafeMutableRawBufferPointer` that is going to be
+  ///   filled with random bytes.
+  mutating func fillBytes(_ buffer: UnsafeMutableRawBufferPointer)
 }
 
 extension RandomNumberGenerator {
@@ -124,6 +109,40 @@ extension RandomNumberGenerator {
     } while random < range
 
     return random % upperBound
+  }
+
+  /// Fills the given buffer with random bytes
+  ///
+  /// - Parameter buffer: `UnsafeMutableRawBufferPointer` that is going to be
+  ///   filled with random bytes.
+  @inlinable
+  public mutating func fillBytes(_ buffer: UnsafeMutableRawBufferPointer) {
+    guard let dest = buffer.baseAddress else {
+      return
+    }
+
+    let blocks = buffer.count / MemoryLayout<UInt64>.size
+
+    for i in 0 ..< blocks {
+      buffer.storeBytes(
+        of: next(),
+        toByteOffset: i * MemoryLayout<UInt64>.size,
+        as: UInt64.self
+      )
+    }
+
+    let bytesWritten = blocks * MemoryLayout<UInt64>.size
+
+    guard bytesWritten != buffer.count else {
+      return
+    }
+
+    var tmp = next()
+    _memcpy(
+      dest: dest.advanced(by: bytesWritten),
+      src: &tmp,
+      size: UInt(buffer.count - bytesWritten)
+    )
   }
 }
 
@@ -168,10 +187,14 @@ public struct SystemRandomNumberGenerator : RandomNumberGenerator {
     return random
   }
 
+  /// Fills the given buffer with random bytes
+  ///
+  /// - Parameter buffer: `UnsafeMutableRawBufferPointer` that is going to be
+  ///   filled with random bytes.
   @inlinable
-  public mutating func _fill(bytes buffer: UnsafeMutableRawBufferPointer) {
-    if !buffer.isEmpty {
-      swift_stdlib_random(buffer.baseAddress!, buffer.count)
+  public mutating func fillBytes(_ buffer: UnsafeMutableRawBufferPointer) {
+    if let dest = buffer.baseAddress {
+      swift_stdlib_random(dest, buffer.count)
     }
   }
 }

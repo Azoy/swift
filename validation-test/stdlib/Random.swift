@@ -6,9 +6,9 @@ import StdlibCollectionUnittest
 
 let RandomTests = TestSuite("Random")
 
-// _fill(bytes:)
+// fillBytes(_:)
 
-RandomTests.test("_fill(bytes:)") {
+RandomTests.test("fillBytes(_:)") {
   for count in [100, 1000] {
     var bytes1 = [UInt8](repeating: 0, count: count)
     var bytes2 = [UInt8](repeating: 0, count: count)
@@ -18,11 +18,11 @@ RandomTests.test("_fill(bytes:)") {
     expectEqual(bytes2, zeros)
     
     var g = SystemRandomNumberGenerator()
-    bytes1.withUnsafeMutableBytes { g._fill(bytes: $0) }
+    bytes1.withUnsafeMutableBytes { g.fillBytes($0) }
     expectNotEqual(bytes1, bytes2)
     expectNotEqual(bytes1, zeros)
     
-    bytes2.withUnsafeMutableBytes { g._fill(bytes: $0) }
+    bytes2.withUnsafeMutableBytes { g.fillBytes($0) }
     expectNotEqual(bytes1, bytes2)
     expectNotEqual(bytes2, zeros)
   }
@@ -192,6 +192,7 @@ public struct LCRNG: RandomNumberGenerator {
 
 RandomTests.test("different random number generators") {
   // 0 = first pass array, 1 = second pass array
+  var bytePasses: [[[UInt8]]] = [[], []]
   var intPasses: [[Int]] = [[], []]
   var doublePasses: [[Double]] = [[], []]
   var boolPasses: [[Bool]] = [[], []]
@@ -203,6 +204,10 @@ RandomTests.test("different random number generators") {
     var rng = LCRNG(seed: seed)
     
     for _ in 0 ..< 1_000 {
+      var bytes = [UInt8](repeating: 0, count: 100)
+      bytes.withUnsafeMutableBytes { rng.fillBytes($0) }
+      bytePasses[i].append(bytes)
+
       let randomInt = Int.random(in: 0 ... 100, using: &rng)
       intPasses[i].append(randomInt)
       
@@ -221,6 +226,7 @@ RandomTests.test("different random number generators") {
     }
   }
   
+  expectEqual(bytePasses[0], bytePasses[1])
   expectEqual(intPasses[0], intPasses[1])
   expectEqual(doublePasses[0], doublePasses[1])
   expectEqual(boolPasses[0], boolPasses[1])
