@@ -17,12 +17,15 @@
 #ifndef SWIFT_AST_STMT_H
 #define SWIFT_AST_STMT_H
 
+#include "swift/AST/ASTContext.h"
 #include "swift/AST/Availability.h"
 #include "swift/AST/AvailabilitySpec.h"
 #include "swift/AST/ASTNode.h"
 #include "swift/AST/IfConfigClause.h"
 #include "swift/AST/TypeAlignments.h"
 #include "swift/Basic/NullablePtr.h"
+#include "swift/Basic/Platform.h"
+#include "swift/Parse/Token.h"
 #include "llvm/Support/TrailingObjects.h"
 
 namespace swift {
@@ -1247,6 +1250,114 @@ class PoundAssertStmt : public Stmt {
 
   static bool classof(const Stmt *S) {
     return S->getKind() == StmtKind::PoundAssert;
+  }
+};
+
+/// Represents inline assembly that will be lowered to assembly calls in IRGen
+class AsmStmt : public Stmt {
+  SourceLoc AsmLoc;
+  SourceLoc LBLoc;
+  SourceLoc RBLoc;
+
+  unsigned TokenCount;
+  unsigned TokenOffsetCount;
+  unsigned OutputCount;
+  unsigned InputCount;
+  unsigned ClobberCount;
+
+  StringRef AsmString;
+
+  Token *AsmToks;
+  unsigned *AsmTokOffsets;
+  StringRef *Constraints;
+  StringRef *Clobbers;
+  Expr **Exprs;
+
+public:
+  AsmStmt(ASTContext &Ctx, SourceLoc loc, SourceLoc lbLoc, SourceLoc rbLoc,
+          StringRef asmString, ArrayRef<Token> asmToks,
+          ArrayRef<unsigned> asmTokOffsets, bool implicit)
+      : Stmt(StmtKind::Asm, implicit), AsmLoc(loc), LBLoc(lbLoc), RBLoc(rbLoc),
+        TokenCount(asmToks.size()), TokenOffsetCount(asmTokOffsets.size()) {
+    AsmString = Ctx.AllocateCopy(asmString);
+
+    AsmToks = Ctx.AllocateCopy<Token>(asmToks.begin(), asmToks.end());
+    std::copy(asmToks.begin(), asmToks.end(), AsmToks);
+
+    AsmTokOffsets = Ctx.AllocateCopy<unsigned>(asmTokOffsets.begin(),
+                                               asmTokOffsets.end());
+    std::copy(asmTokOffsets.begin(), asmTokOffsets.end(), AsmTokOffsets);
+  }
+
+  void postAsmParseSetup(ASTContext &Ctx, unsigned outputCount,
+                         unsigned inputCount, StringRef asmString,
+                         ArrayRef<StringRef> constraints,
+                         ArrayRef<StringRef> clobbers, ArrayRef<Expr *> exprs) {
+    assert(outputCount + inputCount == constraints.size() && 
+           "Incorrect number of constraints");
+
+    OutputCount = outputCount;
+    InputCount = inputCount;
+    ClobberCount = clobbers.size();
+
+    AsmString = Ctx.AllocateCopy(asmString);
+
+    Constraints = Ctx.AllocateCopy<StringRef>(constraints.begin(),
+                                              constraints.end());
+    std::transform(constraints.begin(), constraints.end(), Constraints,
+                   [&](StringRef constraint) {
+      return Ctx.AllocateCopy(constraint);
+    });
+
+    Clobbers = Ctx.AllocateCopy<StringRef>(clobbers.begin(), clobbers.end());
+    std::transform(clobbers.begin(), clobbers.end(), Clobbers,
+                   [&](StringRef clobber) {
+      return Ctx.AllocateCopy(clobber);
+    });
+    
+    Exprs = Ctx.AllocateCopy<Expr *>(exprs.begin(), exprs.end());
+    std::copy(exprs.begin(), exprs.end(), Exprs);
+  }
+
+  SourceLoc getLoc() const { return AsmLoc; }
+  SourceRange getSourceRange() const { return SourceRange(AsmLoc, RBLoc); }
+
+  unsigned getTokenCount() const { return TokenCount; }
+
+  unsigned getTokenOffsetCount() const { return TokenOffsetCount; }
+
+  unsigned getOutputCount() const { return OutputCount; }
+
+  unsigned getInputCount() const { return InputCount; }
+
+  unsigned getClobberCount() const { return ClobberCount; }
+
+  StringRef getAsmString() const { return AsmString; }
+
+  ArrayRef<Token> getTokens() const {
+    return ArrayRef<Token>(AsmToks, TokenCount);
+  }
+
+  ArrayRef<unsigned> getTokenOffsets() const {
+    return ArrayRef<unsigned>(AsmTokOffsets, TokenOffsetCount);
+  }
+
+  ArrayRef<StringRef> getConstraints() const {
+    return ArrayRef<StringRef>(Constraints, OutputCount + InputCount);
+  }
+
+  ArrayRef<StringRef> getClobbers() const {
+    return ArrayRef<StringRef>(Clobbers, ClobberCount);
+  }
+
+  ArrayRef<Expr *> getExprs() const {
+    return ArrayRef<Expr *>(Exprs, OutputCount + InputCount);
+  }
+
+  std::string getConstraintString(const llvm::Triple &triple) const;
+
+  static bool classof(const Stmt *S) {
+    return S->getKind() == StmtKind::Asm;
   }
 };
 

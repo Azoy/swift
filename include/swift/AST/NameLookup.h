@@ -430,6 +430,7 @@ private:
   void visitFallthroughStmt(FallthroughStmt *) {}
   void visitFailStmt(FailStmt *) {}
   void visitReturnStmt(ReturnStmt *) {}
+  void visitAsmStmt(AsmStmt *) {}
   void visitYieldStmt(YieldStmt *) {}
   void visitThrowStmt(ThrowStmt *) {}
   void visitPoundAssertStmt(PoundAssertStmt *) {}

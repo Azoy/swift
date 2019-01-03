@@ -1084,6 +1084,7 @@ ASTScope *ASTScope::createIfNeeded(const ASTScope *parent, Stmt *stmt) {
   case StmtKind::Case:
     return new (ctx) ASTScope(parent, cast<CaseStmt>(stmt));
 
+  case StmtKind::Asm:
   case StmtKind::Break:
   case StmtKind::Continue:
   case StmtKind::Fallthrough:

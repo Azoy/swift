@@ -438,6 +438,46 @@ SwitchStmt *SwitchStmt::create(LabeledStmtInfo LabelInfo, SourceLoc SwitchLoc,
   return theSwitch;
 }
 
+std::string AsmStmt::getConstraintString(const llvm::Triple &triple) const {
+  // Construct our constraint string
+  std::string constraintString;
+  
+  // Add actual constraints first
+  for (auto constraint : getConstraints()) {
+    if (!constraintString.empty())
+      constraintString += ',';
+
+    if (constraint == "=m") {
+      constraintString += "=*m";
+    } else if (constraint == "m") {
+      constraintString += "*m";
+    } else {
+      constraintString += constraint;
+    }
+  }
+  
+  // Now add clobbers (~{clobber})
+  for (auto clobber : getClobbers()) {
+    if (!constraintString.empty())
+      constraintString += ',';
+    
+    constraintString += "~{";
+    constraintString += clobber;
+    constraintString += "}";
+  }
+  
+  // Finally, add target specific clobbers
+  auto targetClobbers = getTargetClobbers(triple);
+  
+  // Check if we need to append a ',' before the clobbers
+  if (!constraintString.empty())
+    constraintString += ',';
+
+  constraintString += targetClobbers;
+  
+  return constraintString;
+}
+
 // See swift/Basic/Statistic.h for declaration: this enables tracing Stmts, is
 // defined here to avoid too much layering violation / circular linkage
 // dependency.

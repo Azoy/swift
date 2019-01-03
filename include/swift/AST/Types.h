@@ -724,6 +724,14 @@ public:
   /// Check if this type is equal to Builtin.IntN.
   bool isBuiltinIntegerType(unsigned bitWidth);
 
+  /// Check if this type is equal to any of the concrete Swift Integer types
+  //  (Int, Int8, Int16, etc.)
+  bool isIntegerType();
+
+  /// Check if this type is equal to any of the concrete Swift Float types
+  /// (Float, Double, Float80)
+  bool isFloatType();
+
   /// If this is a class type or a bound generic class type, returns the
   /// (possibly generic) class.
   ClassDecl *getClassOrBoundGenericClass();

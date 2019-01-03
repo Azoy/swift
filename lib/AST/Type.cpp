@@ -550,6 +550,38 @@ bool TypeBase::isBool() {
   return false;
 }
 
+bool TypeBase::isIntegerType() {
+  if (auto NTD = getAnyNominal()) {
+    if (isa<StructDecl>(NTD)) {
+      auto ctx = &getASTContext();
+      return ctx->getInt8Decl() == NTD ||
+             ctx->getInt16Decl() == NTD ||
+             ctx->getInt32Decl() == NTD ||
+             ctx->getInt64Decl() == NTD ||
+             ctx->getIntDecl() == NTD ||
+             ctx->getUInt8Decl() == NTD ||
+             ctx->getUInt16Decl() == NTD ||
+             ctx->getUInt32Decl() == NTD ||
+             ctx->getUInt64Decl() == NTD ||
+             ctx->getUIntDecl() == NTD;
+    }
+  }
+  
+  return false;
+}
+
+bool TypeBase::isFloatType() {
+  if (auto NTD = getAnyNominal()) {
+    if (isa<StructDecl>(NTD)) {
+      auto ctx = &getASTContext();
+      return ctx->getFloatDecl() == NTD ||
+             ctx->getDoubleDecl() == NTD ||
+             ctx->getFloat80Decl() == NTD;
+    }
+  }
+  
+  return false;
+}
 
 bool TypeBase::isAssignableType() {
   if (hasLValueType()) return true;

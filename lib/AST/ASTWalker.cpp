@@ -1343,6 +1343,10 @@ Stmt *Traversal::visitReturnStmt(ReturnStmt *RS) {
   return RS;
 }
 
+Stmt *Traversal::visitAsmStmt(AsmStmt *AS) {
+  return AS;
+}
+
 Stmt *Traversal::visitYieldStmt(YieldStmt *YS) {
   for (auto &yield : YS->getMutableYields()) {
     if (Expr *E = doIt(yield))

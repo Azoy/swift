@@ -68,7 +68,8 @@ STMT(Fallthrough, Stmt)
 STMT(Fail, Stmt)
 STMT(Throw, Stmt)
 STMT(PoundAssert, Stmt)
-LAST_STMT(PoundAssert)
+STMT(Asm, Stmt)
+LAST_STMT(Asm)
 
 #undef STMT_RANGE
 #undef LABELED_STMT

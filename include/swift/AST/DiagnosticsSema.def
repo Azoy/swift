@@ -3200,6 +3200,12 @@ NOTE(duplicate_where, none,
 ERROR(trailing_closure_requires_parens,none,
       "trailing closure requires parentheses for disambiguation in this"
       " context", ())
+      
+// Asm Stmt
+ERROR(asm_target_lookup_failed,none,
+      "unable to lookup target '%0'", (StringRef))
+ERROR(asm_parsing_failed,none,
+      "error parsing assembly: '%0'", (StringRef))
 
 //------------------------------------------------------------------------------
 // MARK: Type Check Patterns

@@ -1075,6 +1075,12 @@ ERROR(try_on_return_throw_yield,none,
 ERROR(try_on_var_let,none,
       "'try' must be placed on the initial value expression", ())
 
+// Inline Assembly
+ERROR(expected_lbrace_after_asm,PointsToFirstBadToken,
+      "expected '{' after 'asm'", ())
+ERROR(expected_rbrace_end_asm,none,
+      "expected '}' at the end of 'asm'", ())
+
 //------------------------------------------------------------------------------
 // MARK: Expression parsing diagnostics
 //------------------------------------------------------------------------------

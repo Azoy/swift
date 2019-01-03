@@ -1499,6 +1499,11 @@ public:
     PrintWithColorRAII(OS, ParenthesisColor) << ')';
   }
 
+  void visitAsmStmt(AsmStmt *S) {
+    printCommon(S, "asm_stmt");
+    PrintWithColorRAII(OS, ParenthesisColor) << ')';
+  }
+
   void visitYieldStmt(YieldStmt *S) {
     printCommon(S, "yield_stmt");
     for (auto yield : S->getYields()) {

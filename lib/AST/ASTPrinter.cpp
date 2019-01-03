@@ -3034,6 +3034,44 @@ void PrintAST::visitReturnStmt(ReturnStmt *stmt) {
   }
 }
 
+void PrintAST::visitAsmStmt(AsmStmt *stmt) {
+  Printer.printKeyword("asm");
+  Printer << " {";
+  Printer.printNewline();
+  {
+    IndentRAII indentMore(*this);
+    indent();
+    
+    // Split the asm string up into lines to keep an even indentation
+    bool keepSplitting = true;
+    auto split = stmt->getAsmString().split("\n");
+    SmallVector<StringRef, 8> lines;
+    
+    do {
+      lines.push_back(split.first);
+      
+      // Check if we are done splitting
+      if (split.second == "") {
+        keepSplitting = false;
+        break;
+      }
+      
+      split = split.second.split("\n");
+    } while (keepSplitting);
+    
+    for (auto line : lines) {
+      Printer << line.ltrim();
+      
+      // If this is not the last line, print a newline
+      if (lines.back() != line)
+        Printer.printNewline();
+    }
+  }
+  indent();
+  Printer.printNewline();
+  Printer << "}";
+}
+
 void PrintAST::visitYieldStmt(YieldStmt *stmt) {
   Printer.printKeyword("yield");
   Printer << " ";
