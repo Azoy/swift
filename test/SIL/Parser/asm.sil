@@ -1,0 +1,15 @@
+// RUN: %target-swift-frontend %s -emit-silgen -verify
+
+sil_stage raw
+
+import Builtin
+import Swift
+import SwiftShims
+
+sil @main : $@convention(c) (Int32, UnsafeMutablePointer<Optional<UnsafeMutablePointer<Int8>>>) -> Int32 {
+bb0(%0 : @trivial $Int32, %1 : @trivial $UnsafeMutablePointer<Optional<UnsafeMutablePointer<Int8>>>):
+  asm [volatile] "nop", "~{dirflag},~{fpsr},~{flags}"
+  %2 = integer_literal $Builtin.Int32, 0
+  %3 = struct $Int32 (%2 : $Builtin.Int32)
+  return %3 : $Int32
+}

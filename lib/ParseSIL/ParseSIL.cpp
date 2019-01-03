@@ -4841,6 +4841,64 @@ bool SILParser::parseSILInstruction(SILBuilder &B) {
                                                blockType, subMap);
     break;
   }
+  case SILInstructionKind::AsmInst: {
+    // Parse assembly string
+    if (P.Tok.getKind() != tok::string_literal) {
+      P.diagnose(P.Tok, diag::expected_tok_in_sil_instr, "string");
+      return true;
+    }
+    
+    SmallVector<Lexer::StringSegment, 1> asmSegments;
+    P.L->getStringLiteralSegments(P.Tok, asmSegments);
+    assert(asmSegments.size() == 1);
+
+    P.consumeToken(tok::string_literal);
+
+    SmallVector<char, 128> asmStringBuffer;
+    
+    StringRef asmString = P.L->getEncodedStringSegment(asmSegments.front(),
+                                                       asmStringBuffer);
+
+    if (P.parseToken(tok::comma, diag::expected_tok_in_sil_instr, ","))
+      return true;
+
+    // Do the same for the constraint string
+    if (P.Tok.getKind() != tok::string_literal) {
+      P.diagnose(P.Tok, diag::expected_tok_in_sil_instr, "string");
+      return true;
+    }
+
+    SmallVector<Lexer::StringSegment, 1> constraintSegments;
+    P.L->getStringLiteralSegments(P.Tok, constraintSegments);
+    assert(constraintSegments.size() == 1);
+
+    P.consumeToken(tok::string_literal);
+
+    SmallVector<char, 128> constraintStringBuffer;
+
+    StringRef constraintString = 
+      P.L->getEncodedStringSegment(constraintSegments.front(),
+                                   constraintStringBuffer);
+
+    SmallVector<SILValue, 6> args;
+    
+    P.parseToken(tok::l_paren, diag::expected_tok_in_sil_instr, "(");
+    
+    if (P.Tok.getKind() != tok::r_paren) {
+      do {
+        if (parseTypedValueRef(Val, B))
+          break;
+        args.push_back(Val);
+      } while (P.consumeIf(tok::comma));
+      
+      P.parseToken(tok::r_paren, diag::expected_tok_in_sil_instr, "}");
+    } else {
+      P.consumeToken(tok::r_paren);
+    }
+
+    ResultVal = B.createAsm(InstLoc, args, asmString, constraintString);
+    break;
+  }
   }
 
   // Match the results clause if we had one.

@@ -700,6 +700,7 @@ void swift::visitAccessedAddress(SILInstruction *I,
   case SILInstructionKind::AllocBoxInst:
   case SILInstructionKind::AllocExistentialBoxInst:
   case SILInstructionKind::AllocGlobalInst:
+  case SILInstructionKind::AsmInst:
   case SILInstructionKind::BeginAccessInst:
   case SILInstructionKind::BeginApplyInst:
   case SILInstructionKind::BeginBorrowInst:

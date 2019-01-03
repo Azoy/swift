@@ -1018,6 +1018,7 @@ bool SILInstruction::mayRelease() const {
 #include "swift/AST/ReferenceStorage.def"
   case SILInstructionKind::ReleaseValueInst:
   case SILInstructionKind::ReleaseValueAddrInst:
+  case SILInstructionKind::AsmInst:
     return true;
 
   case SILInstructionKind::DestroyValueInst:

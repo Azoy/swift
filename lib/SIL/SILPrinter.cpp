@@ -2134,6 +2134,18 @@ public:
     }
     }
   }
+  
+  void visitAsmInst(AsmInst *AI) {
+    // We use quoted string here because of newlines, tabs, etc
+    *this << QuotedString(AI->getAsmString());
+    *this << ", ";
+    *this << '"' << AI->getConstraintString() << '"';
+    *this << '(';
+    interleave(AI->getOperands(),
+               [&](SILValue value) { *this << getIDAndType(value); },
+               [&] { *this << ", "; });
+    *this << ')';
+  }
 };
 } // end anonymous namespace
 

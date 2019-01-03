@@ -794,7 +794,11 @@ NON_VALUE_INST(AbortApplyInst, abort_apply,
 NON_VALUE_INST(CondFailInst, cond_fail,
                SILInstruction, MayHaveSideEffects, DoesNotRelease)
 
-NODE_RANGE(NonValueInstruction, UnreachableInst, CondFailInst)
+// Misc Instructions
+NON_VALUE_INST(AsmInst, asm,
+               SILInstruction, MayHaveSideEffects, MayRelease)
+
+NODE_RANGE(NonValueInstruction, UnreachableInst, AsmInst)
 
 ABSTRACT_INST(MultipleValueInstruction, SILInstruction)
 FULLAPPLYSITE_MULTIPLE_VALUE_INST(BeginApplyInst, begin_apply,

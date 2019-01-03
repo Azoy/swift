@@ -7747,6 +7747,37 @@ inline void SILSuccessor::pred_iterator::cacheBasicBlock() {
   }
 }
 
+//===----------------------------------------------------------------------===//
+// Misc instructions
+//===----------------------------------------------------------------------===//
+
+class AsmInst final : 
+    public InstructionBaseWithTrailingOperands<SILInstructionKind::AsmInst,
+                                               AsmInst, NonValueInstruction> {
+  friend SILBuilder;
+
+  StringRef AsmString;
+  StringRef ConstraintString;
+
+  AsmInst(SILDebugLocation Loc, ArrayRef<SILValue> operands,
+          StringRef asmString, StringRef constraintString) 
+      : InstructionBaseWithTrailingOperands(operands, Loc),
+        AsmString(asmString), ConstraintString(constraintString) {}
+
+  static AsmInst *create(SILDebugLocation Loc, ArrayRef<SILValue> operands,
+                         StringRef asmString, StringRef constraintString,
+                         SILModule &M);
+
+public:
+  StringRef getAsmString() const { return AsmString; }
+  
+  StringRef getConstraintString() const { return ConstraintString; }
+  
+  OperandValueArrayRef getOperands() const {
+    return OperandValueArrayRef(getAllOperands());
+  }
+};
+
 } // end swift namespace
 
 //===----------------------------------------------------------------------===//

@@ -1964,6 +1964,16 @@ public:
   }
 
   //===--------------------------------------------------------------------===//
+  // Misc Instruction Creations
+  //===--------------------------------------------------------------------===//
+
+  AsmInst *createAsm(SILLocation Loc, ArrayRef<SILValue> operands,
+                     StringRef asmString, StringRef constraintString) {
+    return insert(AsmInst::create(getSILDebugLocation(Loc), operands,
+                                  asmString, constraintString, getModule()));
+  }
+
+  //===--------------------------------------------------------------------===//
   // Memory management helpers
   //===--------------------------------------------------------------------===//
 

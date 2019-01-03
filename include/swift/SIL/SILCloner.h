@@ -2599,6 +2599,19 @@ void SILCloner<ImplClass>::visitKeyPathInst(KeyPathInst *Inst) {
                               opValues, getOpType(Inst->getType())));
 }
 
+template <typename ImplClass>
+void SILCloner<ImplClass>::visitAsmInst(AsmInst *Inst) {
+  getBuilder().setCurrentDebugScope(getOpScope(Inst->getDebugScope()));
+  SmallVector<SILValue, 4> operands;
+  for (auto &op : Inst->getAllOperands())
+    operands.push_back(getOpValue(op.get()));
+    
+  recordClonedInstruction(Inst,
+                          getBuilder().createAsm(
+                            getOpLocation(Inst->getLoc()), operands,
+                            Inst->getAsmString(), Inst->getConstraintString()));
+}
+
 } // end namespace swift
 
 #endif

@@ -2418,3 +2418,17 @@ DestructureTupleInst *DestructureTupleInst::create(SILModule &M,
   return ::new (Buffer)
       DestructureTupleInst(M, Loc, Operand, Types, OwnershipKinds);
 }
+
+AsmInst *AsmInst::create(SILDebugLocation Loc, ArrayRef<SILValue> operands,
+                         StringRef asmString, StringRef constraintString,
+                         SILModule &M) {
+  auto size = totalSizeToAlloc<Operand>(operands.size());
+  void *buffer = M.allocateInst(size, alignof(AsmInst));
+  
+  // This allocation isn't needed if asm came from swift source because the ast
+  // node still contains the stringref, but if we're parsing sil we need to copy
+  auto asmStringCopy = M.getASTContext().AllocateCopy(asmString);
+  auto constraintStringCopy = M.getASTContext().AllocateCopy(constraintString);
+  return ::new (buffer) AsmInst(Loc, operands, asmStringCopy,
+                                constraintStringCopy);
+}
