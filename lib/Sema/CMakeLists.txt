@@ -4,6 +4,7 @@ if (SWIFT_FORCE_OPTIMIZED_TYPECHECKER)
 endif()
 
 add_swift_host_library(swiftSema STATIC
+  AsmParserCallback.cpp
   CSApply.cpp
   CSBindings.cpp
   CSDiag.cpp
@@ -37,6 +38,7 @@ add_swift_host_library(swiftSema STATIC
   ResilienceDiagnostics.cpp
   SourceLoader.cpp
   TypeCheckAccess.cpp
+  TypeCheckAsm.cpp
   TypeCheckAttr.cpp
   TypeCheckAvailability.cpp
   TypeCheckCaptures.cpp

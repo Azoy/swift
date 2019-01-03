@@ -14,6 +14,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "AsmParserCallback.h"
 #include "TypeChecker.h"
 #include "TypeCheckType.h"
 #include "MiscDiagnostics.h"
@@ -475,6 +476,50 @@ public:
       if (auto FD = dyn_cast<FuncDecl>(DRE->getDecl()))
         TC.addEscapingFunctionAsReturnValue(FD, RS);
     return RS;
+  }
+
+  Stmt *visitAsmStmt(AsmStmt *AS) {
+    // Setup our asm parser callback for sema
+    AsmParserCallback callback(TC, DC, AS->getLoc(), AS->getAsmString(),
+                               AS->getTokens(), AS->getTokenOffsets());
+
+    // Setup before parsing the asm
+    std::string asmString;
+    unsigned outputCount;
+    unsigned inputCount;
+    SmallVector<StringRef, 4> constraints;
+    SmallVector<StringRef, 4> clobbers;
+    SmallVector<std::pair<void *, bool>, 4> opExprs;
+    SmallVector<Expr *, 4> exprs;
+
+    // Setup a temporary for constraints and clobbers
+    SmallVector<std::string, 4> tmpConstraints;
+    SmallVector<std::string, 4> tmpClobbers;
+    
+    // Attempt to parse the asm. If we fail here, we're done.
+    if (TC.parseAsmString(AS, &callback, outputCount, inputCount, asmString,
+                          tmpConstraints, tmpClobbers, opExprs))
+      return AS;
+
+    // Remove invalid clobbers
+    llvm::erase_if(tmpClobbers, [](const std::string &C) {
+      return C == "fpsw" || C == "mxcsr";
+    });
+    
+    constraints.insert(constraints.end(), tmpConstraints.begin(),
+                       tmpConstraints.end());
+
+    clobbers.insert(clobbers.end(), tmpClobbers.begin(), tmpClobbers.end());
+
+    for (auto opExpr : opExprs) {
+      Expr *expr = static_cast<Expr *>(opExpr.first);
+      exprs.push_back(expr);
+    }
+
+    AS->postAsmParseSetup(TC.Context, outputCount, inputCount, asmString,
+                          constraints, clobbers, exprs);
+
+    return AS;
   }
 
   Stmt *visitYieldStmt(YieldStmt *YS) {

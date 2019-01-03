@@ -17,6 +17,7 @@
 #ifndef TYPECHECKING_H
 #define TYPECHECKING_H
 
+#include "AsmParserCallback.h"
 #include "swift/AST/ASTContext.h"
 #include "swift/AST/AccessScope.h"
 #include "swift/AST/AnyFunctionRef.h"
@@ -31,10 +32,12 @@
 #include "swift/Config.h"
 #include "llvm/ADT/SetVector.h"
 #include "llvm/ADT/TinyPtrVector.h"
+#include "llvm/MC/MCParser/MCAsmParser.h"
 #include <functional>
 
 namespace swift {
 
+class AsmParserCallback;
 class GenericSignatureBuilder;
 class NominalTypeDecl;
 class NormalProtocolConformance;
@@ -2120,6 +2123,17 @@ public:
   /// Check if the given decl has a @_semantics attribute that gives it
   /// special case type-checking behavior.
   DeclTypeCheckingSemantics getDeclTypeCheckingSemantics(ValueDecl *decl);
+  
+  /// Open up an MCAsmParser and parse the asm string when visiting an AsmStmt.
+  bool parseAsmString(AsmStmt *AS, AsmParserCallback *callback,
+                      unsigned &OutputCount, unsigned &InputCount,
+                      std::string &AsmStringIr,
+                      SmallVectorImpl<std::string> &Constraints,
+                      SmallVectorImpl<std::string> &Clobbers,
+                      SmallVectorImpl<std::pair<void *, bool>> &Exprs);
+
+  /// Inform MCAsmParser of an identifier.
+  void fillAsmIdentifierInfo(Expr *result, llvm::InlineAsmIdentifierInfo &info);
 };
 
 /// Temporary on-stack storage and unescaping for encoded diagnostic
