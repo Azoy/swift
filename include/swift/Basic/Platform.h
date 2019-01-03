@@ -74,6 +74,9 @@ namespace swift {
   ///
   /// This is a stop-gap until full Triple support (ala Clang) exists within swiftc.
   StringRef getMajorArchitectureName(const llvm::Triple &triple);
+  
+  /// Retrieves the target's specific clobbers for asm statements
+  StringRef getTargetClobbers(const llvm::Triple &triple);
 } // end namespace swift
 
 #endif // SWIFT_BASIC_PLATFORM_H

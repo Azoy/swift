@@ -186,3 +186,15 @@ StringRef swift::getMajorArchitectureName(const llvm::Triple &Triple) {
     return Triple.getArchName();
   }
 }
+
+StringRef swift::getTargetClobbers(const llvm::Triple &triple) {
+  switch (triple.getArch()) {
+    default:
+      return "";
+    case llvm::Triple::UnknownArch:
+      llvm_unreachable("unknown architecture for target clobbers");
+    case llvm::Triple::x86:
+    case llvm::Triple::x86_64:
+      return "~{dirflag},~{fpsr},~{flags}";
+  }
+}
