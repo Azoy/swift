@@ -1117,6 +1117,8 @@ public:
   void visitCheckedCastAddrBranchInst(CheckedCastAddrBranchInst *i);
   
   void visitKeyPathInst(KeyPathInst *I);
+  
+  void visitAsmInst(AsmInst *i);
 
 
 #define LOADABLE_REF_STORAGE_HELPER(Name) \
@@ -5605,4 +5607,28 @@ void IRGenModule::emitSILStaticInitializers() {
     auto *TI = cast<TupleInst>(InitValue);
     IRGlobal->setInitializer(emitConstantTuple(*this, TI));
   }
+}
+
+void IRGenSILFunction::visitAsmInst(swift::AsmInst *i) {
+  SmallVector<llvm::Value *, 4> args;
+  SmallVector<llvm::Type *, 4> argTypes;
+  for (auto operand : i->getOperands()) {
+    auto addr = getLoweredAddress(operand);
+    auto deref = Builder.getInt32(0);
+    auto idx = Builder.getInt32(0);
+    auto value = Builder.CreateInBoundsGEP(
+      addr->getType()->getPointerElementType(), addr.getAddress(),
+      {deref, idx});
+    args.push_back(value);
+    argTypes.push_back(value->getType());
+  }
+  
+  llvm::FunctionType *asmFnTy = llvm::FunctionType::get(IGM.VoidTy, argTypes,
+                                                        /*isVarArg*/ false);
+  llvm::InlineAsm *inlineAsm =
+      llvm::InlineAsm::get(asmFnTy, i->getAsmString(),
+                           i->getConstraintString(), /*sideeffects*/ true,
+                           /*alignstack*/ false,
+                           llvm::InlineAsm::AsmDialect::AD_Intel);
+  Builder.CreateAsmCall(inlineAsm, args);
 }
