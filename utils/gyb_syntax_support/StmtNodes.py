@@ -136,6 +136,36 @@ STMT_NODES = [
                    is_optional=True),
          ]),
 
+    # asm-stmt -> 'asm' '{' instr?
+    #                       | instr? arg?
+    #                       | instr? arg? ','? arg?
+    #             '}'
+    Node('AsmStmt', kind='Stmt',
+         children=[
+             Child('AsmKeyword', kind='AsmToken'),
+             Child('LeftBrace', kind='LeftBraceToken'),
+             Child('Asm', kind='Syntax',
+                    node_choices=[
+                        Child('Instr', kind='IdentifierToken'),
+                        Child('SingleArg', kind='AsmInstrSingleArg'),
+                        Child('DoubleArg', kind='AsmInstrDoubleArg'),
+                    ])
+         ]),
+
+    Node('AsmInstrSingleArg', kind='Syntax',
+         children=[
+             Child('Instr', kind='IdentifierToken'),
+             Child('Arg', kind='IdentifierToken'),
+         ]),
+
+    Node('AsmInstrDoubleArg', kind='Syntax',
+         children=[
+             Child('Instr', kind='IdentifierToken'),
+             Child('Arg1', kind='IdentifierToken'),
+             Child('Comma', kind='CommaToken'),
+             Child('Arg2', kind='IdentifierToken'),
+         ]),
+
     # yield-stmt -> 'yield' '('? expr-list? ')'?
     Node('YieldStmt', kind='Stmt',
          children=[

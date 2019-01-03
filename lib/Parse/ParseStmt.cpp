@@ -53,6 +53,7 @@ bool Parser::isStartOfStmt() {
   case tok::kw_case:
   case tok::kw_default:
   case tok::kw_yield:
+  case tok::kw_asm:
   case tok::pound_assert:
   case tok::pound_if:
   case tok::pound_warning:
@@ -585,6 +586,9 @@ ParserResult<Stmt> Parser::parseStmt() {
   case tok::kw_return:
     if (LabelInfo) diagnose(LabelInfo.Loc, diag::invalid_label_on_stmt);
     return parseStmtReturn(tryLoc);
+  case tok::kw_asm:
+    if (LabelInfo) diagnose(LabelInfo.Loc, diag::invalid_label_on_stmt);
+    return parseStmtAsm(tryLoc);
   case tok::kw_yield:
     if (LabelInfo) diagnose(LabelInfo.Loc, diag::invalid_label_on_stmt);
     return parseStmtYield(tryLoc);
@@ -788,6 +792,101 @@ ParserResult<Stmt> Parser::parseStmtReturn(SourceLoc tryLoc) {
     diagnose(tryLoc, diag::try_on_stmt, "return");
 
   return makeParserResult(new (Context) ReturnStmt(ReturnLoc, nullptr));
+}
+
+// Convert an array of asm tokens to a well formed asm string
+static void buildAsmString(ArrayRef<Token> Toks,
+                           SmallVectorImpl<unsigned> &TokOffsets,
+                           SmallString<512> &Asm) {
+  bool isNewInstr = true;
+  
+  for (size_t i = 0; i < Toks.size(); i++) {
+    const auto &tok = Toks[i];
+    
+    if (!isNewInstr && tok.isAtStartOfLine()) {
+      Asm += "\n\t";
+      isNewInstr = true;
+    }
+    
+    if (i != 0) {
+      const auto &previousTok = Toks[i - 1];
+      if (!isNewInstr && 
+          (previousTok.isAtStartOfLine() || previousTok.is(tok::comma) ||
+           (!tok.isAtStartOfLine() && i == 1)))
+        Asm += ' ';
+    }
+      
+    TokOffsets.push_back(Asm.size());
+    
+    Asm += tok.getText();
+    
+    isNewInstr = false;
+  }
+  
+  Asm.push_back('\0');
+  Asm.pop_back();
+  
+  assert(TokOffsets.size() == Toks.size());
+}
+
+ParserResult<Stmt> Parser::parseStmtAsm(SourceLoc tryLoc) {
+  SyntaxContext->setCreateSyntax(SyntaxKind::AsmStmt);
+  SourceLoc asmLoc = consumeToken(tok::kw_asm);
+  SourceLoc lbLoc;
+  SourceLoc rbLoc;
+  
+  if (Tok.isNot(tok::l_brace)) {
+    diagnose(Tok, diag::expected_lbrace_after_asm);
+    
+    // Try to recover by looking for a { on the same line
+    if (!skipUntilTokenOrEndOfLine(tok::l_brace))
+      return nullptr;
+  }
+  
+  lbLoc = consumeToken(tok::l_brace);
+  
+  // Grab the parser position at the first asm tok. We might need this later in
+  // parsing identifiers in the asm
+  auto firstAsmTokPos = getParserPosition();
+  
+  SmallVector<Token, 4> asmToks;
+  
+  bool skipComment = false;
+  
+  while (Tok.isNot(tok::eof, tok::r_brace)) {
+    if (Tok.isAtStartOfLine())
+      skipComment = false;
+    
+    // Check if token is a ; for a comment in assembly. If so, skip until eol
+    if (Tok.is(tok::semi) && !skipComment)
+      skipComment = true;
+    
+    if (skipComment) {
+      consumeToken();
+      continue;
+    }
+    
+    asmToks.push_back(Tok);
+    consumeToken();
+  }
+  
+  if (Tok.isNot(tok::r_brace)) {
+    diagnose(Tok, diag::expected_rbrace_end_asm);
+    return nullptr;
+  }
+  
+  rbLoc = consumeToken(tok::r_brace);
+  
+  SmallString<512> asmString;
+  SmallVector<unsigned, 8> tokOffsets;
+
+  buildAsmString(asmToks, tokOffsets, asmString);
+  
+  auto asmStmt = new (Context) AsmStmt(Context, asmLoc, lbLoc, rbLoc,
+                                       asmString, asmToks, tokOffsets,
+                                       /*implicit*/ false);
+  
+  return makeParserResult(asmStmt);
 }
 
 /// parseStmtYield

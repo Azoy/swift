@@ -182,6 +182,7 @@ SYNTAX_TOKENS = [
     StmtKeyword('Where', 'where', serialization_code=39),
     StmtKeyword('Catch', 'catch', serialization_code=40),
     StmtKeyword('Throw', 'throw', serialization_code=50),
+    StmtKeyword('Asm', 'asm', serialization_code=118),
 
     # Expression keywords
     ExprKeyword('As', 'as', serialization_code=41),
