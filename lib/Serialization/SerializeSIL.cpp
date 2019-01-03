@@ -2090,6 +2090,22 @@ void SILSerializer::writeSILInstruction(const SILInstruction &SI) {
 
     break;
   }
+  case SILInstructionKind::AsmInst:
+    // Format: Asm string, constraint string, and operands
+    auto AI = cast<AsmInst>(&SI);
+    SmallVector<ValueID, 4> args;
+    for (auto arg: AI->getOperands()) {
+      args.push_back(S.addTypeRef(arg->getType().getASTType()));
+      args.push_back((unsigned)arg->getType().getCategory());
+      args.push_back(addValueRef(arg));
+    }
+    
+    StringRef asmString = AI->getAsmString();
+    StringRef constraintString = AI->getAsmString();
+    
+    SILInstAsmLayout::emitRecord(Out, ScratchRecord,
+      SILAbbrCodes[SILInstAsmLayout::Code], S.addUniquedStringRef(asmString),
+      S.addUniquedStringRef(constraintString), args);
   }
   // Non-void values get registered in the value table.
   for (auto result : SI.getResults()) {
@@ -2400,6 +2416,7 @@ void SILSerializer::writeSILBlock(const SILModule *SILMod) {
   registerSILAbbr<SILInstNoOperandLayout>();
   registerSILAbbr<SILOneOperandLayout>();
   registerSILAbbr<SILTwoOperandsLayout>();
+  registerSILAbbr<SILInstAsmLayout>();
 
   registerSILAbbr<VTableLayout>();
   registerSILAbbr<VTableEntryLayout>();

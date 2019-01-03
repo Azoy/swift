@@ -1064,6 +1064,9 @@ bool SILDeserializer::readSILInstruction(SILFunction *Fn, SILBasicBlock *BB,
         TyCategory3, ValID3, ListOfValues);
     RawOpCode = (unsigned)SILInstructionKind::WitnessMethodInst;
     break;
+  case SIL_INST_ASM:
+    SILInstAsmLayout::readRecord(scratch, ValID, ValID2, ListOfValues);
+    RawOpCode = (unsigned)SILInstructionKind::AsmInst;
   }
 
   // FIXME: validate
@@ -2437,6 +2440,20 @@ bool SILDeserializer::readSILInstruction(SILFunction *Fn, SILBasicBlock *BB,
     ResultVal = Builder.createKeyPath(Loc, pattern, subMap, operands, kpTy);
     break;
   }
+  case SILInstructionKind::AsmInst:
+    SmallVector<SILValue, 4> operands;
+    for (unsigned I = 0, E = ListOfValues.size(); I < E; I += 3) {
+      auto valueTy = MF->getType(ListOfValues[I]);
+      auto valueCategory = (SILValueCategory) ListOfValues[I+1];
+      operands.push_back(
+        getLocalValue(ListOfValues[I+2], getSILType(valueTy, valueCategory)));
+    }
+    
+    StringRef asmString = MF->getIdentifierText(ValID);
+    StringRef constraintString = MF->getIdentifierText(ValID2);
+    
+    ResultVal = Builder.createAsm(Loc, operands, asmString, constraintString);
+    break;
   }
 
   for (auto result : ResultVal->getResults()) {

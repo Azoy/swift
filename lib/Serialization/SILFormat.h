@@ -171,6 +171,7 @@ namespace sil_block {
     SIL_PROPERTY,
     SIL_ONE_OPERAND_EXTRA_ATTR,
     SIL_TWO_OPERANDS_EXTRA_ATTR,
+    SIL_INST_ASM,
 
     // We also share these layouts from the decls block. Their enumerators must
     // not overlap with ours.
@@ -463,6 +464,14 @@ namespace sil_block {
     ValueIDField,          // existential
     BCArray<ValueIDField>  // SILDeclRef
     // may be trailed by an inline protocol conformance
+  >;
+  
+  // assembly instructions
+  using SILInstAsmLayout = BCRecordLayout<
+    SIL_INST_ASM,
+    ValueIDField, // assembly string
+    ValueIDField, // constraint string
+    BCArray<ValueIDField> // list of operands
   >;
 }
 
