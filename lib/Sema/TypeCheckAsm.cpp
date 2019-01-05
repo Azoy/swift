@@ -107,13 +107,12 @@ bool TypeChecker::parseAsmString(AsmStmt *AS, AsmParserCallback *callback,
 
 void TypeChecker::fillAsmIdentifierInfo(Expr *result,
                                         llvm::InlineAsmIdentifierInfo &info) {
-  info.setVar(result, true, 8, 8);
-  // If this is a declref to a variable, check if its an integer variable
-  /*
-  if (auto declRef = dyn_cast<DeclRefExpr>(result)) {
-    auto decl = declRef->getDecl();
-    assert(decl->getType() && "asm expr decl should be type checked by now");
-    if (decl->getType())
+  // Check if variable is global
+  bool isGlobal = false;
+  if (auto decl = result->getReferencedDecl().getDecl()) {
+    if (!decl->getDeclContext()->isLocalContext())
+      isGlobal = true;
   }
-  */
+
+  info.setVar(result, isGlobal, 8, 8);
 }
