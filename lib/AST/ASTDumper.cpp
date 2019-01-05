@@ -1501,6 +1501,10 @@ public:
 
   void visitAsmStmt(AsmStmt *S) {
     printCommon(S, "asm_stmt");
+    for (auto expr : S->getExprs()) {
+      OS << '\n';
+      printRec(expr);
+    }
     PrintWithColorRAII(OS, ParenthesisColor) << ')';
   }
 

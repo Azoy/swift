@@ -1350,6 +1350,10 @@ public:
     return ArrayRef<StringRef>(Clobbers, ClobberCount);
   }
 
+  MutableArrayRef<Expr *> getExprs() {
+    return MutableArrayRef<Expr *>(Exprs, OutputCount + InputCount);
+  }
+
   ArrayRef<Expr *> getExprs() const {
     return ArrayRef<Expr *>(Exprs, OutputCount + InputCount);
   }

@@ -1344,6 +1344,13 @@ Stmt *Traversal::visitReturnStmt(ReturnStmt *RS) {
 }
 
 Stmt *Traversal::visitAsmStmt(AsmStmt *AS) {
+  for (auto &expr : AS->getExprs()) {
+    if (auto *E = doIt(expr))
+      expr = E;
+    else
+      return nullptr;
+  }
+
   return AS;
 }
 
