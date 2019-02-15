@@ -634,10 +634,17 @@ void ASTContext::lookupInSwiftModule(
   M->lookupValue({ }, identifier, NLKind::UnqualifiedLookup, results);
 }
 
+/// Diagnoses a missing declaration in the stdlib.
+[[noreturn]] static void reportBrokenStdlib(StringRef name) {
+  auto msg = "Broken standard library: missing " + name.str() + " declaration";
+  llvm_unreachable(msg.c_str());
+}
+
 /// Find the generic implementation declaration for the named syntactic-sugar
 /// type.
 static NominalTypeDecl *findStdlibType(const ASTContext &ctx, StringRef name,
-                                       unsigned genericParams) {
+                                       unsigned genericParams,
+                                       bool returnNullptr) {
   // Find all of the declarations with this name in the Swift module.
   SmallVector<ValueDecl *, 1> results;
   ctx.lookupInSwiftModule(name, results);
@@ -650,7 +657,11 @@ static NominalTypeDecl *findStdlibType(const ASTContext &ctx, StringRef name,
       }
     }
   }
-  return nullptr;
+
+  if (returnNullptr)
+    return nullptr;
+
+  reportBrokenStdlib(name);
 }
 
 FuncDecl *ASTContext::getPlusFunctionOnRangeReplaceableCollection() const {
@@ -708,10 +719,10 @@ FuncDecl *ASTContext::getPlusFunctionOnString() const {
 }
 
 #define KNOWN_STDLIB_TYPE_DECL(NAME, DECL_CLASS, NUM_GENERIC_PARAMS) \
-  DECL_CLASS *ASTContext::get##NAME##Decl() const { \
+  DECL_CLASS *ASTContext::get##NAME##Decl(bool returnNullptr) const { \
     if (!getImpl().NAME##Decl) \
       getImpl().NAME##Decl = dyn_cast_or_null<DECL_CLASS>( \
-        findStdlibType(*this, #NAME, NUM_GENERIC_PARAMS)); \
+        findStdlibType(*this, #NAME, NUM_GENERIC_PARAMS, returnNullptr)); \
     return getImpl().NAME##Decl; \
   }
 #include "swift/AST/KnownStdlibTypes.def"
@@ -730,25 +741,42 @@ ProtocolDecl *ASTContext::getErrorDecl() const {
 }
 
 EnumElementDecl *ASTContext::getOptionalSomeDecl() const {
-  if (!getImpl().OptionalSomeDecl)
-    getImpl().OptionalSomeDecl = getOptionalDecl()->getUniqueElement(/*hasVal*/true);
-  return getImpl().OptionalSomeDecl;
+  if (getImpl().OptionalSomeDecl)
+    return getImpl().OptionalSomeDecl;
+
+  auto optional = getOptionalDecl();
+  for (auto element : optional->getAllElements()) {
+    if (element->getNameStr() == "some" && element->hasAssociatedValues()) {
+      getImpl().OptionalSomeDecl = element;
+      return element;
+    }
+  }
+
+  reportBrokenStdlib("Optional<T>.some(T)");
 }
 
 EnumElementDecl *ASTContext::getOptionalNoneDecl() const {
-  if (!getImpl().OptionalNoneDecl)
-    getImpl().OptionalNoneDecl =getOptionalDecl()->getUniqueElement(/*hasVal*/false);
-  return getImpl().OptionalNoneDecl;
+  if (getImpl().OptionalNoneDecl)
+    return getImpl().OptionalNoneDecl;
+
+  auto optional = getOptionalDecl();
+  for (auto element : optional->getAllElements()) {
+    if (element->getNameStr() == "none") {
+      getImpl().OptionalNoneDecl = element;
+      return element;
+    }
+  }
+
+  reportBrokenStdlib("Optional<T>.none");
 }
 
 static VarDecl *getPointeeProperty(VarDecl *&cache,
-                           NominalTypeDecl *(ASTContext::*getNominal)() const,
-                                  const ASTContext &ctx) {
+                        NominalTypeDecl *(ASTContext::*getNominal)(bool) const,
+                                   const ASTContext &ctx) {
   if (cache) return cache;
 
   // There must be a generic type with one argument.
-  NominalTypeDecl *nominal = (ctx.*getNominal)();
-  if (!nominal) return nullptr;
+  NominalTypeDecl *nominal = (ctx.*getNominal)(false);
   auto sig = nominal->getGenericSignature();
   if (!sig) return nullptr;
   if (sig->getGenericParams().size() != 1) return nullptr;
@@ -807,10 +835,7 @@ CanType ASTContext::getAnyObjectType() const {
 }
 
 CanType ASTContext::getNeverType() const {
-  auto neverDecl = getNeverDecl();
-  if (!neverDecl)
-    return CanType();
-  return neverDecl->getDeclaredType()->getCanonicalType();
+  return getNeverDecl()->getDeclaredType()->getCanonicalType();
 }
 
 TypeAliasDecl *ASTContext::getVoidDecl() const {
@@ -1007,9 +1032,6 @@ ConstructorDecl *ASTContext::getBoolBuiltinInitDecl() const {
   if (getImpl().BoolBuiltinInitDecl)
     return getImpl().BoolBuiltinInitDecl;
 
-  if (!getBoolDecl())
-    return nullptr;
-
   DeclName initName(*const_cast<ASTContext *>(this),
                     DeclBaseName::createConstructor(),
                     { Id_builtinBooleanLiteral });
@@ -1029,9 +1051,6 @@ ConstructorDecl *ASTContext::getBoolBuiltinInitDecl() const {
 FuncDecl *ASTContext::getEqualIntDecl() const {
   if (getImpl().EqualIntDecl)
     return getImpl().EqualIntDecl;
-
-  if (!getIntDecl() || !getBoolDecl())
-    return nullptr;
 
   auto intType = getIntDecl()->getDeclaredType();
   auto isIntParam = [&](AnyFunctionType::Param param) {
@@ -1355,11 +1374,11 @@ FuncDecl *ASTContext::get##Name() const {     \
 }
 #include "swift/AST/KnownDecls.def"
 
-bool ASTContext::hasOptionalIntrinsics() const {
-  return getOptionalDecl() &&
-         getOptionalSomeDecl() &&
-         getOptionalNoneDecl() &&
-         getDiagnoseUnexpectedNilOptional();
+void ASTContext::checkOptionalIntrinsics() const {
+  (void) getOptionalDecl();
+  (void) getOptionalSomeDecl();
+  (void) getOptionalNoneDecl();
+  (void) getDiagnoseUnexpectedNilOptional();
 }
 
 bool ASTContext::hasPointerArgumentIntrinsics() const {
@@ -3707,9 +3726,7 @@ Type AnyFunctionType::Param::getParameterType(bool forCanonical,
   if (isVariadic()) {
     if (!ctx) ctx = &type->getASTContext();
     auto arrayDecl = ctx->getArrayDecl();
-    if (!arrayDecl)
-      type = ErrorType::get(*ctx);
-    else if (forCanonical)
+    if (forCanonical)
       type = BoundGenericType::get(arrayDecl, Type(), {type});
     else
       type = ArraySliceType::get(type);

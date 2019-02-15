@@ -2107,7 +2107,7 @@ Type TypeChecker::typeCheckExpressionImpl(Expr *&expr, DeclContext *dc,
     auto *convertTypeLocator = cs.getConstraintLocator(
         cs.getConstraintLocator(expr), ConstraintLocator::ContextualType);
     Type var = cs.createTypeVariable(convertTypeLocator);
-    convertTo = getOptionalType(expr->getLoc(), var);
+    convertTo = OptionalType::get(var);
   }
 
   SmallVector<Solution, 4> viable;
@@ -2783,14 +2783,9 @@ bool TypeChecker::typeCheckCondition(Expr *&expr, DeclContext *dc) {
       // Save the original expression.
       OrigExpr = expr;
       
-      // Otherwise, the result must be convertible to Bool.
-      auto boolDecl = cs.getASTContext().getBoolDecl();
-      if (!boolDecl)
-        return true;
-      
       // Condition must convert to Bool.
       cs.addConstraint(ConstraintKind::Conversion, cs.getType(expr),
-                       boolDecl->getDeclaredType(),
+                       cs.getASTContext().getBoolDecl()->getDeclaredType(),
                        cs.getConstraintLocator(expr));
       return false;
     }

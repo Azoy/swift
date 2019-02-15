@@ -1207,12 +1207,14 @@ TypeBase *TypeBase::reconstituteSugar(bool Recursive) {
   auto Func = [](Type Ty) -> Type {
     if (auto boundGeneric = dyn_cast<BoundGenericType>(Ty.getPointer())) {
       auto &ctx = boundGeneric->getASTContext();
-      if (boundGeneric->getDecl() == ctx.getArrayDecl())
+      if (boundGeneric->getDecl() == ctx.getArrayDecl(/*returnNullptr*/ true))
         return ArraySliceType::get(boundGeneric->getGenericArgs()[0]);
-      if (boundGeneric->getDecl() == ctx.getDictionaryDecl())
+      if (boundGeneric->getDecl() ==
+            ctx.getDictionaryDecl(/*returnNullptr*/ true))
         return DictionaryType::get(boundGeneric->getGenericArgs()[0],
                                    boundGeneric->getGenericArgs()[1]);
-      if (boundGeneric->getDecl() == ctx.getOptionalDecl())
+      if (boundGeneric->getDecl() ==
+            ctx.getOptionalDecl(/*returnNullptr*/ true))
         return OptionalType::get(boundGeneric->getGenericArgs()[0]);
     }
     return Ty;

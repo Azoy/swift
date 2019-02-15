@@ -1450,12 +1450,11 @@ ConstraintSystem::matchExistentialTypes(Type type1, Type type2,
 }
 
 static bool isStringCompatiblePointerBaseType(TypeChecker &TC,
-                                              DeclContext *DC,
                                               Type baseType) {
   // Allow strings to be passed to pointer-to-byte or pointer-to-void types.
-  if (baseType->isEqual(TC.getInt8Type(DC)))
+  if (baseType->isEqual(TC.Context.getInt8Decl()->getDeclaredInterfaceType()))
     return true;
-  if (baseType->isEqual(TC.getUInt8Type(DC)))
+  if (baseType->isEqual(TC.Context.getUInt8Decl()->getDeclaredInterfaceType()))
     return true;
   if (baseType->isEqual(TC.Context.TheEmptyTupleType))
     return true;
@@ -2284,11 +2283,13 @@ ConstraintSystem::matchTypes(Type type1, Type type2, ConstraintKind kind,
 
                 // The pointer can be converted from a string, if the element
                 // type is compatible.
-                if (type1->isEqual(TC.getStringType(DC))) {
+                auto stringType = 
+                  TC.Context.getStringDecl()->getDeclaredInterfaceType();
+                if (type1->isEqual(stringType)) {
                   auto baseTy = getFixedTypeRecursive(pointeeTy, false);
 
                   if (baseTy->isTypeVariableOrMember() ||
-                      isStringCompatiblePointerBaseType(TC, DC, baseTy))
+                      isStringCompatiblePointerBaseType(TC, baseTy))
                     conversionsOrFixes.push_back(
                         ConversionRestrictionKind::StringToPointer);
                 }
@@ -3349,7 +3350,8 @@ performMemberLookup(ConstraintKind constraintKind, DeclName memberName,
   // If the instance type is String bridged to NSString, compute
   // the type we'll look in for bridging.
   Type bridgedType;
-  if (baseObjTy->getAnyNominal() == TC.Context.getStringDecl()) {
+  if (baseObjTy->getAnyNominal() ==
+        TC.Context.getStringDecl(/*returnNullptr*/ true)) {
     if (Type classType = TC.Context.getBridgedToObjC(DC, instanceTy)) {
       bridgedType = classType;
     }
@@ -3775,8 +3777,7 @@ ConstraintSystem::SolutionKind ConstraintSystem::simplifyMemberConstraint(
       // (for '!' or optional members with '?'), or the original member type
       // with one extra level of optionality ('?' with non-optional members).
       auto innerTV = createTypeVariable(locator, TVO_CanBindToLValue);
-      Type optTy = getTypeChecker().getOptionalType(
-          locator->getAnchor()->getSourceRange().Start, innerTV);
+      Type optTy = OptionalType::get(innerTV);
       SmallVector<Constraint *, 2> optionalities;
       auto nonoptionalResult = Constraint::createFixed(
           *this, ConstraintKind::Bind,
@@ -5202,15 +5203,18 @@ ConstraintSystem::simplifyRestrictedConstraintImpl(
       if (flags.contains(TMF_GenerateConstraints)) {
         increaseScore(ScoreKind::SK_ValueToPointerConversion);
 
+        auto int8Type = TC.Context.getInt8Decl()->getDeclaredInterfaceType();
+        auto uint8Type = TC.Context.getUInt8Decl()->getDeclaredInterfaceType();
+        auto voidType = TC.Context.TheEmptyTupleType;
         auto int8Con = Constraint::create(*this, ConstraintKind::Bind,
-                                       baseType2, TC.getInt8Type(DC),
-                                       getConstraintLocator(locator));
+                                          baseType2, int8Type,
+                                          getConstraintLocator(locator));
         auto uint8Con = Constraint::create(*this, ConstraintKind::Bind,
-                                        baseType2, TC.getUInt8Type(DC),
-                                        getConstraintLocator(locator));
+                                           baseType2, uint8Type,
+                                           getConstraintLocator(locator));
         auto voidCon = Constraint::create(*this, ConstraintKind::Bind,
-                                        baseType2, TC.Context.TheEmptyTupleType,
-                                        getConstraintLocator(locator));
+                                          baseType2, voidType,
+                                          getConstraintLocator(locator));
         
         Constraint *disjunctionChoices[] = {int8Con, uint8Con, voidCon};
         addDisjunctionConstraint(disjunctionChoices, locator);
@@ -5220,7 +5224,7 @@ ConstraintSystem::simplifyRestrictedConstraintImpl(
       return SolutionKind::Unsolved;
     }
     
-    if (!isStringCompatiblePointerBaseType(TC, DC, baseType2)) {
+    if (!isStringCompatiblePointerBaseType(TC, baseType2)) {
       return SolutionKind::Error;
     }
 

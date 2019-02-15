@@ -582,11 +582,6 @@ bool swift::isRepresentableInObjC(
       if (boolDecl == nullptr)
         boolDecl = ctx.getBoolDecl();
 
-      if (boolDecl == nullptr) {
-        AFD->diagnose(diag::broken_bool);
-        return false;
-      }
-
       errorResultType = boolDecl->getDeclaredType()->getCanonicalType();
     } else if (!resultType->getOptionalObjectType() &&
                isBridgedToObjectiveCClass(dc, resultType)) {

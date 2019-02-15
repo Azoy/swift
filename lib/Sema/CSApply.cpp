@@ -2142,14 +2142,16 @@ namespace {
       Expr *literalCapacity =
         IntegerLiteralExpr::createFromUnsigned(tc.Context,
                                                expr->getLiteralCapacity());
-      cs.setType(literalCapacity, tc.getIntType(cs.DC));
+      cs.setType(literalCapacity,
+                 tc.Context.getIntDecl()->getDeclaredInterfaceType());
       literalCapacity =
         handleIntegerLiteralExpr((LiteralExpr*)literalCapacity);
 
       Expr *interpolationCount =
         IntegerLiteralExpr::createFromUnsigned(tc.Context,
                                                expr->getInterpolationCount());
-      cs.setType(interpolationCount, tc.getIntType(cs.DC));
+      cs.setType(interpolationCount,
+                 tc.Context.getIntDecl()->getDeclaredInterfaceType());
       interpolationCount =
         handleIntegerLiteralExpr((LiteralExpr*)interpolationCount);
 
@@ -3061,8 +3063,7 @@ namespace {
       simplifyExprType(expr);
 
       auto elementTy = cs.getType(expr);
-      auto arrayTy =
-        cs.getTypeChecker().getArraySliceType(expr->getLoc(), elementTy);
+      auto arrayTy = ArraySliceType::get(elementTy);
       if (!arrayTy) return expr;
 
       expr->setSubExpr(coerceToType(expr->getSubExpr(), arrayTy,
@@ -3217,7 +3218,7 @@ namespace {
 
       // SIL-generation magically turns this into a Bool; make sure it can.
       if (!tc.Context.getBoolBuiltinInitDecl()) {
-        tc.diagnose(expr->getLoc(), diag::broken_bool);
+        tc.diagnose(expr->getLoc(), diag::broken_builtin_bool);
         // Continue anyway.
       }
 
@@ -5363,7 +5364,7 @@ Expr *ExprRewriter::coerceOptionalToOptional(Expr *expr, Type toType,
   auto &tc = cs.getTypeChecker();
   Type fromType = cs.getType(expr);
   
-  tc.requireOptionalIntrinsics(expr->getLoc());
+  tc.Context.checkOptionalIntrinsics();
 
   SmallVector<Type, 4> fromOptionals;
   (void)fromType->lookThroughAllOptionalTypes(fromOptionals);
@@ -5576,7 +5577,7 @@ Expr *ExprRewriter::coerceCallArguments(
       // Record this parameter.
       auto paramBaseType = param.getOldType();
       assert(sliceType.isNull() && "Multiple variadic parameters?");
-      sliceType = tc.getArraySliceType(arg->getLoc(), paramBaseType);
+      sliceType = ArraySliceType::get(paramBaseType);
       toSugarFields.push_back(
           TupleTypeElt(sliceType, param.getLabel(), param.getParameterFlags()));
       sources.push_back(TupleShuffleExpr::Variadic);
@@ -5621,8 +5622,7 @@ Expr *ExprRewriter::coerceCallArguments(
       // Note that we'll be doing a shuffle involving default arguments.
       toSugarFields.push_back(TupleTypeElt(
                                 param.isVariadic()
-                                  ? tc.getArraySliceType(arg->getLoc(),
-                                                         param.getOldType())
+                                  ? ArraySliceType::get(param.getOldType())
                                   : param.getOldType(),
                                 param.getLabel(),
                                 param.getParameterFlags()));
@@ -6359,7 +6359,7 @@ Expr *ExprRewriter::coerceToType(Expr *expr, Type toType,
     case ConversionRestrictionKind::ValueToOptional: {
       auto toGenericType = toType->castTo<BoundGenericType>();
       assert(toGenericType->getDecl()->isOptionalDecl());
-      tc.requireOptionalIntrinsics(expr->getLoc());
+      tc.Context.checkOptionalIntrinsics();
 
       Type valueType = toGenericType->getGenericArgs()[0];
       expr = coerceToType(expr, valueType, locator);
@@ -6663,7 +6663,7 @@ Expr *ExprRewriter::coerceToType(Expr *expr, Type toType,
   // Coercion to Optional<T>.
   if (auto toGenericType = toType->getAs<BoundGenericType>()) {
     if (toGenericType->getDecl()->isOptionalDecl()) {
-      tc.requireOptionalIntrinsics(expr->getLoc());
+      tc.Context.checkOptionalIntrinsics();
 
       Type valueType = toGenericType->getGenericArgs()[0];
       expr = coerceToType(expr, valueType, locator);
@@ -8007,18 +8007,11 @@ Expr *TypeChecker::callWitness(Expr *base, DeclContext *dc,
 Expr *Solution::convertOptionalToBool(Expr *expr,
                                       ConstraintLocator *locator) const {
   auto &cs = getConstraintSystem();
-  auto &tc = cs.getTypeChecker();
-  tc.requireOptionalIntrinsics(expr->getLoc());
+  auto &ctx = cs.getASTContext();
+  ctx.checkOptionalIntrinsics();
 
   // Match the optional value against its `Some` case.
-  auto &ctx = tc.Context;
   auto isSomeExpr = new (ctx) EnumIsCaseExpr(expr, ctx.getOptionalSomeDecl());
-  auto boolDecl = ctx.getBoolDecl();
-
-  if (!boolDecl) {
-    tc.diagnose(SourceLoc(), diag::broken_bool);
-  }
-
-  cs.setType(isSomeExpr, boolDecl ? boolDecl->getDeclaredType() : Type());
+  cs.setType(isSomeExpr, ctx.getBoolDecl()->getDeclaredType());
   return isSomeExpr;
 }

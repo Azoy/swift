@@ -477,15 +477,16 @@ SILFunction *SILGenModule::emitTopLevelFunction(SILLocation Loc) {
   // Use standard library types if we have them; otherwise, fall back to
   // builtins.
   CanType Int32Ty;
-  if (auto Int32Decl = C.getInt32Decl()) {
+  if (auto Int32Decl = C.getInt32Decl(/*returnNullptr*/ true)) {
     Int32Ty = Int32Decl->getDeclaredInterfaceType()->getCanonicalType();
   } else {
     Int32Ty = CanType(BuiltinIntegerType::get(32, C));
   }
 
   CanType PtrPtrInt8Ty = C.TheRawPointerType;
-  if (auto PointerDecl = C.getUnsafeMutablePointerDecl()) {
-    if (auto Int8Decl = C.getInt8Decl()) {
+  if (auto PointerDecl = 
+        C.getUnsafeMutablePointerDecl(/*returnNullptr*/ true)) {
+    if (auto Int8Decl = C.getInt8Decl(/*returnNullptr*/ true)) {
       Type Int8Ty = Int8Decl->getDeclaredInterfaceType();
       Type PointerInt8Ty = BoundGenericType::get(PointerDecl,
                                                  nullptr,

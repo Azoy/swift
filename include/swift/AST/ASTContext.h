@@ -451,7 +451,7 @@ public:
   
 #define KNOWN_STDLIB_TYPE_DECL(NAME, DECL_CLASS, NUM_GENERIC_PARAMS) \
   /** Retrieve the declaration of Swift.NAME. */ \
-  DECL_CLASS *get##NAME##Decl() const;
+  DECL_CLASS *get##NAME##Decl(bool returnNullptr = false) const;
 #include "swift/AST/KnownStdlibTypes.def"
 
   /// Retrieve the declaration of Swift.Optional<T>.Some.
@@ -498,7 +498,7 @@ public:
   ///
   /// If this is true, the four methods above all promise to return
   /// non-null.
-  bool hasOptionalIntrinsics() const;
+  void checkOptionalIntrinsics() const;
 
   /// Check whether the standard library provides all the correct
   /// intrinsic support for UnsafeMutablePointer<T> function arguments.

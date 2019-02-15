@@ -349,37 +349,6 @@ bool TypeResolution::areSameType(Type type1, Type type2) const {
   return areSameType(depMem1->getBase(), depMem2->getBase());
 }
 
-Type TypeChecker::getArraySliceType(SourceLoc loc, Type elementType) {
-  ASTContext &ctx = elementType->getASTContext();
-  if (!ctx.getArrayDecl()) {
-    ctx.Diags.diagnose(loc, diag::sugar_type_not_found, 0);
-    return Type();
-  }
-
-  return ArraySliceType::get(elementType);
-}
-
-Type TypeChecker::getDictionaryType(SourceLoc loc, Type keyType, 
-                                    Type valueType) {
-  ASTContext &ctx = keyType->getASTContext();
-  if (!ctx.getDictionaryDecl()) {
-    ctx.Diags.diagnose(loc, diag::sugar_type_not_found, 3);
-    return Type();
-  }
-
-  return DictionaryType::get(keyType, valueType);
-}
-
-Type TypeChecker::getOptionalType(SourceLoc loc, Type elementType) {
-  ASTContext &ctx = elementType->getASTContext();
-  if (!ctx.getOptionalDecl()) {
-    ctx.Diags.diagnose(loc, diag::sugar_type_not_found, 1);
-    return Type();
-  }
-
-  return OptionalType::get(elementType);
-}
-
 static Type getPointerType(TypeChecker &tc, SourceLoc loc, Type pointeeType,
                            PointerTypeKind kind) {
   auto pointerDecl = [&] {
@@ -396,12 +365,6 @@ static Type getPointerType(TypeChecker &tc, SourceLoc loc, Type pointeeType,
     }
     llvm_unreachable("bad kind");
   }();
-  if (!pointerDecl) {
-    tc.diagnose(loc, diag::pointer_type_not_found,
-                kind == PTK_UnsafePointer ? 0 :
-                kind == PTK_UnsafeMutablePointer ? 1 : 2);
-    return Type();
-  }
 
   tc.validateDecl(pointerDecl);
   if (pointerDecl->isInvalid())
@@ -418,41 +381,6 @@ Type TypeChecker::getUnsafePointerType(SourceLoc loc, Type pointeeType) {
 
 Type TypeChecker::getUnsafeMutablePointerType(SourceLoc loc, Type pointeeType) {
   return getPointerType(*this, loc, pointeeType, PTK_UnsafeMutablePointer);
-}
-
-Type TypeChecker::getStringType(DeclContext *dc) {
-  if (auto typeDecl = Context.getStringDecl())
-    return typeDecl->getDeclaredInterfaceType();
-
-  return Type();
-}
-
-Type TypeChecker::getSubstringType(DeclContext *dc) {
-  if (auto typeDecl = Context.getSubstringDecl())
-    return typeDecl->getDeclaredInterfaceType();
-
-  return Type();
-}
-
-Type TypeChecker::getIntType(DeclContext *dc) {
-  if (auto typeDecl = Context.getIntDecl())
-    return typeDecl->getDeclaredInterfaceType();
-
-  return Type();
-}
-
-Type TypeChecker::getInt8Type(DeclContext *dc) {
-  if (auto typeDecl = Context.getInt8Decl())
-    return typeDecl->getDeclaredInterfaceType();
-
-  return Type();
-}
-
-Type TypeChecker::getUInt8Type(DeclContext *dc) {
-  if (auto typeDecl = Context.getUInt8Decl())
-    return typeDecl->getDeclaredInterfaceType();
-
-  return Type();
 }
 
 /// Find the standard type of exceptions.
@@ -2898,8 +2826,7 @@ Type TypeResolver::resolveArrayType(ArrayTypeRepr *repr,
   Type baseTy = resolveType(repr->getBase(), options.withoutContext());
   if (!baseTy || baseTy->hasError()) return baseTy;
 
-  auto sliceTy =
-    TypeChecker::getArraySliceType(repr->getBrackets().Start, baseTy);
+  auto sliceTy = ArraySliceType::get(baseTy);
   if (!sliceTy)
     return ErrorType::get(Context);
 
@@ -2921,8 +2848,7 @@ Type TypeResolver::resolveDictionaryType(DictionaryTypeRepr *repr,
 
   auto dictDecl = Context.getDictionaryDecl();
 
-  if (auto dictTy = TypeChecker::getDictionaryType(repr->getBrackets().Start,
-                                                   keyTy, valueTy)) {
+  if (auto dictTy = DictionaryType::get(keyTy, valueTy)) {
     // Check the requirements on the generic arguments.
     if (auto lazyResolver = Context.getLazyResolver())
       lazyResolver->resolveDeclSignature(dictDecl);
@@ -2957,8 +2883,7 @@ Type TypeResolver::resolveOptionalType(OptionalTypeRepr *repr,
   Type baseTy = resolveType(repr->getBase(), elementOptions);
   if (!baseTy || baseTy->hasError()) return baseTy;
 
-  auto optionalTy = TypeChecker::getOptionalType(repr->getQuestionLoc(),
-                                                 baseTy);
+  auto optionalTy = OptionalType::get(baseTy);
   if (!optionalTy) return ErrorType::get(Context);
 
   return optionalTy;
@@ -3028,14 +2953,7 @@ Type TypeResolver::resolveImplicitlyUnwrappedOptionalType(
   Type baseTy = resolveType(repr->getBase(), elementOptions);
   if (!baseTy || baseTy->hasError()) return baseTy;
 
-  Type uncheckedOptionalTy;
-  uncheckedOptionalTy = TypeChecker::getOptionalType(repr->getExclamationLoc(),
-                                                     baseTy);
-
-  if (!uncheckedOptionalTy)
-    return ErrorType::get(Context);
-
-  return uncheckedOptionalTy;
+  return OptionalType::get(baseTy);
 }
 
 Type TypeResolver::resolveTupleType(TupleTypeRepr *repr,

@@ -1249,8 +1249,8 @@ bool ContextualFailure::trySequenceSubsequenceFixIts(InFlightDiagnostic &diag,
   if (!CS.TC.Context.getStdlibModule())
     return false;
 
-  auto String = CS.TC.getStringType(CS.DC);
-  auto Substring = CS.TC.getSubstringType(CS.DC);
+  auto String = CS.TC.Context.getStringDecl()->getDeclaredInterfaceType();
+  auto Substring = CS.TC.Context.getSubstringDecl()->getDeclaredInterfaceType();
 
   if (!String || !Substring)
     return false;

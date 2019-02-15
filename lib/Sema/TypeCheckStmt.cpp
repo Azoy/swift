@@ -245,7 +245,8 @@ static void tryDiagnoseUnnecessaryCastOverOptionSet(ASTContext &Ctx,
   auto *NTD = ResultType->getAnyNominal();
   if (!NTD)
     return;
-  auto optionSetType = dyn_cast_or_null<ProtocolDecl>(Ctx.getOptionSetDecl());
+  auto optionSet = Ctx.getOptionSetDecl(/*returnNullptr*/ true);
+  auto optionSetType = dyn_cast_or_null<ProtocolDecl>(optionSet);
   if (!optionSetType)
     return;
   SmallVector<ProtocolConformance *, 4> conformances;
@@ -733,8 +734,7 @@ public:
     }
 
     // Working with generators requires Optional.
-    if (TC.requireOptionalIntrinsics(S->getForLoc()))
-      return nullptr;
+    TC.Context.checkOptionalIntrinsics();
 
     // Gather the witnesses from the Iterator protocol conformance, which
     // we'll use to drive the loop.

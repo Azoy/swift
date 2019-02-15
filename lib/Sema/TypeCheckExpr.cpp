@@ -555,13 +555,6 @@ static Expr *foldSequence(TypeChecker &TC, DeclContext *DC,
   return makeBinOp(TC, op1.op, LHS, RHS, op1.precedence, S.empty());
 }
 
-bool TypeChecker::requireOptionalIntrinsics(SourceLoc loc) {
-  if (Context.hasOptionalIntrinsics()) return false;
-
-  diagnose(loc, diag::optional_intrinsics_not_found);
-  return true;
-}
-
 bool TypeChecker::requirePointerArgumentIntrinsics(SourceLoc loc) {
   if (Context.hasPointerArgumentIntrinsics()) return false;
 

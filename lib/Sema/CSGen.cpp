@@ -1734,7 +1734,7 @@ namespace {
       auto valueTy = CS.createTypeVariable(CS.getConstraintLocator(expr),
                                            TVO_PrefersSubtypeBinding);
 
-      Type optTy = getOptionalType(expr->getSubExpr()->getLoc(), valueTy);
+      Type optTy = OptionalType::get(valueTy);
       if (!optTy)
         return Type();
 
@@ -2143,7 +2143,7 @@ namespace {
           // Create a fresh type variable to handle overloaded expressions.
           if (!ty || ty->is<TypeVariableType>())
             ty = CS.createTypeVariable(CS.getConstraintLocator(locator));
-          return CS.getTypeChecker().getOptionalType(var->getLoc(), ty);
+          return OptionalType::get(ty);
         case ReferenceOwnershipOptionality::Allowed:
         case ReferenceOwnershipOptionality::Disallowed:
           break;
@@ -2485,7 +2485,7 @@ namespace {
 
       // Try to build the appropriate type for a variadic argument list of
       // the fresh element type.  If that failed, just bail out.
-      auto array = CS.TC.getArraySliceType(expr->getLoc(), element);
+      auto array = ArraySliceType::get(element);
       if (!array) return element;
 
       // Require the operand to be convertible to the array type.
@@ -2645,8 +2645,6 @@ namespace {
     Type visitIfExpr(IfExpr *expr) {
       // The conditional expression must conform to LogicValue.
       auto boolDecl = CS.getASTContext().getBoolDecl();
-      if (!boolDecl)
-        return Type();
 
       // Condition must convert to Bool.
       CS.addConstraint(ConstraintKind::Conversion,
@@ -2800,14 +2798,7 @@ namespace {
                        CS.getConstraintLocator(expr));
 
       // The result is Bool.
-      auto boolDecl = tc.Context.getBoolDecl();
-
-      if (!boolDecl) {
-        tc.diagnose(SourceLoc(), diag::broken_bool);
-        return Type();
-      }
-
-      return boolDecl->getDeclaredType();
+      return tc.Context.getBoolDecl()->getDeclaredType();
     }
 
     Type visitDiscardAssignmentExpr(DiscardAssignmentExpr *expr) {
@@ -2853,19 +2844,6 @@ namespace {
       return typeVar;
     }
 
-    /// Get the type T?
-    ///
-    ///  This is not the ideal source location, but it's only used for
-    /// diagnosing ill-formed standard libraries, so it really isn't
-    /// worth QoI efforts.
-    Type getOptionalType(SourceLoc optLoc, Type valueTy) {
-      auto optTy = CS.getTypeChecker().getOptionalType(optLoc, valueTy);
-      if (!optTy || CS.getTypeChecker().requireOptionalIntrinsics(optLoc))
-        return Type();
-
-      return optTy;
-    }
-
     Type visitBindOptionalExpr(BindOptionalExpr *expr) {
       // The operand must be coercible to T?, and we will have type T.
       auto locator = CS.getConstraintLocator(expr);
@@ -2889,7 +2867,7 @@ namespace {
       auto valueTy = CS.createTypeVariable(CS.getConstraintLocator(expr),
                                            TVO_PrefersSubtypeBinding);
 
-      Type optTy = getOptionalType(expr->getSubExpr()->getLoc(), valueTy);
+      Type optTy = OptionalType::get(valueTy);
       if (!optTy)
         return Type();
 
@@ -2999,11 +2977,6 @@ namespace {
         return CS.getType(E->getObjCStringLiteralExpr());
       
       auto kpDecl = CS.getASTContext().getKeyPathDecl();
-      
-      if (!kpDecl) {
-        CS.TC.diagnose(E->getLoc(), diag::expr_keypath_no_keypath_type);
-        return ErrorType::get(CS.getASTContext());
-      }
       
       // For native key paths, traverse the key path components to set up
       // appropriate type relationships at each level.

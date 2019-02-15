@@ -750,12 +750,6 @@ deriveHashable_hashInto(DerivedConformance &derived,
   // Created from the inside out:
 
   auto hasherDecl = C.getHasherDecl();
-  if (!hasherDecl) {
-    auto hashableProto = C.getProtocol(KnownProtocolKind::Hashable);
-    derived.TC.diagnose(hashableProto->getLoc(),
-                        diag::broken_hashable_no_hasher);
-    return nullptr;
-  }
   Type hasherType = hasherDecl->getDeclaredType();
 
   // Params: self (implicit), hasher

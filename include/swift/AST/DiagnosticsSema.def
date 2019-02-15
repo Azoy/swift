@@ -495,8 +495,6 @@ ERROR(expr_unsupported_objc_key_path_component,none,
 ERROR(expr_unsupported_objc_key_path_compound_name,none,
       "an Objective-C key path cannot reference a declaration with a "
       "compound name", ())
-ERROR(expr_keypath_no_keypath_type,none,
-      "broken standard library: no 'KeyPath' type found", ())
 ERROR(expr_swift_keypath_invalid_component,none,
       "invalid component of Swift key path", ())
 ERROR(expr_swift_keypath_not_starting_with_type,none,
@@ -2424,8 +2422,6 @@ ERROR(broken_equatable_requirement,none,
       "Equatable protocol is broken: unexpected requirement", ())
 ERROR(broken_hashable_requirement,none,
       "Hashable protocol is broken: unexpected requirement", ())
-ERROR(broken_hashable_no_hasher,none,
-      "Hashable protocol is broken: Hasher type not found", ())
 ERROR(broken_errortype_requirement,none,
       "Error protocol is broken: unexpected requirement", ())
 ERROR(broken_int_hashable_conformance,none,
@@ -2726,7 +2722,9 @@ ERROR(try_assign_rhs_noncovering,none,
       "'" TRY_KIND_SELECT(0) "' following assignment operator does not cover "
       "everything to its right", (unsigned))
 
-ERROR(broken_bool,none, "type 'Bool' is broken", ())
+ERROR(broken_builtin_bool,none,
+      "broken standard library: missing _builtinBooleanLiteral initializer "
+      "on Bool", ())
 
 WARNING(inject_forced_downcast,none,
         "treating a forced downcast to %0 as optional will never produce 'nil'",
@@ -2786,7 +2784,6 @@ ERROR(specific_type_of_expression_is_ambiguous,none,
 ERROR(failed_to_produce_diagnostic,Fatal,
       "failed to produce diagnostic for expression; "
       "please file a bug report", ())
-
 
 ERROR(missing_protocol,none,
       "missing protocol %0", (Identifier))
@@ -3323,8 +3320,6 @@ ERROR(isa_collection_downcast_pattern_value_unimplemented,none,
 // MARK: Error-handling diagnostics
 //------------------------------------------------------------------------------
 
-
-
 ERROR(try_unhandled,none,
       "errors thrown from here are not handled", ())
 ERROR(throwing_call_unhandled,none,
@@ -3417,16 +3412,6 @@ NOTE(note_type_cycle_starts_here,none,
 NOTE(note_recursive_enum_case_here,none,
      "recursive case here", ())
 
-ERROR(sugar_type_not_found,none,
-      "broken standard library: cannot find "
-      "%select{Array|Optional|ImplicitlyUnwrappedOptional|Dictionary|"
-      "Error}0 type", (unsigned))
-ERROR(pointer_type_not_found,none,
-      "broken standard library: cannot find "
-      "%select{UnsafePointer|UnsafeMutablePointer}0 type", (unsigned))
-ERROR(optional_intrinsics_not_found,none,
-      "broken standard library: cannot find intrinsic operations on "
-      "Optional<T>", ())
 ERROR(pointer_argument_intrinsics_not_found,none,
       "broken standard library: cannot find intrinsic operations on "
       "UnsafeMutablePointer<T>", ())

@@ -760,7 +760,7 @@ static bool validateParameterType(ParamDecl *decl, TypeResolution resolution,
 
   Type Ty = TL.getType();
   if (decl->isVariadic() && !Ty.isNull() && !hadError) {
-    Ty = TC.getArraySliceType(decl->getStartLoc(), Ty);
+    Ty = ArraySliceType::get(Ty);
     if (Ty.isNull()) {
       hadError = true;
     }
@@ -1278,7 +1278,7 @@ recur:
     if (numExtraOptionals > 0) {
       Pattern *sub = IP;
       for (int i = 0; i < numExtraOptionals; ++i) {
-        auto some = Context.getOptionalDecl()->getUniqueElement(/*hasVal*/true);
+        auto some = Context.getOptionalSomeDecl();
         sub = new (Context) EnumElementPattern(TypeLoc(),
                                                IP->getStartLoc(),
                                                IP->getEndLoc(),

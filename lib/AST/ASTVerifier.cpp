@@ -1590,11 +1590,6 @@ public:
 
     void verifyChecked(AnyHashableErasureExpr *E) {
       auto anyHashableDecl = Ctx.getAnyHashableDecl();
-      if (!anyHashableDecl) {
-        Out << "AnyHashable declaration could not be found\n";
-        abort();
-      }
-
       auto hashableDecl = Ctx.getProtocol(KnownProtocolKind::Hashable);
       if (!hashableDecl) {
         Out << "Hashable declaration could not be found\n";

@@ -815,16 +815,8 @@ public:
     return Diags.diagnose(std::forward<ArgTypes>(Args)...);
   }
 
-  static Type getArraySliceType(SourceLoc loc, Type elementType);
-  static Type getDictionaryType(SourceLoc loc, Type keyType, Type valueType);
-  static Type getOptionalType(SourceLoc loc, Type elementType);
   Type getUnsafePointerType(SourceLoc loc, Type pointeeType);
   Type getUnsafeMutablePointerType(SourceLoc loc, Type pointeeType);
-  Type getStringType(DeclContext *dc);
-  Type getSubstringType(DeclContext *dc);
-  Type getIntType(DeclContext *dc);
-  Type getInt8Type(DeclContext *dc);
-  Type getUInt8Type(DeclContext *dc);
   Type getNSObjectType(DeclContext *dc);
   Type getObjCSelectorType(DeclContext *dc);
   Type getExceptionType(DeclContext *dc, SourceLoc loc);
@@ -1613,10 +1605,6 @@ public:
   Expr *addImplicitLoadExpr(Expr *expr,
                             std::function<Type(Expr *)> getType,
                             std::function<void(Expr *, Type)> setType);
-
-  /// Require that the library intrinsics for working with Optional<T>
-  /// exist.
-  bool requireOptionalIntrinsics(SourceLoc loc);
 
   /// Require that the library intrinsics for working with
   /// UnsafeMutablePointer<T> exist.

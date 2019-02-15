@@ -394,8 +394,6 @@ namespace {
       // OpaquePointer.
       if (!pointeeType || Impl.isOverAligned(pointeeQualType)) {
         auto opaquePointer = Impl.SwiftContext.getOpaquePointerDecl();
-        if (!opaquePointer)
-          return Type();
         return {opaquePointer->getDeclaredType(),
                 ImportHint::OtherPointer};
       }
@@ -1050,10 +1048,8 @@ namespace {
                   // AnyHashable in this context.
                   keyStructDecl == Impl.SwiftContext.getDictionaryDecl() ||
                   keyStructDecl == Impl.SwiftContext.getArrayDecl()) {
-                if (auto anyHashable = Impl.SwiftContext.getAnyHashableDecl())
-                  keyType = anyHashable->getDeclaredType();
-                else
-                  keyType = Type();
+                auto anyHashable = Impl.SwiftContext.getAnyHashableDecl();
+                keyType = anyHashable->getDeclaredType();
               }
             }
 
@@ -1178,7 +1174,8 @@ static bool isCFAudited(ImportTypeKind importKind) {
 /// Turn T into Unmanaged<T>.
 static Type getUnmanagedType(ClangImporter::Implementation &impl,
                              Type payloadType) {
-  NominalTypeDecl *unmanagedDecl = impl.SwiftContext.getUnmanagedDecl();
+  NominalTypeDecl *unmanagedDecl =
+      impl.SwiftContext.getUnmanagedDecl(/*returnNullptr*/ true);
   if (!unmanagedDecl || unmanagedDecl->getGenericParams()->size() != 1)
     return payloadType;
 
