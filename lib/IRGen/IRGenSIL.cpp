@@ -5613,16 +5613,14 @@ void IRGenSILFunction::visitAsmInst(swift::AsmInst *i) {
   SmallVector<llvm::Value *, 4> args;
   SmallVector<llvm::Type *, 4> argTypes;
   for (auto operand : i->getOperands()) {
-    auto addr = getLoweredAddress(operand);
-    auto deref = Builder.getInt32(0);
-    auto idx = Builder.getInt32(0);
-    auto value = Builder.CreateInBoundsGEP(
-      addr->getType()->getPointerElementType(), addr.getAddress(),
-      {deref, idx});
+    auto loweredAddress = getLoweredAddress(operand);
+    auto value = Builder.CreateConstInBoundsGEP2_32(loweredAddress.getType()->getPointerElementType(),
+                                                    loweredAddress.getAddress(),
+                                                    0, 0);
     args.push_back(value);
     argTypes.push_back(value->getType());
   }
-  
+
   llvm::FunctionType *asmFnTy = llvm::FunctionType::get(IGM.VoidTy, argTypes,
                                                         /*isVarArg*/ false);
   llvm::InlineAsm *inlineAsm =

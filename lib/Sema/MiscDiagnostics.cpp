@@ -2462,6 +2462,17 @@ public:
 
   /// Custom handling for statements.
   std::pair<bool, Stmt *> walkToStmtPre(Stmt *S) override {
+    // If there's an AsmStmt that references a variable, mark it as written. We
+    // can only assume the variable was indirectly mutated through assembly.
+    if (auto *AS = dyn_cast<AsmStmt>(S)) {
+      for (auto expr : AS->getExprs()) {
+        if (auto var = dyn_cast<VarDecl>(expr->getReferencedDecl().getDecl())) {
+          //VarDecls[var] |= RK_Read;
+          VarDecls[var] |= RK_Written;
+        }
+      }
+    }
+    
     // Keep track of an association between vardecls and the StmtCondition that
     // they are bound in for IfStmt, GuardStmt, WhileStmt, etc.
     if (auto LCS = dyn_cast<LabeledConditionalStmt>(S)) {

@@ -1344,7 +1344,7 @@ Stmt *Traversal::visitReturnStmt(ReturnStmt *RS) {
 }
 
 Stmt *Traversal::visitAsmStmt(AsmStmt *AS) {
-  for (auto &expr : AS->getExprs()) {
+  for (auto &expr : AS->getMutableExprs()) {
     if (auto *E = doIt(expr))
       expr = E;
     else

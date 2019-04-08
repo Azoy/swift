@@ -1350,12 +1350,12 @@ public:
     return ArrayRef<StringRef>(Clobbers, ClobberCount);
   }
 
-  MutableArrayRef<Expr *> getExprs() {
-    return MutableArrayRef<Expr *>(Exprs, OutputCount + InputCount);
-  }
-
   ArrayRef<Expr *> getExprs() const {
     return ArrayRef<Expr *>(Exprs, OutputCount + InputCount);
+  }
+
+  MutableArrayRef<Expr *> getMutableExprs() {
+    return MutableArrayRef<Expr *>(Exprs, OutputCount + InputCount);
   }
 
   std::string getConstraintString(const llvm::Triple &triple) const;

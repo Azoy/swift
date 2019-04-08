@@ -506,9 +506,8 @@ void StmtEmitter::visitAsmStmt(AsmStmt *S) {
   auto triple = getASTContext().LangOpts.Target;
   SmallVector<SILValue, 4> operands;
   for (auto expr : S->getExprs()) {
-    if (auto declRef = dyn_cast<DeclRefExpr>(expr)) {
-      auto varLoc = SGF.VarLocs[declRef->getDecl()];
-      operands.push_back(varLoc.value);
+    if (auto var = dyn_cast<VarDecl>(expr->getReferencedDecl().getDecl())) {
+      operands.push_back(SGF.VarLocs[var].value);
     }
   }
   SGF.B.createAsm(S, operands, S->getAsmString(),

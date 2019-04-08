@@ -822,7 +822,8 @@ static void buildAsmString(ArrayRef<Token> Toks,
     
     isNewInstr = false;
   }
-  
+
+  // Ensure the asm string is null terminated
   Asm.push_back('\0');
   Asm.pop_back();
   
