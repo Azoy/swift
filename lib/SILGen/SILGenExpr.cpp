@@ -2,7 +2,7 @@
 //
 // This source file is part of the Swift.org open source project
 //
-// Copyright (c) 2014 - 2017 Apple Inc. and the Swift project authors
+// Copyright (c) 2014 - 2019 Apple Inc. and the Swift project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
@@ -1871,7 +1871,7 @@ static RValue emitBoolLiteral(SILGenFunction &SGF, SILLocation loc,
                               SGFContext C) {
   // Call the Bool(_builtinBooleanLiteral:) initializer
   ASTContext &ctx = SGF.getASTContext();
-  auto init = ctx.getBoolBuiltinInitDecl();
+  auto init = ctx.getBoolBuiltinInit();
   auto builtinArgType = CanType(BuiltinIntegerType::get(1, ctx));
   RValue builtinArg(SGF, ManagedValue::forUnmanaged(builtinBool),
                     builtinArgType);

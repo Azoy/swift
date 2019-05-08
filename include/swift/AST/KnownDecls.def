@@ -25,6 +25,21 @@
 #define FUNC_DECL(NAME, ID, GENERIC_ARG_COUNT, ARG_LABELS)
 #endif
 
+#ifndef _MEMBER_FUNC_DECL
+#define _MEMBER_FUNC_DECL(DECL_CLASS, MEMBER, NAME, DECL_BASE_NAME, \
+                          GENERIC_ARG_COUNT, ARG_LABELS)
+#endif
+
+#define MEMBER_FUNC_DECL(MEMBER, NAME, ID, GENERIC_ARG_COUNT, ARG_LABELS) \
+        _MEMBER_FUNC_DECL(FuncDecl, MEMBER, MEMBER##NAME, \
+                          DeclBaseName(getIdentifier(ID)), GENERIC_ARG_COUNT, \
+                          ARG_LABELS)
+
+#define CONSTRUCTOR_DECL(MEMBER, NAME, GENERIC_ARG_COUNT, ARG_LABELS) \
+        _MEMBER_FUNC_DECL(ConstructorDecl, MEMBER, MEMBER##NAME, \
+                          DeclBaseName::createConstructor(), GENERIC_ARG_COUNT, \
+                          ARG_LABELS)
+
 // stdlib/public/core/ArrayCast.swift
 //
 // public func _arrayForceCast<SourceElement, TargetElement>(
@@ -329,7 +344,15 @@ FUNC_DECL(Undefined, "_undefined", 1, ARG_LABELS(EMPTY, Id_file, Id_line))
 // public func _hashValue<H: Hashable>(for value: H) -> Int
 FUNC_DECL(HashValue, "_hashValue", 1, ARG_LABELS(Id_for))
 
+// stdlib/public/core/Bool.swift
+//
+// public Bool.init(_builtinBooleanLiteral: Builtin.Int1)
+CONSTRUCTOR_DECL(Bool, BuiltinInit, 0, ARG_LABELS(Id_builtinBooleanLiteral))
+
 #undef ARG_LABELS
 #undef EMPTY
 #undef UNIMPLEMENTED_DECL
 #undef FUNC_DECL
+#undef _MEMBER_FUNC_DECL
+#undef MEMBER_FUNC_DECL
+#undef CONSTRUCTOR_DECL

@@ -487,6 +487,12 @@ public:
   FuncDecl *get##NAME() const;
 #include "swift/AST/KnownDecls.def"
 
+  // Declare accessors for the known member declarations.
+#define _MEMBER_FUNC_DECL(DECL_CLASS, MEMBER, NAME, DECL_BASE_NAME, \
+                          GENERIC_ARG_COUNT, ARG_LABELS) \
+  DECL_CLASS *get##NAME() const;
+#include "swift/AST/KnownDecls.def"
+
   /// Get the '+' function on two RangeReplaceableCollection.
   FuncDecl *getPlusFunctionOnRangeReplaceableCollection() const;
 

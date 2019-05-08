@@ -2,7 +2,7 @@
 //
 // This source file is part of the Swift.org open source project
 //
-// Copyright (c) 2014 - 2018 Apple Inc. and the Swift project authors
+// Copyright (c) 2014 - 2019 Apple Inc. and the Swift project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
@@ -3226,7 +3226,7 @@ namespace {
       }
 
       // SIL-generation magically turns this into a Bool; make sure it can.
-      if (!tc.Context.getBoolBuiltinInitDecl()) {
+      if (!tc.Context.getBoolBuiltinInit()) {
         tc.diagnose(expr->getLoc(), diag::broken_bool);
         // Continue anyway.
       }

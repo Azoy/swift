@@ -184,6 +184,12 @@ FOR_KNOWN_FOUNDATION_TYPES(CACHE_FOUNDATION_DECL)
   FuncDecl *NAME = nullptr;
 #include "swift/AST/KnownDecls.def"
   
+  /// Declare cached declarations for each of the known member declarations.
+#define _MEMBER_FUNC_DECL(DECL_CLASS, MEMBER, NAME, DECL_BASE_NAME, \
+                        GENERIC_ARG_COUNT, ARG_LABELS) \
+  DECL_CLASS *NAME = nullptr;
+#include "swift/AST/KnownDecls.def"
+
   /// func ==(Int, Int) -> Bool
   FuncDecl *EqualIntDecl = nullptr;
 
@@ -675,22 +681,22 @@ FuncDecl *ASTContext::getPlusFunctionOnString() const {
 }
 
 #define KNOWN_STDLIB_TYPE_DECL(NAME, DECL_CLASS, NUM_GENERIC_PARAMS) \
-  DECL_CLASS *ASTContext::get##NAME##Decl() const { \
-    if (getImpl().NAME##Decl) \
-      return getImpl().NAME##Decl; \
-    SmallVector<ValueDecl *, 1> results; \
-    lookupInSwiftModule(#NAME, results); \
-    for (auto result : results) { \
-      if (auto type = dyn_cast<DECL_CLASS>(result)) { \
-        auto params = type->getGenericParams(); \
-        if (NUM_GENERIC_PARAMS == (params == nullptr ? 0 : params->size())) { \
-          getImpl().NAME##Decl = type; \
-          return type; \
-        } \
+DECL_CLASS *ASTContext::get##NAME##Decl() const { \
+  if (getImpl().NAME##Decl) \
+    return getImpl().NAME##Decl; \
+  SmallVector<ValueDecl *, 1> results; \
+  lookupInSwiftModule(#NAME, results); \
+  for (auto result : results) { \
+    if (auto type = dyn_cast<DECL_CLASS>(result)) { \
+      auto params = type->getGenericParams(); \
+      if (NUM_GENERIC_PARAMS == (params == nullptr ? 0 : params->size())) { \
+        getImpl().NAME##Decl = type; \
+        return type; \
       } \
     } \
-    return nullptr; \
-  }
+  } \
+  return nullptr; \
+}
 #include "swift/AST/KnownStdlibTypes.def"
 
 CanType ASTContext::getExceptionType() const {
@@ -891,20 +897,6 @@ static FuncDecl *findLibraryIntrinsic(const ASTContext &ctx,
   return nullptr;
 }
 
-/// Returns the type of an intrinsic function if it is not generic, otherwise
-/// returns nullptr.
-static FunctionType *
-getIntrinsicCandidateType(FuncDecl *fn, bool allowTypeMembers) {
-  auto type = fn->getInterfaceType();
-  if (allowTypeMembers && fn->getDeclContext()->isTypeContext()) {
-    auto fnType = type->getAs<FunctionType>();
-    if (!fnType) return nullptr;
-
-    type = fnType->getResult();
-  }
-  return type->getAs<FunctionType>();
-}
-
 /// Looks up all implementations of an operator (globally and declared in types)
 /// and passes potential matches to the given callback. The search stops when
 /// the predicate returns true (in which case the matching function declaration
@@ -929,17 +921,19 @@ lookupOperatorFunc(const ASTContext &ctx, StringRef oper, Type contextType,
     if (!fnDecl)
       continue;
 
+    auto *funcTy = fnDecl->getInterfaceType()->getAs<FunctionType>();
+    if (!funcTy)
+      continue;
+    
     if (fnDecl->getDeclContext()->isTypeContext()) {
       auto contextTy = fnDecl->getDeclContext()->getDeclaredInterfaceType();
       if (!contextTy->isEqual(contextType)) continue;
+      funcTy = funcTy->getResult()->getAs<FunctionType>();
+      if (!funcTy) continue;
     }
 
     if (auto resolver = ctx.getLazyResolver())
       resolver->resolveDeclSignature(fnDecl);
-
-    auto *funcTy = getIntrinsicCandidateType(fnDecl, /*allowTypeMembers=*/true);
-    if (!funcTy)
-      continue;
 
     if (pred(funcTy))
       return fnDecl;
@@ -1162,7 +1156,7 @@ FuncDecl *ASTContext::getIsOSVersionAtLeastDecl() const {
   if (!decl)
     return nullptr;
 
-  auto *fnType = getIntrinsicCandidateType(decl, /*allowTypeMembers=*/false);
+  auto *fnType = decl->getInterfaceType()->getAs<FunctionType>();
   if (!fnType)
     return nullptr;
 
@@ -1285,7 +1279,7 @@ FuncDecl *ASTContext::get##NAME() const { \
     return getImpl().NAME; \
   \
   SmallVector<ValueDecl *, 2> results; \
-  this->lookupInSwiftModule(#NAME, results); \
+  this->lookupInSwiftModule(ID, results); \
   DeclName name(*const_cast<ASTContext*>(this), \
                 DeclBaseName(getIdentifier(ID)), { ARG_LABELS }); \
   \
@@ -1301,7 +1295,42 @@ FuncDecl *ASTContext::get##NAME() const { \
     if ((genericParams ? genericParams->size() : 0) != GENERIC_ARG_COUNT) \
       continue; \
   \
+    if (auto resolver = getLazyResolver()) \
+      resolver->resolveDeclSignature(func); \
+  \
     getImpl().NAME = func; \
+  } \
+  \
+  return getImpl().NAME; \
+}
+#include "swift/AST/KnownDecls.def"
+
+#define _MEMBER_FUNC_DECL(DECL_CLASS, MEMBER, NAME, DECL_BASE_NAME, \
+                          GENERIC_ARG_COUNT, ARG_LABELS) \
+DECL_CLASS *ASTContext::get##NAME() const { \
+  if (getImpl().NAME) \
+    return getImpl().NAME; \
+  \
+  if (!get##MEMBER##Decl()) \
+    return nullptr; \
+  \
+  DeclName name(*const_cast<ASTContext*>(this), DECL_BASE_NAME, \
+                { ARG_LABELS }); \
+  auto results = get##MEMBER##Decl()->lookupDirect(name); \
+  \
+  for (auto result : results) { \
+    if (!isa<DECL_CLASS>(result)) \
+      continue; \
+  \
+    auto decl = cast<DECL_CLASS>(result); \
+    auto genericParams = decl->getGenericParams(); \
+    if ((genericParams ? genericParams->size() : 0) != GENERIC_ARG_COUNT) \
+      continue; \
+  \
+    if (auto resolver = getLazyResolver()) \
+      resolver->resolveDeclSignature(decl); \
+  \
+    getImpl().NAME = decl; \
   } \
   \
   return getImpl().NAME; \
