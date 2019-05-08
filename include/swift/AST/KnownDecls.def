@@ -2,7 +2,7 @@
 //
 // This source file is part of the Swift.org open source project
 //
-// Copyright (c) 2014 - 2017 Apple Inc. and the Swift project authors
+// Copyright (c) 2014 - 2019 Apple Inc. and the Swift project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
@@ -15,75 +15,321 @@
 //
 //===----------------------------------------------------------------------===//
 
+#define ARG_LABELS(...) __VA_ARGS__
+
+#define EMPTY Identifier()
+
+#define UNIMPLEMENTED_DECL(NAME, ID)
+
 #ifndef FUNC_DECL
-#  define FUNC_DECL(Name, Id)
+#define FUNC_DECL(NAME, ID, GENERIC_ARG_COUNT, ARG_LABELS)
 #endif
 
-FUNC_DECL(ArrayForceCast, "_arrayForceCast")
-FUNC_DECL(ArrayConditionalCast, "_arrayConditionalCast")
+// stdlib/public/core/ArrayCast.swift
+//
+// public func _arrayForceCast<SourceElement, TargetElement>(
+//   _ source: [SourceElement]
+// ) -> [TargetElement]
+FUNC_DECL(ArrayForceCast, "_arrayForceCast", 2, ARG_LABELS(EMPTY))
 
-FUNC_DECL(DictionaryUpCast, "_dictionaryUpCast")
-FUNC_DECL(DictionaryDownCast, "_dictionaryDownCast")
-FUNC_DECL(DictionaryDownCastConditional, "_dictionaryDownCastConditional")
+// stdlib/public/core/ArrayCast.swift
+//
+// public func _arrayConditionalCast<SourceElement, TargetElement>(
+//   _ source: [SourceElement]
+// ) -> [TargetElement]?
+FUNC_DECL(ArrayConditionalCast, "_arrayConditionalCast", 2, ARG_LABELS(EMPTY))
 
-FUNC_DECL(SetUpCast, "_setUpCast")
-FUNC_DECL(SetDownCast, "_setDownCast")
-FUNC_DECL(SetDownCastConditional, "_setDownCastConditional")
+// stdlib/public/core/DictionaryCasting.swift
+//
+// public func _dictionaryUpCast<DerivedKey, DerivedValue, BaseKey, BaseValue>(
+//   _ source: [DerivedKey: DerivedValue]
+// ) -> [BaseKey: BaseValue]
+FUNC_DECL(DictionaryUpCast, "_dictionaryUpCast", 4, ARG_LABELS(EMPTY))
 
-FUNC_DECL(ConvertPointerToPointerArgument,
-          "_convertPointerToPointerArgument")
-FUNC_DECL(ConvertInOutToPointerArgument,
-          "_convertInOutToPointerArgument")
+// stdlib/public/core/DictionaryCasting.swift
+//
+// public func _dictionaryDownCast<
+//   BaseKey, BaseValue, DerivedKey, DerivedValue
+// >(
+//   _ source: [BaseKey: BaseValue]
+// ) -> [DerivedKey: DerivedValue]
+FUNC_DECL(DictionaryDownCast, "_dictionaryDownCast", 4, ARG_LABELS(EMPTY))
+
+// stdlib/public/core/DictionaryCasting.swift
+//
+// public func _dictionaryDownCastConditional<
+//   BaseKey, BaseValue, DerivedKey, DerivedValue
+// >(
+//   _ source: [BaseKey: BaseValue]
+// ) -> [DerivedKey: DerivedValue]?
+FUNC_DECL(DictionaryDownCastConditional, "_dictionaryDownCastConditional", 4,
+          ARG_LABELS(EMPTY))
+
+// stdlib/public/core/SetCasting.swift
+//
+// public func _setUpCast<DerivedValue, BaseValue>(
+//   _ source: Set<DerivedValue>
+// ) -> Set<BaseValue>
+FUNC_DECL(SetUpCast, "_setUpCast", 2, ARG_LABELS(EMPTY))
+
+// stdlib/public/core/SetCasting.swift
+//
+// public func _setDownCast<BaseValue, DerivedValue>(
+//   _ source: Set<BaseValue>
+// ) -> Set<DerivedValue>
+FUNC_DECL(SetDownCast, "_setDownCast", 2, ARG_LABELS(EMPTY))
+
+// stdlib/public/core/SetCasting.swift
+//
+// public func _setDownCastConditional<BaseValue, DerivedValue>(
+//   _ source: Set<BaseValue>
+// ) -> Set<DerivedValue>?
+FUNC_DECL(SetDownCastConditional, "_setDownCastConditional", 2,
+          ARG_LABELS(EMPTY))
+
+// stdlib/public/core/Pointer.swift
+//
+// public func _convertPointerToPointerArgument<
+//   FromPointer: _Pointer,
+//   ToPointer: _Pointer
+// >(_ from: FromPointer) -> ToPointer
+FUNC_DECL(ConvertPointerToPointerArgument, "_convertPointerToPointerArgument",
+          2, ARG_LABELS(EMPTY))
+
+// stdlib/public/core/Pointer.swift
+//
+// public func _convertInOutToPointerArgument<ToPointer: _Pointer>(
+//   _ from: Builtin.RawPointer
+// ) -> ToPointer
+FUNC_DECL(ConvertInOutToPointerArgument, "_convertInOutToPointerArgument", 1,
+          ARG_LABELS(EMPTY))
+
+// stdlib/public/core/Pointer.swift
+//
+// public func _convertMutableArrayToPointerArgument<
+//   FromElement,
+//   ToPointer: _Pointer
+// >(_ a: inout [FromElement]) -> (AnyObject?, ToPointer)
 FUNC_DECL(ConvertMutableArrayToPointerArgument,
-          "_convertMutableArrayToPointerArgument")
+          "_convertMutableArrayToPointerArgument", 2, ARG_LABELS(EMPTY))
+
+// stdlib/public/core/Pointer.swift
+//
+// public func _convertConstArrayToPointerArgument<
+//   FromElement, ToPointer: _Pointer
+// >(_ arr: [FromElement]) -> (AnyObject?, ToPointer)
 FUNC_DECL(ConvertConstArrayToPointerArgument,
-          "_convertConstArrayToPointerArgument")
+          "_convertConstArrayToPointerArgument", 2, ARG_LABELS(EMPTY))
+
+// stdlib/public/core/Pointer.swift
+//
+// public func _convertConstStringToUTF8PointerArgument<ToPointer: _Pointer>(
+//   _ str: String
+// ) -> (AnyObject?, ToPointer)
 FUNC_DECL(ConvertConstStringToUTF8PointerArgument,
-          "_convertConstStringToUTF8PointerArgument")
-FUNC_DECL(AllocateUninitializedArray,
-          "_allocateUninitializedArray")
-FUNC_DECL(DeallocateUninitializedArray,
-          "_deallocateUninitializedArray")
+          "_convertConstStringToUTF8PointerArgument", 1, ARG_LABELS(EMPTY))
 
-FUNC_DECL(ForceBridgeFromObjectiveC,
-          "_forceBridgeFromObjectiveC")
+// stdlib/public/core/ArrayShared.swift
+//
+// public func _allocateUninitializedArray<Element>(
+//   _ builtinCount: Builtin.Word
+// ) -> ([Element], Builtin.RawPointer)
+FUNC_DECL(AllocateUninitializedArray, "_allocateUninitializedArray", 1,
+          ARG_LABELS(EMPTY))
+
+// stdlib/public/core/ArrayShared.swift
+//
+// public func _deallocateUninitializedArray<Element>(_ arr: __owned [Element])
+FUNC_DECL(DeallocateUninitializedArray, "_deallocateUninitializedArray", 1,
+          ARG_LABELS(EMPTY))
+
+// stdlib/public/core/BridgeObjectiveC.swift
+//
+// public func _forceBridgeFromObjectiveC<T>(_ x: AnyObject, _: T.Type) -> T
+FUNC_DECL(ForceBridgeFromObjectiveC, "_forceBridgeFromObjectiveC", 1,
+          ARG_LABELS(EMPTY, EMPTY))
+
+// stdlib/public/core/BridgeObjectiveC.swift
+//
+// public func _conditionallyBridgeFromObjectiveC<T>(
+//   _ x: AnyObject,
+//   _: T.Type
+// ) -> T?
 FUNC_DECL(ConditionallyBridgeFromObjectiveC,
-          "_conditionallyBridgeFromObjectiveC")
+          "_conditionallyBridgeFromObjectiveC", 1, ARG_LABELS(EMPTY, EMPTY))
 
+// stdlib/public/core/BridgeObjectiveC.swift
+//
+// public func _forceBridgeFromObjectiveC_bridgeable<T: _ObjectiveCBridgeable>(
+//   _ x: T._ObjectiveCType,
+//   _: T.Type
+// ) -> T
 FUNC_DECL(ForceBridgeFromObjectiveCBridgeable,
-          "_forceBridgeFromObjectiveC_bridgeable")
+          "_forceBridgeFromObjectiveC_bridgeable", 1, ARG_LABELS(EMPTY, EMPTY))
+
+// stdlib/public/core/BridgeObjectiveC.swift
+//
+// public func _conditionallyBridgeFromObjectiveC_bridgeable<
+//   T: _ObjectiveCBridgeable
+// >(_ x: T._ObjectiveCType, _: T.Type) -> T?
 FUNC_DECL(ConditionallyBridgeFromObjectiveCBridgeable,
-          "_conditionallyBridgeFromObjectiveC_bridgeable")
+          "_conditionallyBridgeFromObjectiveC_bridgeable", 1,
+          ARG_LABELS(EMPTY, EMPTY))
 
-FUNC_DECL(BridgeAnythingToObjectiveC,
-          "_bridgeAnythingToObjectiveC")
-FUNC_DECL(BridgeAnyObjectToAny,
-          "_bridgeAnyObjectToAny")
+// stdlib/public/core/BridgeObjectiveC.swift
+//
+// public func _bridgeAnythingToObjectiveC<T>(_ x: T) -> AnyObject
+FUNC_DECL(BridgeAnythingToObjectiveC, "_bridgeAnythingToObjectiveC", 1,
+          ARG_LABELS(EMPTY))
 
-FUNC_DECL(ConvertToAnyHashable, "_convertToAnyHashable")
+// stdlib/public/core/BridgeObjectiveC.swift
+//
+// public func _bridgeAnyObjectToAny(_ possiblyNullObject: AnyObject?) -> Any
+FUNC_DECL(BridgeAnyObjectToAny, "_bridgeAnyObjectToAny", 0, ARG_LABELS(EMPTY))
 
-FUNC_DECL(DiagnoseUnexpectedError, "_unexpectedError")
-FUNC_DECL(DiagnoseUnexpectedNilOptional, "_diagnoseUnexpectedNilOptional")
-FUNC_DECL(DiagnoseUnexpectedEnumCase, "_diagnoseUnexpectedEnumCase")
-FUNC_DECL(DiagnoseUnexpectedEnumCaseValue, "_diagnoseUnexpectedEnumCaseValue")
+// stdlib/public/core/AnyHashable.swift
+//
+// public func _convertToAnyHashable<H: Hashable>(_ value: H) -> AnyHashable
+FUNC_DECL(ConvertToAnyHashable, "_convertToAnyHashable", 1, ARG_LABELS(EMPTY))
 
-FUNC_DECL(GetErrorEmbeddedNSError, "_getErrorEmbeddedNSError")
+// stdlib/public/core/ErrorType.swift
+//
+// public func _unexpectedError(
+//   _ error: __owned Error,
+//   filenameStart: Builtin.RawPointer,
+//   filenameLength: Builtin.Word,
+//   filenameIsASCII: Builtin.Int1,
+//   line: Builtin.Word
+// )
+FUNC_DECL(DiagnoseUnexpectedError, "_unexpectedError", 0,
+          ARG_LABELS(EMPTY, Id_filenameStart, Id_filenameLength,
+                     Id_filenameIsASCII, Id_line))
 
-FUNC_DECL(UnsafeBitCast, "unsafeBitCast")
+// stdlib/public/core/Optional.swift
+//
+// public func _diagnoseUnexpectedNilOptional(
+//   _filenameStart: Builtin.RawPointer,
+//   _filenameLength: Builtin.Word,
+//   _filenameIsASCII: Builtin.Int1,
+//   _line: Builtin.Word,
+//   _isImplicitUnwrap: Builtin.Int1
+// )
+FUNC_DECL(DiagnoseUnexpectedNilOptional, "_diagnoseUnexpectedNilOptional", 0,
+          ARG_LABELS(Id_filenameStart_, Id_filenameLength_, Id_filenameIsASCII_,
+                     Id_line_, Id_isImplicitUnwrap))
 
-FUNC_DECL(GetAtKeyPath, "_getAtKeyPath")
-FUNC_DECL(GetAtAnyKeyPath, "_getAtAnyKeyPath")
-FUNC_DECL(GetAtPartialKeyPath, "_getAtPartialKeyPath")
-FUNC_DECL(SetAtWritableKeyPath, "_setAtWritableKeyPath")
-FUNC_DECL(SetAtReferenceWritableKeyPath, "_setAtReferenceWritableKeyPath")
+// stdlib/public/core/AssertCommon.swift
+//
+// internal func _diagnoseUnexpectedEnumCase<SwitchedValue>(
+//   type: SwitchedValue.Type
+// ) -> Never
+FUNC_DECL(DiagnoseUnexpectedEnumCase, "_diagnoseUnexpectedEnumCase", 1,
+          ARG_LABELS(Id_type))
+
+// stdlib/public/core/AssertCommon.swift
+//
+// internal func _diagnoseUnexpectedEnumCaseValue<SwitchedValue, RawValue>(
+//   type: SwitchedValue.Type,
+//   rawValue: RawValue
+// ) -> Never
+FUNC_DECL(DiagnoseUnexpectedEnumCaseValue, "_diagnoseUnexpectedEnumCaseValue",
+          2, ARG_LABELS(Id_type, Id_rawValue))
+
+// stdlib/public/core/ErrorType.swift
+//
+// internal func _getErrorEmbeddedNSError<T: Error>(_ x: T) -> AnyObject?
+FUNC_DECL(GetErrorEmbeddedNSError, "_getErrorEmbeddedNSError", 1,
+          ARG_LABELS(EMPTY))
+
+// stdlib/public/core/Builtin.swift
+//
+// public func unsafeBitCast<T, U>(_ x: T, to type: U.Type) -> U
+FUNC_DECL(UnsafeBitCast, "unsafeBitCast", 2, ARG_LABELS(EMPTY, Id_to))
+
+// stdlib/public/core/KeyPath.swift
+//
+// public func _getAtKeyPath<Root, Value>(
+//   root: Root,
+//   keyPath: KeyPath<Root, Value>
+// ) -> Value
+FUNC_DECL(GetAtKeyPath, "_getAtKeyPath", 2, ARG_LABELS(Id_root, Id_keyPath))
+
+// stdlib/public/core/KeyPath.swift
+//
+// public func _getAtAnyKeyPath<RootValue>(
+//   root: RootValue,
+//   keyPath: AnyKeyPath
+// ) -> Any?
+FUNC_DECL(GetAtAnyKeyPath, "_getAtAnyKeyPath", 1,
+          ARG_LABELS(Id_root, Id_keyPath))
+
+// stdlib/public/core/KeyPath.swift
+//
+// public func _getAtPartialKeyPath<Root>(
+//   root: Root,
+//   keyPath: PartialKeyPath<Root>
+// ) -> Any
+FUNC_DECL(GetAtPartialKeyPath, "_getAtPartialKeyPath", 1,
+          ARG_LABELS(Id_root, Id_keyPath))
+
+// stdlib/public/core/KeyPath.swift
+//
+// public func _setAtWritableKeyPath<Root, Value>(
+//   root: inout Root,
+//   keyPath: WritableKeyPath<Root, Value>,
+//   value: __owned Value
+// )
+FUNC_DECL(SetAtWritableKeyPath, "_setAtWritableKeyPath", 2,
+          ARG_LABELS(Id_root, Id_keyPath, Id_value))
+
+// stdlib/public/core/KeyPath.swift
+//
+// public func _setAtReferenceWritableKeyPath<Root, Value>(
+//   root: inout Root,
+//   keyPath: ReferenceWritableKeyPath<Root, Value>,
+//   value: __owned Value
+// )
+FUNC_DECL(SetAtReferenceWritableKeyPath, "_setAtReferenceWritableKeyPath", 2,
+          ARG_LABELS(Id_root, Id_keyPath, Id_value))
+
 // These don't actually have AST nodes associated with them right now.
-FUNC_DECL(ReadAtKeyPath, "_readAtKeyPath")
-FUNC_DECL(ModifyAtWritableKeyPath, "_modifyAtWritableKeyPath")
-FUNC_DECL(ModifyAtReferenceWritableKeyPath, "_modifyAtReferenceWritableKeyPath")
+UNIMPLEMENTED_DECL(ReadAtKeyPath, "_readAtKeyPath")
+UNIMPLEMENTED_DECL(ModifyAtWritableKeyPath, "_modifyAtWritableKeyPath")
+UNIMPLEMENTED_DECL(ModifyAtReferenceWritableKeyPath,
+                   "_modifyAtReferenceWritableKeyPath")
 
-FUNC_DECL(Swap, "swap")
+// stdlib/public/core/MutableCollection.swift
+//
+// public func swap<T>(_ a: inout T, _ b: inout T)
+FUNC_DECL(Swap, "swap", 1, ARG_LABELS(EMPTY, EMPTY))
 
-FUNC_DECL(UnimplementedInitializer, "_unimplementedInitializer")
-FUNC_DECL(Undefined, "_undefined")
+// stdlib/public/core/AssertCommon.swift
+//
+// public func _unimplementedInitializer(
+//   className: StaticString,
+//   initName: StaticString,
+//   file: StaticString,
+//   line: UInt,
+//   column: UInt
+// ) -> Never
+FUNC_DECL(UnimplementedInitializer, "_unimplementedInitializer", 0,
+          ARG_LABELS(Id_className, Id_initName, Id_file, Id_line, Id_column))
 
+// stdlib/public/core/AssertCommon.swift
+//
+// public func _undefined<T>(
+//   _ message: @autoclosure () -> String,
+//   file: StaticString,
+//   line: UInt
+// ) -> T
+FUNC_DECL(Undefined, "_undefined", 1, ARG_LABELS(EMPTY, Id_file, Id_line))
+
+// stdlib/public/core/Hashable.swift
+//
+// public func _hashValue<H: Hashable>(for value: H) -> Int
+FUNC_DECL(HashValue, "_hashValue", 1, ARG_LABELS(Id_for))
+
+#undef ARG_LABELS
+#undef EMPTY
+#undef UNIMPLEMENTED_DECL
 #undef FUNC_DECL

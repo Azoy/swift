@@ -2,7 +2,7 @@
 //
 // This source file is part of the Swift.org open source project
 //
-// Copyright (c) 2014 - 2018 Apple Inc. and the Swift project authors
+// Copyright (c) 2014 - 2019 Apple Inc. and the Swift project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
@@ -71,9 +71,9 @@ internal func _setDownCastIndirect<SourceValue, TargetValue>(
 /// - Precondition: `DerivedValue` is a subtype of `BaseValue` and both
 ///   are reference types.
 @inlinable
-public func _setDownCast<BaseValue, DerivedValue>(_ source: Set<BaseValue>)
-  -> Set<DerivedValue> {
-
+public func _setDownCast<BaseValue, DerivedValue>(
+  _ source: Set<BaseValue>
+) -> Set<DerivedValue> {
 #if _runtime(_ObjC)
   if _isClassOrObjCExistential(BaseValue.self)
   && _isClassOrObjCExistential(DerivedValue.self) {

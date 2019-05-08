@@ -2,7 +2,7 @@
 //
 // This source file is part of the Swift.org open source project
 //
-// Copyright (c) 2014 - 2017 Apple Inc. and the Swift project authors
+// Copyright (c) 2014 - 2019 Apple Inc. and the Swift project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
@@ -184,12 +184,12 @@ static FuncDecl *diagnoseMissingIntrinsic(SILGenModule &sgm,
   return nullptr;
 }
 
-#define FUNC_DECL(NAME, ID)                             \
-  FuncDecl *SILGenModule::get##NAME(SILLocation loc) {  \
-    if (auto fn = getASTContext().get##NAME())   \
-      return fn;                                        \
-    return diagnoseMissingIntrinsic(*this, loc, ID);    \
-  }
+#define FUNC_DECL(NAME, ID, GENERIC_ARG_COUNT, ARG_LABELS) \
+FuncDecl *SILGenModule::get##NAME(SILLocation loc) { \
+  if (auto fn = getASTContext().get##NAME()) \
+    return fn; \
+  return diagnoseMissingIntrinsic(*this, loc, ID); \
+}
 #include "swift/AST/KnownDecls.def"
 
 ProtocolDecl *SILGenModule::getObjectiveCBridgeable(SILLocation loc) {

@@ -2,7 +2,7 @@
 //
 // This source file is part of the Swift.org open source project
 //
-// Copyright (c) 2014 - 2017 Apple Inc. and the Swift project authors
+// Copyright (c) 2014 - 2019 Apple Inc. and the Swift project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
@@ -483,8 +483,8 @@ public:
   ClassDecl *getNSValueDecl() const;
 
   // Declare accessors for the known declarations.
-#define FUNC_DECL(Name, Id) \
-  FuncDecl *get##Name() const;
+#define FUNC_DECL(NAME, ID, GENERIC_ARG_COUNT, ARG_LABELS) \
+  FuncDecl *get##NAME() const;
 #include "swift/AST/KnownDecls.def"
 
   /// Get the '+' function on two RangeReplaceableCollection.
@@ -532,9 +532,6 @@ public:
 
   /// Retrieve the declaration of Swift.==(Int, Int) -> Bool.
   FuncDecl *getEqualIntDecl() const;
-
-  /// Retrieve the declaration of Swift._hashValue<H>(for: H) -> Int.
-  FuncDecl *getHashValueForDecl() const;
 
   /// Retrieve the declaration of Array.append(element:)
   FuncDecl *getArrayAppendElementDecl() const;

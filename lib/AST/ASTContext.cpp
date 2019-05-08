@@ -2,7 +2,7 @@
 //
 // This source file is part of the Swift.org open source project
 //
-// Copyright (c) 2014 - 2018 Apple Inc. and the Swift project authors
+// Copyright (c) 2014 - 2019 Apple Inc. and the Swift project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
@@ -180,14 +180,12 @@ FOR_KNOWN_FOUNDATION_TYPES(CACHE_FOUNDATION_DECL)
 #undef CACHE_FOUNDATION_DECL
 
   // Declare cached declarations for each of the known declarations.
-#define FUNC_DECL(Name, Id) FuncDecl *Get##Name = nullptr;
+#define FUNC_DECL(NAME, ID, GENERIC_ARG_COUNT, ARG_LABELS) \
+  FuncDecl *NAME = nullptr;
 #include "swift/AST/KnownDecls.def"
   
   /// func ==(Int, Int) -> Bool
   FuncDecl *EqualIntDecl = nullptr;
-
-  /// func _hashValue<H: Hashable>(for: H) -> Int
-  FuncDecl *HashValueForDecl = nullptr;
 
   /// func append(Element) -> void
   FuncDecl *ArrayAppendElementDecl = nullptr;
@@ -907,20 +905,6 @@ getIntrinsicCandidateType(FuncDecl *fn, bool allowTypeMembers) {
   return type->getAs<FunctionType>();
 }
 
-/// Check whether the given type is Builtin.Int1.
-static bool isBuiltinInt1Type(Type type) {
-  if (auto intType = type->getAs<BuiltinIntegerType>())
-    return intType->isFixedWidth() && intType->getFixedWidth() == 1;
-  return false;
-}
-
-/// Check whether the given type is Builtin.Word.
-static bool isBuiltinWordType(Type type) {
-  if (auto intType = type->getAs<BuiltinIntegerType>())
-    return intType->getWidth().isPointerWidth();
-  return false;
-}
-
 /// Looks up all implementations of an operator (globally and declared in types)
 /// and passes potential matches to the given callback. The search stops when
 /// the predicate returns true (in which case the matching function declaration
@@ -1065,31 +1049,6 @@ FuncDecl *ASTContext::getEqualIntDecl() const {
   return decl;
 }
 
-FuncDecl *ASTContext::getHashValueForDecl() const {
-  if (getImpl().HashValueForDecl)
-    return getImpl().HashValueForDecl;
-
-  SmallVector<ValueDecl *, 1> results;
-  lookupInSwiftModule("_hashValue", results);
-  for (auto result : results) {
-    auto *fd = dyn_cast<FuncDecl>(result);
-    if (!fd)
-      continue;
-    auto paramList = fd->getParameters();
-    if (paramList->size() != 1)
-      continue;
-    auto paramDecl = paramList->get(0);
-    if (paramDecl->getArgumentName() != Id_for)
-      continue;
-    auto genericParams = fd->getGenericParams();
-    if (!genericParams || genericParams->size() != 1)
-      continue;
-    getImpl().HashValueForDecl = fd;
-    return fd;
-  }
-  return nullptr;
-}
-
 FuncDecl *ASTContext::getArrayAppendElementDecl() const {
   if (getImpl().ArrayAppendElementDecl)
     return getImpl().ArrayAppendElementDecl;
@@ -1214,13 +1173,13 @@ FuncDecl *ASTContext::getIsOSVersionAtLeastDecl() const {
 
   if (llvm::any_of(intrinsicsParams, [](AnyFunctionType::Param param) {
     return (param.isVariadic() || param.isInOut() ||
-            !isBuiltinWordType(param.getPlainType()));
+            !param.getPlainType()->isBuiltinWordType());
   })) {
     return nullptr;
   }
 
   // Output must be Builtin.Int1
-  if (!isBuiltinInt1Type(fnType->getResult()))
+  if (!fnType->getResult()->isBuiltinIntegerType(1))
     return nullptr;
 
   getImpl().IsOSVersionAtLeastDecl = decl;
@@ -1320,19 +1279,32 @@ ASTContext::associateInfixOperators(PrecedenceGroupDecl *left,
   llvm_unreachable("bad associativity");
 }
 
-// Find library intrinsic function.
-static FuncDecl *findLibraryFunction(const ASTContext &ctx, FuncDecl *&cache, 
-                                     StringRef name) {
-  if (cache) return cache;
-
-  // Look for a generic function.
-  cache = findLibraryIntrinsic(ctx, name);
-  return cache;
-}
-
-#define FUNC_DECL(Name, Id)                                         \
-FuncDecl *ASTContext::get##Name() const {     \
-  return findLibraryFunction(*this, getImpl().Get##Name, Id);  \
+#define FUNC_DECL(NAME, ID, GENERIC_ARG_COUNT, ARG_LABELS) \
+FuncDecl *ASTContext::get##NAME() const { \
+  if (getImpl().NAME) \
+    return getImpl().NAME; \
+  \
+  SmallVector<ValueDecl *, 2> results; \
+  this->lookupInSwiftModule(#NAME, results); \
+  DeclName name(*const_cast<ASTContext*>(this), \
+                DeclBaseName(getIdentifier(ID)), { ARG_LABELS }); \
+  \
+  for (auto decl : results) { \
+    if (!isa<FuncDecl>(decl)) \
+      continue; \
+  \
+    auto func = cast<FuncDecl>(decl); \
+    if (func->getFullName() != name) \
+      continue; \
+  \
+    auto genericParams = func->getGenericParams(); \
+    if ((genericParams ? genericParams->size() : 0) != GENERIC_ARG_COUNT) \
+      continue; \
+  \
+    getImpl().NAME = func; \
+  } \
+  \
+  return getImpl().NAME; \
 }
 #include "swift/AST/KnownDecls.def"
 

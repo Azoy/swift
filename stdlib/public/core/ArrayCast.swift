@@ -2,7 +2,7 @@
 //
 // This source file is part of the Swift.org open source project
 //
-// Copyright (c) 2014 - 2017 Apple Inc. and the Swift project authors
+// Copyright (c) 2014 - 2019 Apple Inc. and the Swift project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
@@ -19,8 +19,8 @@
 /// Called by the casting machinery.
 @_silgen_name("_swift_arrayDownCastIndirect")
 internal func _arrayDownCastIndirect<SourceValue, TargetValue>(
-  _ source: UnsafePointer<Array<SourceValue>>,
-  _ target: UnsafeMutablePointer<Array<TargetValue>>) {
+  _ source: UnsafePointer<[SourceValue]>,
+  _ target: UnsafeMutablePointer<[TargetValue]>) {
   target.initialize(to: _arrayForceCast(source.pointee))
 }
 
@@ -30,8 +30,8 @@ internal func _arrayDownCastIndirect<SourceValue, TargetValue>(
 ///   checking is deferred until elements are actually accessed.
 @inlinable //for performance reasons
 public func _arrayForceCast<SourceElement, TargetElement>(
-  _ source: Array<SourceElement>
-) -> Array<TargetElement> {
+  _ source: [SourceElement]
+) -> [TargetElement] {
 #if _runtime(_ObjC)
   if _isClassOrObjCExistential(SourceElement.self)
   && _isClassOrObjCExistential(TargetElement.self) {
@@ -55,8 +55,8 @@ public func _arrayForceCast<SourceElement, TargetElement>(
 /// Called by the casting machinery.
 @_silgen_name("_swift_arrayDownCastConditionalIndirect")
 internal func _arrayDownCastConditionalIndirect<SourceValue, TargetValue>(
-  _ source: UnsafePointer<Array<SourceValue>>,
-  _ target: UnsafeMutablePointer<Array<TargetValue>>
+  _ source: UnsafePointer<[SourceValue]>,
+  _ target: UnsafeMutablePointer<[TargetValue]>
 ) -> Bool {
   if let result: Array<TargetValue> = _arrayConditionalCast(source.pointee) {
     target.initialize(to: result)

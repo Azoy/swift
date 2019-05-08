@@ -2,7 +2,7 @@
 //
 // This source file is part of the Swift.org open source project
 //
-// Copyright (c) 2014 - 2018 Apple Inc. and the Swift project authors
+// Copyright (c) 2014 - 2019 Apple Inc. and the Swift project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
@@ -740,6 +740,9 @@ public:
 
   /// Check if this type is equal to Builtin.IntN.
   bool isBuiltinIntegerType(unsigned bitWidth);
+
+  /// Check if this type is equal to Builtin.Word.
+  bool isBuiltinWordType();
 
   /// If this is a class type or a bound generic class type, returns the
   /// (possibly generic) class.
@@ -5410,12 +5413,16 @@ inline GenericTypeDecl *TypeBase::getAnyGeneric() {
   return getCanonicalType().getAnyGeneric();
 }
 
-  
-  
 inline bool TypeBase::isBuiltinIntegerType(unsigned n) {
   if (auto intTy = dyn_cast<BuiltinIntegerType>(getCanonicalType()))
     return intTy->getWidth().isFixedWidth()
       && intTy->getWidth().getFixedWidth() == n;
+  return false;
+}
+
+inline bool TypeBase::isBuiltinWordType() {
+  if (auto intTy = dyn_cast<BuiltinIntegerType>(getCanonicalType()))
+    return intTy->getWidth().isPointerWidth();
   return false;
 }
 

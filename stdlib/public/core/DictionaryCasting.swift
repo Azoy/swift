@@ -2,7 +2,7 @@
 //
 // This source file is part of the Swift.org open source project
 //
-// Copyright (c) 2014 - 2018 Apple Inc. and the Swift project authors
+// Copyright (c) 2014 - 2019 Apple Inc. and the Swift project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
@@ -43,8 +43,8 @@ extension Dictionary {
 ///   respectively.
 @inlinable
 public func _dictionaryUpCast<DerivedKey, DerivedValue, BaseKey, BaseValue>(
-    _ source: Dictionary<DerivedKey, DerivedValue>
-) -> Dictionary<BaseKey, BaseValue> {
+    _ source: [DerivedKey: DerivedValue]
+) -> [BaseKey: BaseValue] {
   return Dictionary(
     _mapping: source,
     // String and NSString have different concepts of equality, so
@@ -60,8 +60,8 @@ public func _dictionaryUpCast<DerivedKey, DerivedValue, BaseKey, BaseValue>(
 @_silgen_name("_swift_dictionaryDownCastIndirect")
 internal func _dictionaryDownCastIndirect<SourceKey, SourceValue,
                                           TargetKey, TargetValue>(
-  _ source: UnsafePointer<Dictionary<SourceKey, SourceValue>>,
-  _ target: UnsafeMutablePointer<Dictionary<TargetKey, TargetValue>>) {
+  _ source: UnsafePointer<[SourceKey: SourceValue]>,
+  _ target: UnsafeMutablePointer<[TargetKey: TargetValue]>) {
   target.initialize(to: _dictionaryDownCast(source.pointee))
 }
 
@@ -74,8 +74,8 @@ internal func _dictionaryDownCastIndirect<SourceKey, SourceValue,
 ///   a subtype of `BaseValue`, and all of these types are reference types.
 @inlinable
 public func _dictionaryDownCast<BaseKey, BaseValue, DerivedKey, DerivedValue>(
-  _ source: Dictionary<BaseKey, BaseValue>
-) -> Dictionary<DerivedKey, DerivedValue> {
+  _ source: [BaseKey: BaseValue]
+) -> [DerivedKey: DerivedValue] {
 
 #if _runtime(_ObjC)
   if _isClassOrObjCExistential(BaseKey.self)
@@ -113,8 +113,8 @@ public func _dictionaryDownCast<BaseKey, BaseValue, DerivedKey, DerivedValue>(
 @_silgen_name("_swift_dictionaryDownCastConditionalIndirect")
 internal func _dictionaryDownCastConditionalIndirect<SourceKey, SourceValue,
                                                      TargetKey, TargetValue>(
-  _ source: UnsafePointer<Dictionary<SourceKey, SourceValue>>,
-  _ target: UnsafeMutablePointer<Dictionary<TargetKey, TargetValue>>
+  _ source: UnsafePointer<[SourceKey: SourceValue]>,
+  _ target: UnsafeMutablePointer<[TargetKey: TargetValue]>
 ) -> Bool {
   if let result: Dictionary<TargetKey, TargetValue>
        = _dictionaryDownCastConditional(source.pointee) {
@@ -135,8 +135,8 @@ internal func _dictionaryDownCastConditionalIndirect<SourceKey, SourceValue,
 public func _dictionaryDownCastConditional<
   BaseKey, BaseValue, DerivedKey, DerivedValue
 >(
-  _ source: Dictionary<BaseKey, BaseValue>
-) -> Dictionary<DerivedKey, DerivedValue>? {
+  _ source: [BaseKey: BaseValue]
+) -> [DerivedKey: DerivedValue]? {
   return Dictionary(
     _mapping: source,
     // String and NSString have different concepts of equality, so

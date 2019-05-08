@@ -2,7 +2,7 @@
 //
 // This source file is part of the Swift.org open source project
 //
-// Copyright (c) 2014 - 2018 Apple Inc. and the Swift project authors
+// Copyright (c) 2014 - 2019 Apple Inc. and the Swift project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
@@ -29,8 +29,9 @@ public struct _DependenceToken {
 @inline(__always)
 @_semantics("array.uninitialized_intrinsic")
 public // COMPILER_INTRINSIC
-func _allocateUninitializedArray<Element>(_  builtinCount: Builtin.Word)
-    -> (Array<Element>, Builtin.RawPointer) {
+func _allocateUninitializedArray<Element>(
+  _ builtinCount: Builtin.Word
+) -> ([Element], Builtin.RawPointer) {
   let count = Int(builtinCount)
   if count > 0 {
     // Doing the actual buffer allocation outside of the array.uninitialized
@@ -51,13 +52,10 @@ func _allocateUninitializedArray<Element>(_  builtinCount: Builtin.Word)
 @inlinable
 @_semantics("array.dealloc_uninitialized")
 public // COMPILER_INTRINSIC
-func _deallocateUninitializedArray<Element>(
-  _ array: __owned Array<Element>
-) {
+func _deallocateUninitializedArray<Element>(_ array: __owned [Element]) {
   var array = array
   array._deallocateUninitialized()
 }
-
 
 extension Collection {  
   // Utility method for collections that wish to implement

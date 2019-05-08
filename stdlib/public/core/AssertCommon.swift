@@ -2,7 +2,7 @@
 //
 // This source file is part of the Swift.org open source project
 //
-// Copyright (c) 2014 - 2017 Apple Inc. and the Swift project authors
+// Copyright (c) 2014 - 2019 Apple Inc. and the Swift project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
@@ -207,11 +207,12 @@ internal func _fatalErrorMessage(
 /// called by the Objective-C runtime.
 @_transparent
 public // COMPILER_INTRINSIC
-func _unimplementedInitializer(className: StaticString,
-                               initName: StaticString = #function,
-                               file: StaticString = #file,
-                               line: UInt = #line,
-                               column: UInt = #column
+func _unimplementedInitializer(
+  className: StaticString,
+  initName: StaticString = #function,
+  file: StaticString = #file,
+  line: UInt = #line,
+  column: UInt = #column
 ) -> Never {
   // This function is marked @_transparent so that it is inlined into the caller
   // (the initializer stub), and, depending on the build configuration,
@@ -253,7 +254,8 @@ func _unimplementedInitializer(className: StaticString,
 public // COMPILER_INTRINSIC
 func _undefined<T>(
   _ message: @autoclosure () -> String = String(),
-  file: StaticString = #file, line: UInt = #line
+  file: StaticString = #file,
+  line: UInt = #line
 ) -> T {
   _assertionFailure("Fatal error", message(), file: file, line: line, flags: 0)
 }

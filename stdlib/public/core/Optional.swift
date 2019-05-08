@@ -2,7 +2,7 @@
 //
 // This source file is part of the Swift.org open source project
 //
-// Copyright (c) 2014 - 2017 Apple Inc. and the Swift project authors
+// Copyright (c) 2014 - 2019 Apple Inc. and the Swift project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
@@ -295,11 +295,13 @@ extension Optional : CustomReflectable {
 
 @_transparent
 public // COMPILER_INTRINSIC
-func _diagnoseUnexpectedNilOptional(_filenameStart: Builtin.RawPointer,
-                                    _filenameLength: Builtin.Word,
-                                    _filenameIsASCII: Builtin.Int1,
-                                    _line: Builtin.Word,
-                                    _isImplicitUnwrap: Builtin.Int1) {
+func _diagnoseUnexpectedNilOptional(
+  _filenameStart: Builtin.RawPointer,
+  _filenameLength: Builtin.Word,
+  _filenameIsASCII: Builtin.Int1,
+  _line: Builtin.Word,
+  _isImplicitUnwrap: Builtin.Int1
+) {
   // Cannot use _preconditionFailure as the file and line info would not be
   // printed.
   preconditionFailure(
