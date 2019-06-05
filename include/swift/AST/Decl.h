@@ -1613,6 +1613,10 @@ class ExtensionDecl final : public GenericContext, public Decl,
 
   MutableArrayRef<TypeLoc> Inherited;
 
+  /// This serves as a temporary place to check whether the extension was
+  /// parsed with its own unique gp list.
+  GenericParamList *ParsedGP;
+
   /// The next extension in the linked list of extensions.
   ///
   /// The bit indicates whether this extension has been resolved to refer to
@@ -1631,7 +1635,7 @@ class ExtensionDecl final : public GenericContext, public Decl,
 
   ExtensionDecl(SourceLoc extensionLoc, TypeRepr *extendedType,
                 MutableArrayRef<TypeLoc> inherited,
-                DeclContext *parent,
+                GenericParamList *genericParams, DeclContext *parent,
                 TrailingWhereClause *trailingWhereClause);
 
   /// Retrieve the conformance loader (if any), and removing it in the
@@ -1656,6 +1660,7 @@ public:
   static ExtensionDecl *create(ASTContext &ctx, SourceLoc extensionLoc,
                                TypeRepr *extendedType,
                                MutableArrayRef<TypeLoc> inherited,
+                               GenericParamList *genericParams,
                                DeclContext *parent,
                                TrailingWhereClause *trailingWhereClause,
                                ClangNode clangNode = ClangNode());

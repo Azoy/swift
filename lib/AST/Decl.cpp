@@ -1142,6 +1142,7 @@ NominalTypeDecl::takeConformanceLoaderSlow() {
 ExtensionDecl::ExtensionDecl(SourceLoc extensionLoc,
                              TypeRepr *extendedType,
                              MutableArrayRef<TypeLoc> inherited,
+                             GenericParamList *genericParams,
                              DeclContext *parent,
                              TrailingWhereClause *trailingWhereClause)
   : GenericContext(DeclContextKind::ExtensionDecl, parent, nullptr),
@@ -1149,7 +1150,8 @@ ExtensionDecl::ExtensionDecl(SourceLoc extensionLoc,
     IterableDeclContext(IterableDeclContextKind::ExtensionDecl),
     ExtensionLoc(extensionLoc),
     ExtendedTypeRepr(extendedType),
-    Inherited(inherited)
+    Inherited(inherited),
+    ParsedGP(genericParams)
 {
   Bits.ExtensionDecl.DefaultAndMaxAccessLevel = 0;
   Bits.ExtensionDecl.HasLazyConformances = false;
@@ -1159,6 +1161,7 @@ ExtensionDecl::ExtensionDecl(SourceLoc extensionLoc,
 ExtensionDecl *ExtensionDecl::create(ASTContext &ctx, SourceLoc extensionLoc,
                                      TypeRepr *extendedType,
                                      MutableArrayRef<TypeLoc> inherited,
+                                     GenericParamList *genericParams,
                                      DeclContext *parent,
                                      TrailingWhereClause *trailingWhereClause,
                                      ClangNode clangNode) {
@@ -1169,7 +1172,7 @@ ExtensionDecl *ExtensionDecl::create(ASTContext &ctx, SourceLoc extensionLoc,
 
   // Construct the extension.
   auto result = ::new (declPtr) ExtensionDecl(extensionLoc, extendedType,
-                                              inherited, parent,
+                                              inherited, genericParams, parent,
                                               trailingWhereClause);
   if (clangNode)
     result->setClangNode(clangNode);
@@ -1284,15 +1287,19 @@ static GenericParamList *cloneGenericParams(ASTContext &ctx,
                                   SourceLoc());
 }
 
-static GenericParamList *
-createExtensionGenericParams(ASTContext &ctx,
-                             ExtensionDecl *ext,
-                             NominalTypeDecl *nominal) {
+static GenericParamList *addNominalGenericParams(ASTContext &ctx,
+                                                 ExtensionDecl *ext,
+                                                 NominalTypeDecl *nominal) {
   // Collect generic parameters from all outer contexts.
   SmallVector<GenericParamList *, 2> allGenericParams;
+
+  // If this is a parameterized extension, set those generic params as innermost
+  // parameters.
+  if (auto gpList = ext->ParsedGP)
+    allGenericParams.push_back(gpList);
+
   nominal->forEachGenericContext([&](GenericParamList *gpList) {
-    allGenericParams.push_back(
-      cloneGenericParams(ctx, ext, gpList));
+    allGenericParams.push_back(cloneGenericParams(ctx, ext, gpList));
   });
 
   GenericParamList *toParams = nullptr;
@@ -1314,7 +1321,12 @@ GenericParamListRequest::evaluate(Evaluator &evaluator, GenericContext *value) c
     if (!nominal) {
       return nullptr;
     }
-    auto *genericParams = createExtensionGenericParams(ctx, ext, nominal);
+
+    bool isParameterized = false;
+    if (ext->ParsedGP)
+      isParameterized = true;
+
+    auto *genericParams = addNominalGenericParams(ctx, ext, nominal);
 
     // Protocol extensions need an inheritance clause due to how name lookup
     // is implemented.
@@ -1327,6 +1339,10 @@ GenericParamListRequest::evaluate(Evaluator &evaluator, GenericContext *value) c
 
     // Set the depth of every generic parameter.
     unsigned depth = nominal->getGenericContextDepth();
+
+    if (isParameterized)
+      depth += 1;
+
     for (auto *outerParams = genericParams;
          outerParams != nullptr;
          outerParams = outerParams->getOuterParameters())
