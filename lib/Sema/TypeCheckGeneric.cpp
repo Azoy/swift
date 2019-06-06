@@ -530,6 +530,9 @@ static Type formExtensionInterfaceType(
   } else {
     auto currentBoundType = type->getAs<BoundGenericType>();
 
+    if (ext->getGenericContextDepth() != nominal->getGenericContextDepth())
+      genericParams = genericParams->getOuterParameters();
+
     // Form the bound generic type with the type parameters provided.
     unsigned gpIndex = 0;
     for (auto gp : *genericParams) {
