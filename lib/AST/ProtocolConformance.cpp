@@ -574,9 +574,9 @@ void NormalProtocolConformance::differenceAndStoreConditionalRequirements()
   // The extension signature should be a superset of the type signature, meaning
   // every thing in the type signature either is included too or is implied by
   // something else. The most important bit is having the same type
-  // parameters. (NB. if/when Swift gets parameterized extensions, this needs to
-  // change.)
-  assert(canTypeSig.getGenericParams() == canExtensionSig.getGenericParams());
+  // parameters, unless the extension is parameterized.
+  if (ext->getGenericContextDepth() == nominal->getGenericContextDepth())
+    assert(canTypeSig.getGenericParams() == canExtensionSig.getGenericParams());
 
   // Find the requirements in the extension that aren't proved by the original
   // type, these are the ones that make the conformance conditional.

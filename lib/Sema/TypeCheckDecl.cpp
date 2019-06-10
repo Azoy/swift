@@ -4594,7 +4594,7 @@ ExtendedTypeRequest::evaluate(Evaluator &eval, ExtensionDecl *ext) const {
 
   // Cannot extend generic type parameters. Example: extension<T> T {}
   if (auto gtpTy = extendedType->getAs<GenericTypeParamType>()) {
-    diags.diagnose(ext->getLoc(), diag::non_nominal_structural_extension,
+    diags.diagnose(ext->getLoc(), diag::generic_param_extension,
                    gtpTy->getName())
          .highlight(extendedRepr->getSourceRange());
     return error();

@@ -109,7 +109,7 @@ _ = l.someValues // expected-error {{generic parameter 'T' could not be inferred
 
 // Cannot extend generic type parameters
 
-extension<T> T { // expected-error {{non-nominal and non-structural type 'T' cannot be extended}}
+extension<T> T { // expected-error {{cannot extend generic parameter type 'T'}}
   func sayHello() {
     print("Hello!")
   }
@@ -118,8 +118,24 @@ extension<T> T { // expected-error {{non-nominal and non-structural type 'T' can
 protocol X {}
 protocol Y {}
 
-extension<T: X> T: Y { // expected-error {{non-nominal and non-structural type 'T' cannot be extended}}
+extension<T: X> T: Y { // expected-error {{cannot extend generic parameter type 'T'}}
   func sayGoodbye() {
     print("Goodbye!")
   }
 }
+
+// Conditional Conformance (!!!)
+
+struct Wrapped<T> {
+  let value: T
+}
+
+extension<T: Equatable> Pair<T>: Equatable {} // expected-note {{requirement from conditional conformance of 'Pair<Wrapped<Int>>' to 'Equatable'}}
+
+let m = Pair<Int>(first: 316, second: 128)
+let n = Pair<Int>(first: 316, second: 128)
+_ = m == n // ok
+
+let o = Pair<Wrapped<Int>>(first: .init(value: 316), second: .init(value: 128))
+let p = Pair<Wrapped<Int>>(first: .init(value: 316), second: .init(value: 128))
+_ = o == p // expected-error {{operator function '==' requires that 'Wrapped<Int>' conform to 'Equatable'}}
