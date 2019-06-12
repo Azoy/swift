@@ -96,7 +96,13 @@ GenericTypeParamType *DeclContext::getProtocolSelfType() const {
   if (auto proto = dyn_cast<ProtocolDecl>(this)) {
     genericParams = proto->getGenericParams();
   } else {
-    genericParams = cast<ExtensionDecl>(this)->getGenericParams();
+    auto ext = cast<ExtensionDecl>(this);
+    genericParams = ext->getGenericParams();
+
+    // Check for added generic parameters.
+    if (getGenericContextDepth() !=
+        ext->getExtendedNominal()->getGenericContextDepth())
+      genericParams = genericParams->getOuterParameters();
   }
 
   if (genericParams == nullptr)

@@ -139,3 +139,19 @@ _ = m == n // ok
 let o = Pair<Wrapped<Int>>(first: .init(value: 316), second: .init(value: 128))
 let p = Pair<Wrapped<Int>>(first: .init(value: 316), second: .init(value: 128))
 _ = o == p // expected-error {{operator function '==' requires that 'Wrapped<Int>' conform to 'Equatable'}}
+
+// Protocol Extensions
+
+extension<T> Collection where Element == T? { // expected-note {{where 'Self.Element' = 'Int', 'T?' = 'Any?'}}
+                                              // expected-note@-1 {{'T' declared as parameter to type 'Collection'}}
+  func compacted() -> [T] {
+    compactMap { $0 }
+  }
+}
+
+let q = [1, 2, nil, 4]
+_ = q.compacted() // ok
+
+let r = [1, 2, 3, 4]
+_ = r.compacted() // expected-error {{generic parameter 'T' could not be inferred}}
+                  // expected-error@-1 {{referencing instance method 'compacted()' on 'Collection' requires the types 'Int' and 'Any?' be equivalent}}

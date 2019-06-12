@@ -1333,7 +1333,12 @@ GenericParamListRequest::evaluate(Evaluator &evaluator, GenericContext *value) c
     if (auto *proto = ext->getExtendedProtocolDecl()) {
       auto protoType = proto->getDeclaredType();
       TypeLoc selfInherited[1] = { TypeLoc::withoutLoc(protoType) };
-      genericParams->getParams().front()->setInherited(
+      auto protoParams = genericParams;
+
+      if (isParameterized)
+        protoParams = protoParams->getOuterParameters();
+
+      protoParams->getParams().front()->setInherited(
         ctx.AllocateCopy(selfInherited));
     }
 
