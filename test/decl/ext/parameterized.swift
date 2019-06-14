@@ -155,3 +155,16 @@ _ = q.compacted() // ok
 let r = [1, 2, 3, 4]
 _ = r.compacted() // expected-error {{generic parameter 'T' could not be inferred}}
                   // expected-error@-1 {{referencing instance method 'compacted()' on 'Collection' requires the types 'Int' and 'Any?' be equivalent}}
+
+
+// Cannot extend concrete types (also specialized types)
+
+extension<T> Int {} // expected-error {{cannot have generic parameters when extending a concrete type}}
+
+extension<T> [Int] {} // expected-error {{cannot have generic parameters when extending a concrete type}}
+
+extension<T> [Int] where Element == T? {}  // expected-error {{cannot have generic parameters when extending a concrete type}}
+
+extension<T> [T?] {} // ok
+
+extension<T> [[[T?]]] {} // ok

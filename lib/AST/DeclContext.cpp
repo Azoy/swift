@@ -99,9 +99,7 @@ GenericTypeParamType *DeclContext::getProtocolSelfType() const {
     auto ext = cast<ExtensionDecl>(this);
     genericParams = ext->getGenericParams();
 
-    // Check for added generic parameters.
-    if (getGenericContextDepth() !=
-        ext->getExtendedNominal()->getGenericContextDepth())
+    if (ext->isParameterized())
       genericParams = genericParams->getOuterParameters();
   }
 

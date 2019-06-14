@@ -1243,6 +1243,17 @@ bool ExtensionDecl::isEquivalentToExtendedContext() const {
     && !getDeclaredInterfaceType()->isExistentialType();
 }
 
+bool ExtensionDecl::isParameterized() const {
+  // We could just check if ParsedGP is present, but if we ever synthesize
+  // extensions with a generic parameter list then that would be wrong.
+
+  auto nominal = getExtendedNominal();
+  if (!nominal && ParsedGP)
+    return true;
+
+  return getGenericContextDepth() != nominal->getGenericContextDepth();
+}
+
 AccessLevel ExtensionDecl::getDefaultAccessLevel() const {
   ASTContext &ctx = getASTContext();
   return evaluateOrDefault(ctx.evaluator,
