@@ -791,8 +791,7 @@ private:
     }
 
     Mangle::ASTMangler Mangler;
-    std::string Result = Mangler.mangleTypeForDebugger(
-        Ty, nullptr);
+    std::string Result = Mangler.mangleTypeForDebugger(Ty, nullptr);
 
     if (!Opts.DisableRoundTripDebugTypes
         // FIXME: implement type reconstruction for opaque types

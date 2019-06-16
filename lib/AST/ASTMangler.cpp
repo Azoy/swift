@@ -1279,7 +1279,7 @@ void ASTMangler::appendBoundGenericArgs(Type type, bool &isFirstArgList) {
     appendOperator("_");
   }
   for (Type arg : genericArgs) {
-    appendType(arg);
+    appendType(arg->getCanonicalType());
   }
 }
 
@@ -1657,13 +1657,12 @@ void ASTMangler::appendContext(const DeclContext *ctx) {
     return;
 
   case DeclContextKind::ExtensionDecl: {
-    auto ExtD = cast<ExtensionDecl>(ctx);
-    auto decl = ExtD->getExtendedNominal();
+    auto ext = cast<ExtensionDecl>(ctx);
+    auto decl = ext->getExtendedNominal();
     // Recover from erroneous extension.
     if (!decl)
-      return appendContext(ExtD->getDeclContext());
+      return appendContext(ext->getDeclContext());
 
-    if (!ExtD->isEquivalentToExtendedContext()) {
     // Mangle the extension if:
     // - the extension is defined in a different module from the original
     //   nominal type decl,
@@ -1673,16 +1672,24 @@ void ASTMangler::appendContext(const DeclContext *ctx) {
     // "extension is to a protocol" would no longer be a reason to use the
     // extension mangling, because an extension method implementation could be
     // resiliently moved into the original protocol itself.
-      auto sig = ExtD->getGenericSignature();
+    if (!ext->isEquivalentToExtendedContext()) {
+      auto sig = ext->getGenericSignature();
       // If the extension is constrained, mangle the generic signature that
       // constrains it.
       appendAnyGenericType(decl);
-      appendModule(ExtD->getParentModule());
-      if (sig && ExtD->isConstrainedExtension()) {
-        Mod = ExtD->getModuleContext();
-        auto nominalSig = ExtD->getSelfNominalTypeDecl()
-                            ->getGenericSignatureOfContext();
-        appendGenericSignature(sig, nominalSig);
+      appendModule(ext->getParentModule());
+      if (sig && ext->isConstrainedExtension()) {
+        Mod = ext->getModuleContext();
+
+        // If the extension is parameterized, go ahead and mangle the complete
+        // canonical signature.
+        if (ext->isParameterized()) {
+          appendGenericSignature(sig, nullptr);
+        } else {
+          auto nominalSig = ext->getSelfNominalTypeDecl()
+                               ->getGenericSignatureOfContext();
+          appendGenericSignature(sig, nominalSig);
+        }
       }
       return appendOperator("E");
     }

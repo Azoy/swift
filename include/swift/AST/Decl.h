@@ -1717,6 +1717,9 @@ public:
 
   void setInherited(MutableArrayRef<TypeLoc> i) { Inherited = i; }
 
+  /// Whether or not we parsed this extension with its own unique gp list.
+  GenericParamList *getParsedGenericParamList() const { return ParsedGP; }
+
   bool hasDefaultAccessLevel() const {
     return Bits.ExtensionDecl.DefaultAndMaxAccessLevel != 0;
   }

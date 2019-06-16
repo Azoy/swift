@@ -1306,7 +1306,7 @@ static GenericParamList *addNominalGenericParams(ASTContext &ctx,
 
   // If this is a parameterized extension, set those generic params as innermost
   // parameters.
-  if (auto gpList = ext->ParsedGP)
+  if (auto gpList = ext->getParsedGenericParamList())
     allGenericParams.push_back(gpList);
 
   nominal->forEachGenericContext([&](GenericParamList *gpList) {
@@ -1334,7 +1334,7 @@ GenericParamListRequest::evaluate(Evaluator &evaluator, GenericContext *value) c
     }
 
     bool isParameterized = false;
-    if (ext->ParsedGP)
+    if (ext->getParsedGenericParamList())
       isParameterized = true;
 
     auto *genericParams = addNominalGenericParams(ctx, ext, nominal);

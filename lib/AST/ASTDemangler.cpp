@@ -769,12 +769,33 @@ ASTBuilder::getForeignModuleKind(NodePointer node) {
 CanGenericSignature ASTBuilder::demangleGenericSignature(
     NominalTypeDecl *nominalDecl,
     NodePointer node) {
+  SmallVector<GenericTypeParamType *, 2> gpTypes;
   SmallVector<Requirement, 2> requirements;
 
+  // Skip the number of generic params equal to the nominal's generic param size.
+  unsigned skipGenericParams = nominalDecl->getGenericSignature()
+                                          ->getGenericParams().size();
+  unsigned gpDepth = nominalDecl->getGenericContextDepth();
+
   for (auto &child : *node) {
-    if (child->getKind() ==
-          Demangle::Node::Kind::DependentGenericParamCount)
+    if (child->getKind() == Demangle::Node::Kind::DependentGenericParamCount &&
+        skipGenericParams != 0) {
+      skipGenericParams -= 1;
       continue;
+    }
+
+    // If we have more generic param counts, create new generic parameters for
+    // the GSB.
+    if (child->getKind() == Demangle::Node::Kind::DependentGenericParamCount) {
+      gpDepth += 1;
+
+      for (uint64_t i = 0; i != child->getIndex(); i += 1) {
+        auto gpTy = GenericTypeParamType::get(gpDepth, i, Ctx);
+        gpTypes.push_back(gpTy);
+      }
+
+      continue;
+    }
 
     if (child->getNumChildren() != 2)
       return CanGenericSignature();
@@ -857,7 +878,7 @@ CanGenericSignature ASTBuilder::demangleGenericSignature(
   return evaluateOrDefault(
       Ctx.evaluator,
       AbstractGenericSignatureRequest{
-        nominalDecl->getGenericSignature().getPointer(), { },
+        nominalDecl->getGenericSignature().getPointer(), std::move(gpTypes),
         std::move(requirements)},
       GenericSignature())->getCanonicalSignature();
 }
@@ -969,8 +990,7 @@ ASTBuilder::findDeclContext(NodePointer node) {
         continue;
       }
 
-      if (ext->getGenericSignature()->getCanonicalSignature()
-          == genericSig) {
+      if (ext->getGenericSignature()->getCanonicalSignature() == genericSig) {
         return ext;
       }
     }
