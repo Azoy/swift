@@ -954,6 +954,13 @@ GenericContext::GenericContext(DeclContextKind Kind, DeclContext *Parent,
     Parent->getASTContext().evaluator.cacheOutput(
           GenericParamListRequest{const_cast<GenericContext *>(this)},
           std::move(Params));
+
+    // If we're initializing an extension decl and we have generic parameters,
+    // uncheck the generic parameter bit because we want to access the generic
+    // parameters but also go through the request phase to create the remaining
+    // generic parameters.
+    if (Kind == DeclContextKind::ExtensionDecl)
+      GenericParamsAndBit.setInt(false);
   }
 }
 
@@ -1145,13 +1152,12 @@ ExtensionDecl::ExtensionDecl(SourceLoc extensionLoc,
                              GenericParamList *genericParams,
                              DeclContext *parent,
                              TrailingWhereClause *trailingWhereClause)
-  : GenericContext(DeclContextKind::ExtensionDecl, parent, nullptr),
+  : GenericContext(DeclContextKind::ExtensionDecl, parent, genericParams),
     Decl(DeclKind::Extension, parent),
     IterableDeclContext(IterableDeclContextKind::ExtensionDecl),
     ExtensionLoc(extensionLoc),
     ExtendedTypeRepr(extendedType),
-    Inherited(inherited),
-    ParsedGP(genericParams)
+    Inherited(inherited)
 {
   Bits.ExtensionDecl.DefaultAndMaxAccessLevel = 0;
   Bits.ExtensionDecl.HasLazyConformances = false;
@@ -1244,12 +1250,12 @@ bool ExtensionDecl::isEquivalentToExtendedContext() const {
 }
 
 bool ExtensionDecl::isParameterized() const {
-  // We could just check if ParsedGP is present, but if we ever synthesize
-  // extensions with a generic parameter list then that would be wrong.
-
   auto nominal = getExtendedNominal();
-  if (!nominal && ParsedGP)
+  if (!nominal && getGenericParamsUncached())
     return true;
+
+  if (!nominal)
+    return false;
 
   return getGenericContextDepth() != nominal->getGenericContextDepth();
 }
@@ -1306,7 +1312,7 @@ static GenericParamList *addNominalGenericParams(ASTContext &ctx,
 
   // If this is a parameterized extension, set those generic params as innermost
   // parameters.
-  if (auto gpList = ext->getParsedGenericParamList())
+  if (auto gpList = ext->getGenericParamsUncached())
     allGenericParams.push_back(gpList);
 
   nominal->forEachGenericContext([&](GenericParamList *gpList) {
@@ -1334,7 +1340,7 @@ GenericParamListRequest::evaluate(Evaluator &evaluator, GenericContext *value) c
     }
 
     bool isParameterized = false;
-    if (ext->getParsedGenericParamList())
+    if (ext->getGenericParamsUncached())
       isParameterized = true;
 
     auto *genericParams = addNominalGenericParams(ctx, ext, nominal);

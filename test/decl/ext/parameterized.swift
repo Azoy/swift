@@ -8,7 +8,7 @@ struct Pair<Element> {
 // Basic parameterized extensions
 
 // Extend Pair where Element == Optional<T>
-extension<T> Pair where Element == T? { // expected-note {{where 'Element' = 'Int', 'T?' = '_?'}}
+extension<T> Pair where Element == T? { // expected-note {{where 'Element' = 'Int', 'T?' = 'Optional<_>'}}
   var firstUnwrapped: T {
     first!
   }
@@ -18,7 +18,7 @@ let a = Pair<Int?>(first: 316, second: nil)
 _ = a.firstUnwrapped // ok
 
 let b = Pair<Int>(first: 316, second: 128)
-_ = b.firstUnwrapped // expected-error {{property 'firstUnwrapped' requires the types 'Int' and '_?' be equivalent}}
+_ = b.firstUnwrapped // expected-error {{property 'firstUnwrapped' requires the types 'Int' and 'Optional<_>' be equivalent}}
 
 // Ensure we can extend types with same type requirements
 
@@ -36,7 +36,7 @@ let d = Pair<Double>(first: .pi, second: .zero)
 _ = d.sum // expected-error {{property 'sum' requires that 'Double' conform to 'FixedWidthInteger'}}
 
 // Extend Pair where Element == Optional<T>
-extension<T> Pair<T?> { // expected-note {{where 'Element' = 'Int', 'T?' = '_?'}}
+extension<T> Pair<T?> { // expected-note {{where 'Element' = 'Int', 'T?' = 'Optional<_>'}}
   var secondUnwrapped: T {
     second!
   }
@@ -46,7 +46,7 @@ let e = Pair<Int?>(first: nil, second: 128)
 _ = e.secondUnwrapped // ok
 
 let f = Pair<Int>(first: 316, second: 128)
-_ = f.secondUnwrapped // expected-error {{property 'secondUnwrapped' requires the types 'Int' and '_?' be equivalent}}
+_ = f.secondUnwrapped // expected-error {{property 'secondUnwrapped' requires the types 'Int' and 'Optional<_>' be equivalent}}
 
 // Extend Pair where Element == Array<T>
 extension<T> Pair<[T]> { // expected-note {{where 'Element' = 'Set<Int>', '[T]' = '[Any]'}}

@@ -1440,6 +1440,13 @@ public:
   /// this context is not generic.
   GenericParamList *getGenericParams() const;
 
+  /// This is only used to grab the generic param list for an extension that
+  /// needs to create other generic parameters along with its own parsed params.
+  /// All other uses need to go through `getGenericParams`.
+  GenericParamList *getGenericParamsUncached() const {
+    return GenericParamsAndBit.getPointer();
+  }
+
   /// Determine whether this context has generic parameters
   /// of its own.
   ///
@@ -1613,10 +1620,6 @@ class ExtensionDecl final : public GenericContext, public Decl,
 
   MutableArrayRef<TypeLoc> Inherited;
 
-  /// This serves as a temporary place to check whether the extension was
-  /// parsed with its own unique gp list.
-  GenericParamList *ParsedGP;
-
   /// The next extension in the linked list of extensions.
   ///
   /// The bit indicates whether this extension has been resolved to refer to
@@ -1716,9 +1719,6 @@ public:
   ArrayRef<TypeLoc> getInherited() const { return Inherited; }
 
   void setInherited(MutableArrayRef<TypeLoc> i) { Inherited = i; }
-
-  /// Whether or not we parsed this extension with its own unique gp list.
-  GenericParamList *getParsedGenericParamList() const { return ParsedGP; }
 
   bool hasDefaultAccessLevel() const {
     return Bits.ExtensionDecl.DefaultAndMaxAccessLevel != 0;
