@@ -60,11 +60,11 @@ extension Generic where T: AnyObject {
 
 // Parameterized Extensions
 
-extension<T> Generic<T?> {
+extension<U> Generic<U?> {
   struct Nested3 {}
 }
 
-extension<T: Proto> Generic<T> {
+extension<U: Proto> Generic<U> {
   struct Nested4 {}
 }
 

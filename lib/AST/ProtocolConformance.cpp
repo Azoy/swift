@@ -575,7 +575,7 @@ void NormalProtocolConformance::differenceAndStoreConditionalRequirements()
   // every thing in the type signature either is included too or is implied by
   // something else. The most important bit is having the same type
   // parameters, unless the extension is parameterized.
-  if (ext->getGenericContextDepth() == nominal->getGenericContextDepth())
+  if (!ext->isParameterized())
     assert(canTypeSig.getGenericParams() == canExtensionSig.getGenericParams());
 
   // Find the requirements in the extension that aren't proved by the original
