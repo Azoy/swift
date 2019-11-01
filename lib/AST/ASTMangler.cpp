@@ -1279,7 +1279,7 @@ void ASTMangler::appendBoundGenericArgs(Type type, bool &isFirstArgList) {
     appendOperator("_");
   }
   for (Type arg : genericArgs) {
-    appendType(arg->getCanonicalType());
+    appendType(arg);
   }
 }
 

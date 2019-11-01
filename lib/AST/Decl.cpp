@@ -1250,6 +1250,9 @@ bool ExtensionDecl::isEquivalentToExtendedContext() const {
 }
 
 bool ExtensionDecl::isParameterized() const {
+  if (!hasBeenBound())
+    return getGenericParamsUncached();
+
   auto nominal = getExtendedNominal();
   if (!nominal && getGenericParamsUncached())
     return true;

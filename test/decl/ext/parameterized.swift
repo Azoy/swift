@@ -168,3 +168,9 @@ extension<T> [Int] where Element == T? {}  // expected-error {{cannot have gener
 extension<T> [T?] {} // ok
 
 extension<T> [[[T?]]] {} // ok
+
+// Reject invalid extensions
+
+struct BadScope {
+  extension<T> [T?] {} // expected-error {{declaration is only valid at file scope}}
+}

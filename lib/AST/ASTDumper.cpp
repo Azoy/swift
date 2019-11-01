@@ -595,7 +595,7 @@ namespace {
     void visitExtensionDecl(ExtensionDecl *ED) {
       printCommon(ED, "extension_decl", ExtensionColor);
       if (ED->isParameterized())
-        printGenericParameters(OS, ED->getGenericParams());
+        printGenericParameters(OS, ED->getGenericParamsUncached());
       OS << ' ';
       ED->getExtendedType().print(OS);
       printInherited(ED->getInherited());
