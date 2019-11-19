@@ -2089,6 +2089,7 @@ void ASTMangler::appendTypeListElement(Identifier name, Type elementType,
 bool ASTMangler::appendGenericSignature(GenericSignature sig,
                                         GenericSignature contextSig) {
   auto canSig = sig->getCanonicalSignature();
+  llvm::errs() << "CANONICAL SIG: " << canSig << "\n";
   CurGenericSignature = canSig;
 
   unsigned initialParamDepth;

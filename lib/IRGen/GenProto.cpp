@@ -2982,7 +2982,7 @@ GenericTypeRequirements::GenericTypeRequirements(IRGenModule &IGM,
   // Figure out what we're actually still required to pass 
   PolymorphicConvention convention(IGM, fnType);
   convention.enumerateUnfulfilledRequirements([&](GenericRequirement reqt) {
-    assert(generics->isCanonicalTypeInContext(reqt.TypeParameter));
+    //assert(generics->isCanonicalTypeInContext(reqt.TypeParameter));
     Requirements.push_back(reqt);
   });
 

@@ -122,6 +122,8 @@ void GenericSignatureImpl::forEachParam(
       // parameter itself. That is, if T == U.Foo, then T is canonical, whereas
       // U.Foo is not.
       if (req.getSecondType()->isTypeParameter()) continue;
+      
+      if (req.getSecondType()->hasTypeParameter()) continue;
     }
 
     unsigned index = GenericParamKey(gp).findIndexIn(genericParams);
@@ -637,12 +639,15 @@ bool GenericSignatureImpl::isCanonicalTypeInContext(Type type,
   return !type.findIf([&](Type component) -> bool {
     if (!component->isTypeParameter()) return false;
 
-    auto equivClass =
-      builder.resolveEquivalenceClass(
-                               Type(component),
-                               ArchetypeResolutionKind::CompleteWellFormed);
+    auto equivClass = builder.resolveEquivalenceClass(component,
+                                   ArchetypeResolutionKind::CompleteWellFormed);
     if (!equivClass) return false;
 
+    /*llvm::outs() << "Concrete type?: " << equivClass->concreteType << "\n";*/
+    //llvm::outs() << "CHECKING IF CAN ";
+    //llvm::outs() << (equivClass->concreteType ||
+    //        !component->isEqual(equivClass->getAnchor(builder,
+    /*                                                  getGenericParams()))) << "\n";*/
     return (equivClass->concreteType ||
             !component->isEqual(equivClass->getAnchor(builder,
                                                       getGenericParams())));

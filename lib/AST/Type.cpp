@@ -3565,6 +3565,60 @@ Type TypeBase::getSuperclassForDecl(const ClassDecl *baseClass,
   return ErrorType::get(this);
 }
 
+// This is used to dig out a concrete type for a generic parameter not found in
+// the type signature. Ex. Generic<Optional<U>>.Nested where U is introduced in
+// a parameterized extension and isn't found in the signature. We dig out a
+// concrete type by walking other substitutions and checking their concrete
+// counter part if we found U defined in some other context.
+class SubFinder final : public TypeWalker,
+                  private llvm::TrailingObjects<SubFinder, TypeWalker::Action> {
+  friend TrailingObjects;
+
+private:
+  Type missingSub;
+  Type concreteFind;
+  unsigned numActions = 0;
+  unsigned currentIdx = 0;
+  bool done = false;
+
+  MutableArrayRef<Action> getActions() {
+    return {getTrailingObjects<Action>(), numActions + 1};
+  }
+
+public:
+  SubFinder(Type missingSub) : missingSub(missingSub) {}
+
+  Action walkToTypePre(Type t) {
+    // Replay the events.
+    if (done) {
+      Action step = getActions()[currentIdx];
+      currentIdx += 1;
+
+      if (step == Action::Stop)
+        concreteFind = t;
+
+      return step;
+    }
+
+    if (t->isEqual(missingSub)) {
+      done = true;
+      return record(Action::Stop);
+    }
+
+    return record(Action::Continue);
+  }
+
+  Action record(Action step) {
+    getActions()[numActions] = step;
+    numActions += 1;
+    return step;
+  }
+
+  Type getConcreteFind() {
+    return concreteFind;
+  }
+};
+
 TypeSubstitutionMap
 TypeBase::getContextSubstitutions(const DeclContext *dc,
                                   GenericEnvironment *genericEnv) {
@@ -3601,31 +3655,30 @@ TypeBase::getContextSubstitutions(const DeclContext *dc,
     return substitutions;
 
   auto params = genericSig->getGenericParams();
-  unsigned n = params.size();
 
-  while (baseTy && n > 0) {
-    if (baseTy->is<ErrorType>())
-      break;
-
+  while (baseTy) {
     // For a bound generic type, gather the generic parameter -> generic
     // argument substitutions.
     if (auto boundGeneric = baseTy->getAs<BoundGenericType>()) {
       auto args = boundGeneric->getGenericArgs();
-      for (unsigned i = 0, e = args.size(); i < e; ++i) {
-        substitutions[params[n - e + i]->getCanonicalType()
-                        ->castTo<GenericTypeParamType>()] = args[i];
+      auto type = boundGeneric->getAnyGeneric();
+      auto params = type->getGenericParams()->getParams();
+
+      for (unsigned i : indices(args)) {
+        auto genericTy = params[i]->getDeclaredInterfaceType()
+                                  ->getCanonicalType()
+                                  ->castTo<GenericTypeParamType>();
+        substitutions[genericTy] = args[i];
       }
 
       // Continue looking into the parent.
       baseTy = boundGeneric->getParent();
-      n -= args.size();
       continue;
     }
 
     // Continue looking into the parent.
     if (auto protocolTy = baseTy->getAs<ProtocolType>()) {
       baseTy = protocolTy->getParent();
-      n--;
       continue;
     }
 
@@ -3640,16 +3693,56 @@ TypeBase::getContextSubstitutions(const DeclContext *dc,
     break;
   }
 
-  while (n > 0) {
-    auto *gp = params[--n];
-    auto substTy = (genericEnv
-                    ? genericEnv->mapTypeIntoContext(gp)
-                    : gp);
-    auto result = substitutions.insert(
-      {gp->getCanonicalType()->castTo<GenericTypeParamType>(),
-       substTy});
-    assert(result.second);
-    (void) result;
+  // Record a list of generic params that didn't have a concrete replacement.
+  llvm::SmallVector<GenericTypeParamType *, 2> missingSubs;
+  for (auto param : params) {
+    auto genericTy = param->getCanonicalType()->castTo<GenericTypeParamType>();
+
+    if (substitutions.find(genericTy) != substitutions.end())
+      continue;
+
+    auto replacement = genericEnv ? genericEnv->mapTypeIntoContext(param) :
+                                    param;
+
+    missingSubs.push_back(genericTy);
+    substitutions[genericTy] = replacement;
+  }
+
+  // Attempt to fish out a concrete type for missing subs, but only if we have a
+  // concrete type and the context is a parameterized extension. (This only
+  // occurs in parameterized extension because those generic params don't show
+  // up in the type signature.)
+  auto declContext = this->getAnyNominal()->getDeclContext();
+  auto ext = dyn_cast<ExtensionDecl>(declContext);
+  bool isParameterizedExt = ext ? ext->isParameterized() : false;
+  bool isSpecialized = this->isSpecialized() &&
+                       !this->hasTypeParameter();
+  if (isParameterizedExt && isSpecialized && !missingSubs.empty()) {
+    // FIXME: This is O(n*m) (where n is size of missing subs and m is size of
+    // generic parameters) which feels really bad. Is there a better way to do
+    // this?
+    for (auto param : missingSubs) {
+      for (auto source : params) {
+        if (source == param)
+          continue;
+
+        if (auto concrete = genericSig->getConcreteType(source)) {
+          auto canTy = source->getCanonicalType()
+                             ->castTo<GenericTypeParamType>();
+          auto replace = substitutions[canTy];
+          if (concrete->hasTypeParameter() && !replace->hasTypeParameter()) {
+            SubFinder findSub(param);
+            bool wasFound = concrete.walk(findSub);
+
+            if (wasFound) {
+              replace.walk(findSub);
+              substitutions[param] = findSub.getConcreteFind();
+              break;
+            }
+          }
+        }
+      }
+    }
   }
 
   return substitutions;
@@ -3732,7 +3825,9 @@ Type TypeBase::getTypeOfMember(ModuleDecl *module, const ValueDecl *member,
   assert(memberType);
 
   // Perform the substitution.
-  auto substitutions = getMemberSubstitutionMap(module, member);
+  auto genericEnv = member->getInnermostDeclContext()
+                          ->getGenericEnvironmentOfContext();
+  auto substitutions = getMemberSubstitutionMap(module, member, genericEnv);
   return memberType.subst(substitutions);
 }
 

@@ -980,6 +980,12 @@ ASTBuilder::findDeclContext(NodePointer node) {
     if (node->getNumChildren() > 2)
       genericSig = demangleGenericSignature(nominalDecl, node->getChild(2));
 
+    if (genericSig) {
+      llvm::errs() << "WE FOUND A GENERIC SIG!\n";
+      genericSig->dump();
+      llvm::errs() << "\n";
+    }
+
     for (auto *ext : nominalDecl->getExtensions()) {
       if (ext->getParentModule() != moduleDecl)
         continue;

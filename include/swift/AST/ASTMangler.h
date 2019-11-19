@@ -88,10 +88,24 @@ public:
 
   void addTypeSubstitution(Type type) {
     type = dropProtocolsFromAssociatedTypes(type);
+    //if (type->hasTypeParameter()) {
+    //  type = type.transform([](Type type) {
+    //    if (type->is<GenericTypeParamType>())
+    //      return Type(type->getCanonicalType());
+    //    return type;
+    //  });
+    //}
     addSubstitution(type.getPointer());
   }
   bool tryMangleTypeSubstitution(Type type) {
     type = dropProtocolsFromAssociatedTypes(type);
+    //if (type->hasTypeParameter()) {
+    //  type = type.transform([](Type type) {
+    //    if (type->is<GenericTypeParamType>())
+    //      return Type(type->getCanonicalType());
+    //    return type;
+    //  });
+    //}
     return tryMangleSubstitution(type.getPointer());
   }
 
