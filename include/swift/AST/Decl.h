@@ -1707,6 +1707,10 @@ public:
   /// resiliently moved into the original protocol itself.
   bool isEquivalentToExtendedContext() const;
 
+  /// Whether this extension contains unique generic parameters that differs
+  /// from the extended nominal's generic signature.
+  bool isParameterized() const;
+
   // Implement isa/cast/dyncast/etc.
   static bool classof(const Decl *D) {
     return D->getKind() == DeclKind::Extension;
