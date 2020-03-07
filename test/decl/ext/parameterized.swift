@@ -129,3 +129,19 @@ extension<T: X> T: Y { // expected-error {{cannot extend generic parameter 'T'}}
     print("Goodbye!")
   }
 }
+
+// Conditional Conformance (!!!)
+
+struct Wrapped<T> {
+  let value: T
+}
+
+extension<T: Equatable> Pair<T>: Equatable {} // expected-note {{requirement from conditional conformance of 'Pair<Wrapped<Int>>' to 'Equatable'}}
+
+let m = Pair<Int>(first: 316, second: 128)
+let n = Pair<Int>(first: 316, second: 128)
+_ = m == n // ok
+
+let o = Pair<Wrapped<Int>>(first: .init(value: 316), second: .init(value: 128))
+let p = Pair<Wrapped<Int>>(first: .init(value: 316), second: .init(value: 128))
+_ = o == p // expected-error {{operator function '==' requires that 'Wrapped<Int>' conform to 'Equatable'}}

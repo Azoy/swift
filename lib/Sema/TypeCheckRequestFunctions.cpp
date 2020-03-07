@@ -39,6 +39,19 @@ Type InheritedTypeRequest::evaluate(
       options |= TypeResolutionFlags::AllowUnavailableProtocol;
     } else {
       dc = typeDecl->getDeclContext();
+
+      // If we're checking a generic parameter T whose context is a
+      // parameterized extension and it was declared on said extension, inform
+      // name lookup to look at the file scope rather than the extension's to
+      // resolve inherited types.
+      if (auto ext = dyn_cast<ExtensionDecl>(dc)) {
+        if (ext->isParameterized()) {
+          if (auto gp = dyn_cast<GenericTypeParamDecl>(typeDecl)) {
+            if (gp->getDepth() == ext->getGenericContextDepth())
+              dc = ext->getDeclContext();
+          }
+        }
+      }
     }
   } else {
     dc = (DeclContext *)decl.get<const ExtensionDecl *>();
