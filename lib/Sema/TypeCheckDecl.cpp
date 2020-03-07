@@ -2689,6 +2689,14 @@ ExtendedTypeRequest::evaluate(Evaluator &eval, ExtensionDecl *ext) const {
     return error();
   }
 
+  // Cannot extend generic type parameters.
+  if (auto gpTy = extendedType->getAs<GenericTypeParamType>()) {
+    diags.diagnose(ext->getLoc(), diag::generic_param_extension,
+                   gpTy->getName())
+        .highlight(extendedRepr->getSourceRange());
+    return error();
+  }
+
   // Cannot extend function types, tuple types, etc.
   if (!extendedType->getAnyNominal()) {
     diags.diagnose(ext->getLoc(), diag::non_nominal_extension, extendedType)

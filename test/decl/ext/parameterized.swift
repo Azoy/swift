@@ -112,3 +112,20 @@ _ = k.someValues // ok
 let l = [1, 2, 3, 4]
 _ = l.someValues // expected-error {{generic parameter 'T' could not be inferred}}
                  // expected-error@-1 {{property 'someValues' requires the types 'Int' and 'Any?' be equivalent}}
+
+// Cannot extend generic type parameters
+
+extension<T> T { // expected-error {{cannot extend generic parameter type 'T'}}
+  func sayHello() {
+    print("Hello!")
+  }
+}
+
+protocol X {}
+protocol Y {}
+
+extension<T: X> T: Y { // expected-error {{cannot extend generic parameter 'T'}}
+  func sayGoodbye() {
+    print("Goodbye!")
+  }
+}
