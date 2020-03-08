@@ -145,3 +145,15 @@ _ = m == n // ok
 let o = Pair<Wrapped<Int>>(first: .init(value: 316), second: .init(value: 128))
 let p = Pair<Wrapped<Int>>(first: .init(value: 316), second: .init(value: 128))
 _ = o == p // expected-error {{operator function '==' requires that 'Wrapped<Int>' conform to 'Equatable'}}
+
+// Cannot extend concrete types (also specialized types)
+
+extension<T> Int {} // expected-error {{cannot have generic parameters when extending a concrete type}}
+
+extension<T> [Int] {} // expected-error {{cannot have generic parameters when extending a concrete type}}
+
+extension<T> [Int] where Element == T? {} // expected-error {{cannot have generic parameters when extending a concrete type}}
+
+extension<T> [T?] {} // ok
+
+extension<T> [[[T?]]] {} // ok

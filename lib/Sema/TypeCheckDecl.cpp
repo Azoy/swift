@@ -2704,5 +2704,15 @@ ExtendedTypeRequest::evaluate(Evaluator &eval, ExtensionDecl *ext) const {
     return error();
   }
 
+  // Cannot extend a concrete type if the extension is parameterized.
+  bool isConcrete = !extendedType->getAnyNominal()->isGeneric();
+  bool isSpecialized = extendedType->isSpecialized() &&
+                       !extendedType->hasTypeParameter();
+  if ((isConcrete || isSpecialized) && ext->isParameterized()) {
+    diags.diagnose(ext->getLoc(), diag::concrete_generic_extension)
+         .highlight(extendedRepr->getSourceRange());
+    return error();
+  }
+
   return extendedType;
 }
