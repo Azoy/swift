@@ -157,3 +157,19 @@ extension<T> [Int] where Element == T? {} // expected-error {{cannot have generi
 extension<T> [T?] {} // ok
 
 extension<T> [[[T?]]] {} // ok
+
+// Protocol Extensions
+
+extension<T> Collection where Element == T? { // expected-note {{where 'Self.Element' = 'Int', 'T?' = 'Any?'}}
+                                              // expected-note@-1 {{'T' declared as parameter to type 'Collection'}}
+  func compacted() -> [T] {
+    compactMap { $0 }
+  }
+}
+
+let q = [1, 2, nil, 4]
+_ = q.compacted() // ok
+
+let r = [1, 2, 3, 4]
+_ = r.compacted() // expected-error {{generic parameter 'T' could not be inferred}}
+                  // expected-error@-1 {{referencing instance method 'compacted()' on 'Collection' requires the types 'Int' and 'Any?' to be equivalent}}
