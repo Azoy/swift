@@ -225,6 +225,12 @@ evaluator::DependencySource GetDestructorRequest::readDependencySource(
 
 Optional<GenericParamList *> GenericParamListRequest::getCachedResult() const {
   auto *decl = std::get<0>(getStorage());
+
+  // If this is a parameterized extension, go through the request to clone the
+  // nominal's generic param lists.
+  if (isa<ExtensionDecl>(decl) && decl->getParsedGenericParams())
+    return None;
+
   if (auto *params = decl->GenericParamsAndBit.getPointer())
     return params;
 
