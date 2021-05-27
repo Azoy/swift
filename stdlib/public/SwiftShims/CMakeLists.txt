@@ -19,6 +19,7 @@ set(sources
   System.h
   Target.h
   ThreadLocalStorage.h
+  UnicodeProperties.h
   UnicodeShims.h
   Visibility.h
   _SwiftConcurrency.h

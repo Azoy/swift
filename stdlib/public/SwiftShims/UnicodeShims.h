@@ -511,11 +511,6 @@ __swift_int32_t __swift_stdlib_unorm2_spanQuickCheckYes(
     __swift_int32_t, __swift_stdlib_UErrorCode *);
 
 SWIFT_RUNTIME_STDLIB_API
-__swift_stdlib_UBool
-    __swift_stdlib_u_hasBinaryProperty(__swift_stdlib_UChar32,
-                                       __swift_stdlib_UProperty);
-
-SWIFT_RUNTIME_STDLIB_API
 void __swift_stdlib_u_charAge(
     __swift_stdlib_UChar32, __swift_stdlib_UVersionInfo _Nonnull);
 

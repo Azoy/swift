@@ -57,7 +57,6 @@ int32_t unorm2_normalize(const UNormalizer2 *, const UChar *, int32_t, UChar *,
                          int32_t, UErrorCode *);
 const UNormalizer2 *unorm2_getNFCInstance(UErrorCode *);
 UBool unorm2_hasBoundaryBefore(const UNormalizer2 *norm2, UChar32 c);
-UBool u_hasBinaryProperty(UChar32, UProperty);
 void u_charAge(UChar32, UVersionInfo);
 int32_t u_getIntPropertyValue(UChar32, UProperty);
 int32_t u_charName(UChar32, UCharNameChoice, char *, int32_t, UErrorCode *);
@@ -242,12 +241,6 @@ __swift_int32_t __swift_stdlib_unorm2_spanQuickCheckYes(
   return unorm2_spanQuickCheckYes(ptr_cast<UNormalizer2>(norm),
                                   ptr_cast<UChar>(ptr), len,
                                   ptr_cast<UErrorCode>(err));
-}
-
-__swift_stdlib_UBool
-__swift_stdlib_u_hasBinaryProperty(__swift_stdlib_UChar32 c,
-                                          __swift_stdlib_UProperty p) {
-  return u_hasBinaryProperty(c, static_cast<UProperty>(p));
 }
 
 void
