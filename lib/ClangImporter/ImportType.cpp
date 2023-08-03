@@ -2466,6 +2466,11 @@ static ParamDecl *getParameterInfo(ClangImporter::Implementation *impl,
                               ? ParamSpecifier::InOut
                               : ParamSpecifier::Default);
   paramInfo->setInterfaceType(swiftParamTy);
+
+  if (swiftParamTy->getAnyPointerElementType()) {
+    paramInfo->getAttrs().add(new (paramInfo->getASTContext()) ForwardedToCAttr(/*isImplicit*/ true));
+  }
+
   impl->recordImplicitUnwrapForDecl(paramInfo, isParamTypeImplicitlyUnwrapped);
 
   return paramInfo;

@@ -3776,6 +3776,7 @@ namespace {
       printFlag(paramFlags.isAutoClosure(), "autoclosure");
       printFlag(paramFlags.isNonEphemeral(), "nonEphemeral");
       printFlag(paramFlags.isCompileTimeConst(), "compileTimeConst");
+      printFlag(paramFlags.isForwardedToC(), "forwardedToC");
       switch (paramFlags.getValueOwnership()) {
       case ValueOwnership::Default: break;
       case ValueOwnership::Owned: printFlag("owned"); break;

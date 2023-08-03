@@ -746,7 +746,12 @@ DECL_ATTR_KINDS = [
                   UserInaccessible,
                   ABIBreakingToAdd, ABIBreakingToRemove,
                   APIStableToAdd, APIStableToRemove,
-                  code=146)
+                  code=146),
+
+    SimpleDeclAttribute('forwardedToC', 'ForwardedToC',
+                        OnParam,
+                        ABIStableToAdd, ABIStableToRemove, APIBreakingToAdd, APIStableToRemove,
+                        code=147),
 ]
 
 # Schema for declaration modifiers:

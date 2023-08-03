@@ -410,8 +410,18 @@ public func spawnChild(_ args: [String])
     }
   }
   let spawnResult = withArrayOfCStrings(childArgs) {
-    _stdlib_posix_spawn(
-      &pid, childArgs[0], &fileActions, nil, $0, environ)
+    $0.withUnsafeBufferPointer { arrayBuffer in
+      childArgs[0].withCString {
+        _stdlib_posix_spawn(
+          &pid,
+          $0,
+          &fileActions,
+          nil,
+          arrayBuffer.baseAddress!,
+          environ
+        )
+      }
+    }
   }
   if spawnResult != 0 {
     print(String(cString: strerror(spawnResult)))
