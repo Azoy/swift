@@ -1905,6 +1905,7 @@ static bool shouldSerializeMember(Decl *D) {
   case DeclKind::Extension:
   case DeclKind::Module:
   case DeclKind::PrecedenceGroup:
+  case DeclKind::Submodule:
     if (D->getASTContext().LangOpts.AllowModuleWithCompilerErrors)
       return false;
     llvm_unreachable("decl should never be a member");
@@ -4875,6 +4876,10 @@ public:
     llvm_unreachable("import decls should not be serialized");
   }
 
+  void visitSubmoduleDecl(const SubmoduleDecl *) {
+    llvm_unreachable("submodule decls should not be serialized");
+  }
+
   void visitIfConfigDecl(const IfConfigDecl *) {
     llvm_unreachable("#if block declarations should not be serialized");
   }
@@ -6388,7 +6393,7 @@ void Serializer::writeAST(ModuleOrSourceFile DC) {
     for (auto D : fileDecls) {
       if (isa<ImportDecl>(D) || isa<IfConfigDecl>(D) ||
           isa<PoundDiagnosticDecl>(D) || isa<TopLevelCodeDecl>(D) ||
-          isa<MacroExpansionDecl>(D)) {
+          isa<MacroExpansionDecl>(D) || isa<SubmoduleDecl>(D)) {
         continue;
       }
 

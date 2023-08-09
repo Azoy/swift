@@ -2465,7 +2465,11 @@ void ASTMangler::appendContext(const DeclContext *ctx, StringRef useModuleName) 
 
 void ASTMangler::appendModule(const ModuleDecl *module,
                               StringRef useModuleName) {
-  assert(!module->getParent() && "cannot mangle nested modules!");
+  // HACK: for submodules just use the parent module's mangling.
+  //assert(!module->getParent() && "cannot mangle nested modules!");
+  if (module->getParent()) {
+    module = cast<ModuleDecl>(module->getParent());
+  }
 
   // Use the module real name in mangling; this is the physical name
   // of the module on-disk, which can be different if -module-alias is

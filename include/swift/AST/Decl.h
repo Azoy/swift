@@ -200,7 +200,8 @@ enum class DescriptiveDeclKind : uint8_t {
   OpaqueResultType,
   OpaqueVarType,
   Macro,
-  MacroExpansion
+  MacroExpansion,
+  Submodule
 };
 
 /// Describes which spelling was used in the source for the 'static' or 'class'
@@ -1508,6 +1509,46 @@ public:
 
   static bool classof(const Decl *D) {
     return D->getKind() == DeclKind::Import;
+  }
+};
+
+/// Defines a submodule within a module.
+class SubmoduleDecl final : public Decl {
+  friend class Decl;
+
+  SourceLoc SubmoduleLoc;
+  Identifier Name;
+  SourceLoc NameLoc;
+
+  SubmoduleDecl(DeclContext *dc, SourceLoc loc, Identifier name,
+                SourceLoc nameLoc);
+
+public:
+  static SubmoduleDecl *create(ASTContext &ctx, DeclContext *dc, SourceLoc loc,
+                               Identifier name, SourceLoc nameLoc);
+
+  Identifier getName() const {
+    return Name;
+  }
+
+  SourceLoc getStartLoc() const {
+    return SubmoduleLoc;
+  }
+
+  SourceLoc getNameLoc() const {
+    return NameLoc;
+  }
+
+  SourceLoc getLocFromSource() const {
+    return SubmoduleLoc;
+  }
+
+  SourceRange getSourceRange() const {
+    return SourceRange(getStartLoc(), getNameLoc());
+  }
+
+  static bool classof(const Decl *D) {
+    return D->getKind() == DeclKind::Submodule;
   }
 };
 

@@ -748,6 +748,7 @@ public:
     case DeclKind::PostfixOperator:
     case DeclKind::Macro:
     case DeclKind::MacroExpansion:
+    case DeclKind::Submodule:
       return false;
     case DeclKind::Missing:
       llvm_unreachable("missing decl should not show up here");
@@ -842,6 +843,7 @@ public:
   UNINTERESTING_DECL(IfConfig)
   UNINTERESTING_DECL(Import)
   UNINTERESTING_DECL(MacroExpansion)
+  UNINTERESTING_DECL(Submodule)
   UNINTERESTING_DECL(Missing)
   UNINTERESTING_DECL(MissingMember)
   UNINTERESTING_DECL(Operator)

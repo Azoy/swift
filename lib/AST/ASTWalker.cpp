@@ -160,6 +160,10 @@ class Traversal : public ASTVisitor<Traversal, Expr*, Stmt*,
     return false;
   }
 
+  bool visitSubmoduleDecl(SubmoduleDecl *SD) {
+    return false;
+  }
+
   bool visitExtensionDecl(ExtensionDecl *ED) {
     if (auto *typeRepr = ED->getExtendedTypeRepr())
       if (doIt(typeRepr))

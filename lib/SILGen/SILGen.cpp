@@ -2330,10 +2330,11 @@ ASTLoweringRequest::evaluate(Evaluator &evaluator,
   }
 
   // Emit any whole-files needed.
-  for (auto file : desc.getFilesToEmit()) {
-    if (auto *nextSF = dyn_cast<SourceFile>(file))
+  desc.forEachFileToEmit([&](FileUnit *file) {
+    if (auto nextSF = dyn_cast<SourceFile>(file)) {
       scope.emitSourceFile(nextSF);
-  }
+    }
+  });
 
   // Also make sure to process any intermediate files that may contain SIL.
   bool shouldDeserialize =

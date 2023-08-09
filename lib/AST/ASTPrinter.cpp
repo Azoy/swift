@@ -2646,6 +2646,12 @@ void PrintAST::visitImportDecl(ImportDecl *decl) {
                    [&] { Printer << "."; });
 }
 
+void PrintAST::visitSubmoduleDecl(SubmoduleDecl *decl) {
+  printAttributes(decl);
+  Printer.printIntroducerKeyword("submodule", Options, " ");
+  Printer.printName(decl->getName());
+}
+
 void PrintAST::printExtendedTypeName(TypeLoc ExtendedTypeLoc) {
   bool OldFullyQualifiedTypesIfAmbiguous =
     Options.FullyQualifiedTypesIfAmbiguous;
@@ -5733,6 +5739,10 @@ bool Decl::shouldPrintInContext(const PrintOptions &PO) const {
 
   if (isa<IfConfigDecl>(this)) {
     return PO.PrintIfConfig;
+  }
+
+  if (isa<SubmoduleDecl>(this)) {
+    return PO.IsForSwiftInterface;
   }
 
   // Print everything else.

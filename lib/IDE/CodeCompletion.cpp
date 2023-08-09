@@ -726,6 +726,7 @@ static void addDeclKeywords(CodeCompletionResultSink &Sink, DeclContext *DC,
     case CodeCompletionKeywordKind::kw_import:
     case CodeCompletionKeywordKind::kw_protocol:
     case CodeCompletionKeywordKind::kw_extension:
+    case CodeCompletionKeywordKind::kw_submodule:
       return true;
     default:
       return false;

@@ -597,6 +597,11 @@ namespace {
       OS << "')";
     }
 
+    void visitSubmoduleDecl(SubmoduleDecl *SD) {
+      printCommon(SD, "submodule_decl");
+      OS << " " << SD->getName();
+    }
+
     void visitExtensionDecl(ExtensionDecl *ED) {
       printCommon(ED, "extension_decl", ExtensionColor);
       OS << ' ';

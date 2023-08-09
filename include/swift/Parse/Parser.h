@@ -1211,6 +1211,9 @@ public:
   ParserResult<ImportDecl> parseDeclImport(ParseDeclOptions Flags,
                                            DeclAttributes &Attributes);
 
+  ParserResult<SubmoduleDecl> parseDeclSubmodule(ParseDeclOptions flags,
+                                                 DeclAttributes &attributes);
+
   /// Parse an inheritance clause into a vector of InheritedEntry's.
   ///
   /// \param allowClassRequirement whether to permit parsing of 'class'

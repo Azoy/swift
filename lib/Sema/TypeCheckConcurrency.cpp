@@ -3750,6 +3750,7 @@ getMemberIsolationPropagation(const ValueDecl *value) {
   case DeclKind::EnumElement:
   case DeclKind::Macro:
   case DeclKind::MacroExpansion:
+  case DeclKind::Submodule:
     return llvm::None;
 
   case DeclKind::PatternBinding:
@@ -5444,6 +5445,7 @@ static bool isNonValueReference(const ValueDecl *value) {
   case DeclKind::TopLevelCode:
   case DeclKind::Destructor:
   case DeclKind::MacroExpansion:
+  case DeclKind::Submodule:
     return true;
 
   case DeclKind::EnumElement:

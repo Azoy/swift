@@ -73,6 +73,23 @@ ArrayRef<FileUnit *> ASTLoweringDescriptor::getFilesToEmit() const {
   return llvm::makeArrayRef(*context.getAddrOfPtr1());
 }
 
+void ASTLoweringDescriptor::forEachFileToEmit(
+                                      llvm::function_ref<void (FileUnit *)> fn) const {
+  if (refsToEmit) {
+    return;
+  }
+
+  if (auto mod = context.dyn_cast<ModuleDecl *>()) {
+    mod->forEachRecursiveFile([&](FileUnit *file) {
+      fn(file);
+    });
+
+    return;
+  }
+
+  fn(*context.getAddrOfPtr1());
+}
+
 SourceFile *ASTLoweringDescriptor::getSourceFileToParse() const {
 #ifndef NDEBUG
   auto sfCount = llvm::count_if(getFilesToEmit(), [](FileUnit *file) {
@@ -86,21 +103,24 @@ SourceFile *ASTLoweringDescriptor::getSourceFileToParse() const {
          "Cannot currently mix a .sil file with other SourceFiles");
 #endif
 
-  for (auto *file : getFilesToEmit()) {
+  SourceFile *result = nullptr;
+
+  forEachFileToEmit([&](FileUnit *file) {
     // Skip other kinds of files.
     auto *SF = dyn_cast<SourceFile>(file);
     if (!SF)
-      continue;
+      return;
 
     // Given the above precondition that a .sil file isn't mixed with other
     // SourceFiles, we can return a SIL file if we have it, or return nullptr.
-    if (SF->Kind == SourceFileKind::SIL) {
-      return SF;
+    if (!result && SF->Kind == SourceFileKind::SIL) {
+      result = SF;
     } else {
-      return nullptr;
+      result = nullptr;
     }
-  }
-  return nullptr;
+  });
+
+  return result;
 }
 
 // Define request evaluation functions for each of the SILGen requests.

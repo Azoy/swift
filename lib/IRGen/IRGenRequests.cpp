@@ -71,6 +71,28 @@ TinyPtrVector<FileUnit *> IRGenDescriptor::getFilesToEmit() const {
   return files;
 }
 
+void IRGenDescriptor::forEachFileToEmit(llvm::function_ref<void (FileUnit *)> fn) const {
+  if (SymbolsToEmit)
+    return;
+
+  if (auto mod = Ctx.dyn_cast<ModuleDecl *>()) {
+    for (auto file : mod->getFiles()) {
+      fn(file);
+    }
+
+    for (auto submodule : mod->getSubmodules()) {
+      for (auto file : submodule->getFiles()) {
+        fn(file);
+      }
+    }
+
+    return;
+  }
+
+  auto primary = Ctx.get<FileUnit *>();
+  fn(primary);
+}
+
 ModuleDecl *IRGenDescriptor::getParentModule() const {
   if (auto *file = Ctx.dyn_cast<FileUnit *>())
     return file->getParentModule();

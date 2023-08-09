@@ -306,6 +306,7 @@ ContextFreeCodeCompletionResult::getCodeCompletionDeclKind(const Decl *D) {
   case DeclKind::OpaqueType:
   case DeclKind::BuiltinTuple:
   case DeclKind::MacroExpansion:
+  case DeclKind::Submodule:
     llvm_unreachable("not expecting such a declaration result");
   case DeclKind::Module:
     return CodeCompletionDeclKind::Module;

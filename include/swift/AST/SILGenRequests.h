@@ -93,6 +93,8 @@ public:
   /// only to emit a specific set of SILDeclRefs, this will be empty.
   ArrayRef<FileUnit *> getFilesToEmit() const;
 
+  void forEachFileToEmit(llvm::function_ref<void (FileUnit *)> fn) const;
+
   /// If the module or file contains SIL that needs parsing, returns the file
   /// to be parsed, or \c nullptr if parsing isn't required.
   SourceFile *getSourceFileToParse() const;

@@ -352,6 +352,15 @@ static void printImports(raw_ostream &out,
     if (Opts.AliasModuleNames &&
         AliasModuleNamesTargets.contains(importedModule->getName().str()))
       out << MODULE_DISAMBIGUATING_PREFIX;
+
+    // If our imported module has a parent context, then it's a submodule. Print
+    // the parent module's name as well.
+    if (auto parentModule = dyn_cast_or_null<ModuleDecl>(
+          importedModule->getParent())) {
+      parentModule->getReverseFullModuleName().printForward(out);
+      out << ".";
+    }
+
     importedModule->getReverseFullModuleName().printForward(out);
 
     // Write the access path we should be honoring but aren't.

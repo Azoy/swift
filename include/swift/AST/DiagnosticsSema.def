@@ -7474,5 +7474,12 @@ ERROR(referencebindings_binding_must_have_initial_value,none,
 ERROR(referencebindings_binding_must_be_to_lvalue,none,
       "%0 bindings must be bound to an lvalue", (StringRef))
 
+//------------------------------------------------------------------------------
+// MARK: Submodule errors
+//------------------------------------------------------------------------------
+
+ERROR(submodule_not_at_top,none,
+      "submodule declaration must appear at the beginning of the file", ())
+
 #define UNDEFINE_DIAGNOSTIC_MACROS
 #include "DefineDiagnosticMacros.h"

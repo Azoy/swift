@@ -285,6 +285,8 @@ public:
   };
 
 private:
+  SmallVector<ModuleDecl *, 2> Submodules;
+
   /// If non-NULL, a plug-in that should be used when performing external
   /// lookups.
   // FIXME: Do we really need to bloat all modules with this?
@@ -381,12 +383,36 @@ public:
   /// Only to be called by MemoryBufferSerializedModuleLoader.
   void setBypassResilience() { BypassResilience = true; }
 
+  ArrayRef<ModuleDecl *> getSubmodules() {
+    return Submodules;
+  }
+
+  ArrayRef<const ModuleDecl *> getSubmodules() const {
+    return { Submodules.begin(), Submodules.size() };
+  }
+
+  void addSubmodule(ModuleDecl *);
+
   ArrayRef<FileUnit *> getFiles() {
     assert(!Files.empty() || failedToLoad());
     return Files;
   }
   ArrayRef<const FileUnit *> getFiles() const {
     return { Files.begin(), Files.size() };
+  }
+
+  /// Iterates through all of this module's files as well as all of the
+  /// submodule files.
+  void forEachRecursiveFile(llvm::function_ref<void (FileUnit *)> fn) {
+    for (auto file : getFiles()) {
+      fn(file);
+    }
+
+    for (auto submodule : getSubmodules()) {
+      for (auto file : submodule->getFiles()) {
+        fn(file);
+      }
+    }
   }
 
   /// Add the given file to this module.
@@ -402,6 +428,15 @@ public:
 
   /// Add an auxiliary source file, introduced as part of the translation.
   void addAuxiliaryFile(SourceFile &sourceFile);
+
+  /// Wipes this module's list of files.
+  ///
+  /// WARNING: Do not call this function. This is only used at the beginning of
+  //  the compilation pipeline to reorganize files with their respected
+  /// submodule.
+  void removeFiles() {
+    Files.clear();
+  }
 
   /// Produces the source file that contains the given source location, or
   /// \c nullptr if the source location isn't in this module.

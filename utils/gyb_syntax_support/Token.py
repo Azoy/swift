@@ -157,6 +157,7 @@ SYNTAX_TOKENS = [
     DeclKeyword('Subscript', 'subscript'),
     DeclKeyword('Typealias', 'typealias'),
     DeclKeyword('Var', 'var'),
+    DeclKeyword('Submodule', 'submodule'),
 
     DeclKeyword('Fileprivate', 'fileprivate'),
     DeclKeyword('Internal', 'internal'),

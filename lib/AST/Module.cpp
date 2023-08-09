@@ -181,6 +181,9 @@ class swift::SourceLookupCache {
 
   SmallVector<llvm::PointerUnion<Decl *, MacroExpansionExpr *>, 4>
       MayHaveAuxiliaryDecls;
+
+  SmallVector<const ModuleDecl *, 2> Submodules;
+
   void populateAuxiliaryDeclCache();
   SourceLookupCache(ASTContext &ctx);
 
@@ -501,6 +504,10 @@ SourceLookupCache::SourceLookupCache(const ModuleDecl &M)
       addToUnqualifiedLookupCache(SFU->getTopLevelDecls(), false);
     }
   }
+
+  for (auto submodule : M.getSubmodules()) {
+    Submodules.push_back(submodule);
+  }
 }
 
 void SourceLookupCache::lookupValue(DeclName Name, NLKind LookupKind,
@@ -511,6 +518,14 @@ void SourceLookupCache::lookupValue(DeclName Name, NLKind LookupKind,
     Result.reserve(I->second.size());
     for (ValueDecl *Elt : I->second)
       Result.push_back(Elt);
+  }
+
+  if (!Name.isSpecial()) {
+    for (auto submodule : Submodules) {
+      if (submodule->getName() == Name.getBaseIdentifier()) {
+        Result.push_back(const_cast<ValueDecl *>(cast<ValueDecl>(submodule)));
+      }
+    }
   }
 
   // If we aren't supposed to find names introduced by macros, we're done.
@@ -741,6 +756,11 @@ ImplicitImportList ModuleDecl::getImplicitImports() const {
   auto *mutableThis = const_cast<ModuleDecl *>(this);
   return evaluateOrDefault(evaluator, ModuleImplicitImportsRequest{mutableThis},
                            {});
+}
+
+void ModuleDecl::addSubmodule(ModuleDecl *submodule) {
+  Submodules.push_back(submodule);
+  clearLookupCache();
 }
 
 void ModuleDecl::addFile(FileUnit &newFile) {
@@ -1000,7 +1020,13 @@ ModuleDecl *ModuleDecl::getTopLevelModule(bool overlay) {
                                               overlay);
     }
   }
-  // Swift modules don't currently support submodules.
+  // If we have a decl context, this is a submodule who's context is the parent
+  // module.
+  if (auto dc = getDeclContext()) {
+    return cast<ModuleDecl>(dc);
+  }
+
+  // Otherwise we are just the top level module already.
   return this;
 }
 
@@ -3300,6 +3326,10 @@ RestrictedImportKind SourceFile::getRestrictedImportKind(const ModuleDecl *modul
     // If the module is imported publicly, there's no restriction.
     else if (imports.isImportedBy(module, desc.module.importedModule))
       return RestrictedImportKind::None;
+
+    if (module == desc.module.importedModule) {
+      return RestrictedImportKind::None;
+    }
   }
 
   // Now check this file's enclosing module in case there are re-exports.

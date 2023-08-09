@@ -5120,6 +5120,7 @@ bool swift::isKeywordPossibleDeclStart(const LangOptions &options,
   case tok::pound_error:
   case tok::identifier:
   case tok::pound_sourceLocation:
+  case tok::kw_submodule:
     return true;
   case tok::pound_line:
     // #line at the start of the line is a directive, but it's deprecated.
@@ -5615,6 +5616,9 @@ Parser::parseDecl(ParseDeclOptions Flags,
   switch (Tok.getKind()) {
   case tok::kw_import:
     DeclResult = parseDeclImport(Flags, Attributes);
+    break;
+  case tok::kw_submodule:
+    DeclResult = parseDeclSubmodule(Flags, Attributes);
     break;
   case tok::kw_extension:
     DeclResult = parseDeclExtension(Flags, Attributes);
@@ -6122,6 +6126,37 @@ ParserResult<ImportDecl> Parser::parseDeclImport(ParseDeclOptions Flags,
                                 KindLoc, importPath.get());
   ID->getAttrs() = Attributes;
   return DCC.fixupParserResult(ID);
+}
+
+/// Parse a 'submodule' declaration.
+///
+/// \verbatim
+///   decl-submodule:
+///     'submodule' identifier
+/// \endverbatim
+ParserResult<SubmoduleDecl> Parser::parseDeclSubmodule(ParseDeclOptions flags,
+                                                  DeclAttributes &attributes) {
+  SourceLoc submoduleLoc = consumeToken(tok::kw_submodule);
+  DebuggerContextChange DCC(*this);
+
+  if (!CodeCompletionCallbacks && !DCC.movedToTopLevel() &&
+      !(flags & PD_AllowTopLevel)) {
+    diagnose(submoduleLoc, diag::decl_inner_scope);
+    return nullptr;
+  }
+
+  Identifier name;
+  SourceLoc nameLoc;
+
+  if (parseIdentifier(name, nameLoc, /*diagnoseDollarPrefix=*/ false,
+                      diag::expected_identifier_in_decl, "submodule")) {
+    return nullptr;
+  }
+
+  auto *submodule = SubmoduleDecl::create(Context, CurDeclContext, submoduleLoc,
+                                          name, nameLoc);
+  submodule->getAttrs() = attributes;
+  return DCC.fixupParserResult(submodule);
 }
 
 static void addMoveOnlyAttrIf(SourceLoc const &parsedTildeCopyable,

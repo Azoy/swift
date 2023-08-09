@@ -387,6 +387,21 @@ ImportResolver::getModule(ImportPath::Module modulePath) {
     }
   }
 
+  // If our path has only 2 element, check if the first element is equal to our
+  // loading module's name. If it is, check if the second element matches any
+  // of our submodule's names.
+  if (modulePath.size() == 2 &&
+      ctx.getRealModuleName(moduleID.Item) == loadingModule->getName()) {
+    auto potentialSubmoduleID = modulePath[1];
+
+    for (auto submodule : loadingModule->getSubmodules()) {
+      if (ctx.getRealModuleName(potentialSubmoduleID.Item) ==
+          submodule->getName()) {
+        return submodule;
+      }
+    }
+  }
+
   // If the imported module name is the same as the current module,
   // skip the Swift module loader and use the Clang module loader instead.
   // This allows a Swift module to extend a Clang module of the same name.

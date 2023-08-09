@@ -264,7 +264,6 @@ class alignas(1 << DeclContextAlignInBits) DeclContext
 
   /// Change the parent of this context.  This should only be used
   /// very carefully.
-  void setParent(DeclContext *parent) { ParentAndKind.setPointer(parent); }
   friend class Initializer; // uses setParent
   friend class AutoClosureExpr; // uses setParent
   friend class AbstractClosureExpr; // uses setParent
@@ -305,6 +304,8 @@ class alignas(1 << DeclContextAlignInBits) DeclContext
   }
 
 public:
+  void setParent(DeclContext *parent) { ParentAndKind.setPointer(parent); }
+  
   LLVM_READONLY
   Decl *getAsDecl() {
     return ParentAndKind.getInt() == ASTHierarchy::Decl ?

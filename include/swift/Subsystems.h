@@ -120,6 +120,9 @@ namespace swift {
                               bool TokenizeInterpolatedString = true,
                               ArrayRef<Token> SplitTokens = ArrayRef<Token>());
 
+  /// This walks every source file to find submodule declarations to create.
+  void performSubmoduleCreation(ModuleDecl *module);
+
   /// This walks the AST to resolve imports.
   void performImportResolution(SourceFile &SF);
 

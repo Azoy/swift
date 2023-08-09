@@ -2369,6 +2369,7 @@ InterfaceTypeRequest::evaluate(Evaluator &eval, ValueDecl *D) const {
   case DeclKind::GenericTypeParam:
   case DeclKind::BuiltinTuple:
   case DeclKind::MacroExpansion:
+  case DeclKind::Submodule:
     llvm_unreachable("should not get here");
     return Type();
 

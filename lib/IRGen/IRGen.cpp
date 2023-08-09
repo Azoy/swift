@@ -1156,7 +1156,7 @@ GeneratedModule IRGenRequest::evaluate(Evaluator &evaluator,
     // Emit the module contents.
     irgen.emitGlobalTopLevel(desc.getLinkerDirectives());
 
-    for (auto *file : filesToEmit) {
+    desc.forEachFileToEmit([&](FileUnit *file) {
       if (auto *nextSF = dyn_cast<SourceFile>(file)) {
         IGM.emitSourceFile(*nextSF);
         if (auto *synthSFU = file->getSynthesizedFile()) {
@@ -1167,7 +1167,7 @@ GeneratedModule IRGenRequest::evaluate(Evaluator &evaluator,
           IGM.addLinkLibrary(LinkLib);
         });
       }
-    }
+    });
 
     // Okay, emit any definitions that we suddenly need.
     irgen.emitLazyDefinitions();
@@ -1185,7 +1185,7 @@ GeneratedModule IRGenRequest::evaluate(Evaluator &evaluator,
       IGM.emitAccessibleFunctions();
       IGM.emitBuiltinReflectionMetadata();
       IGM.emitReflectionMetadataVersion();
-      IGM.emitRuntimeDiscoverableAttributes(filesToEmit);
+      //IGM.emitRuntimeDiscoverableAttributes(filesToEmit);
       irgen.emitEagerClassInitialization();
       irgen.emitObjCActorsNeedingSuperclassSwizzle();
       irgen.emitDynamicReplacements();

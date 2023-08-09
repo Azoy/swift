@@ -214,6 +214,8 @@ public:
   /// configured only to emit a specific set of symbols, this will be empty.
   TinyPtrVector<FileUnit *> getFilesToEmit() const;
 
+  void forEachFileToEmit(llvm::function_ref<void (FileUnit *)> fn) const;
+
   /// For a single file, returns its parent module, otherwise returns the module
   /// itself.
   ModuleDecl *getParentModule() const;

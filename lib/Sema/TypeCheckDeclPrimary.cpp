@@ -2014,6 +2014,10 @@ public:
     }
   }
 
+  void visitSubmoduleDecl(SubmoduleDecl *SD) {
+    TypeChecker::checkDeclAttributes(SD);
+  }
+
   void visitOperatorDecl(OperatorDecl *OD) {
     TypeChecker::checkDeclAttributes(OD);
     checkRedeclaration(OD);

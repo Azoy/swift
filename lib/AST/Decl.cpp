@@ -152,6 +152,7 @@ DescriptiveDeclKind Decl::getDescriptiveKind() const {
 
   switch (getKind()) {
   TRIVIAL_KIND(Import);
+  TRIVIAL_KIND(Submodule);
   TRIVIAL_KIND(Extension);
   TRIVIAL_KIND(EnumCase);
   TRIVIAL_KIND(TopLevelCode);
@@ -367,6 +368,7 @@ StringRef Decl::getDescriptiveKindName(DescriptiveDeclKind K) {
   ENTRY(OpaqueVarType, "type");
   ENTRY(Macro, "macro");
   ENTRY(MacroExpansion, "pound literal");
+  ENTRY(Submodule, "submodule");
   }
 #undef ENTRY
   llvm_unreachable("bad DescriptiveDeclKind");
@@ -1382,6 +1384,7 @@ ImportKind ImportDecl::getBestImportKind(const ValueDecl *VD) {
   case DeclKind::Missing:
   case DeclKind::MissingMember:
   case DeclKind::MacroExpansion:
+  case DeclKind::Submodule:
     llvm_unreachable("not a ValueDecl");
 
   case DeclKind::AssociatedType:
@@ -1500,6 +1503,21 @@ bool ImportDecl::isAccessLevelImplicit() const {
   }
   return true;
 }
+
+SubmoduleDecl *SubmoduleDecl::create(ASTContext &ctx, DeclContext *dc,
+                                     SourceLoc submoduleLoc, Identifier name,
+                                     SourceLoc nameLoc) {
+  unsigned size = sizeof(SubmoduleDecl);
+
+  void *ptr = allocateMemoryForDecl<SubmoduleDecl>(ctx, size, false);
+
+  return ::new (ptr) SubmoduleDecl(dc, submoduleLoc, name, nameLoc);
+}
+
+SubmoduleDecl::SubmoduleDecl(DeclContext *DC, SourceLoc submoduleLoc,
+                             Identifier name, SourceLoc nameLoc)
+  : Decl(DeclKind::Submodule, DC), SubmoduleLoc(submoduleLoc), Name(name),
+    NameLoc(nameLoc) {}
 
 void NominalTypeDecl::setConformanceLoader(LazyMemberLoader *lazyLoader,
                                            uint64_t contextData) {
@@ -2883,6 +2901,7 @@ bool ValueDecl::isInstanceMember() const {
   case DeclKind::Missing:
   case DeclKind::MissingMember:
   case DeclKind::MacroExpansion:
+  case DeclKind::Submodule:
     llvm_unreachable("Not a ValueDecl");
 
   case DeclKind::Class:
@@ -4039,8 +4058,16 @@ getAccessScopeForFormalAccess(const ValueDecl *VD,
   case AccessLevel::FilePrivate:
     assert(resultDC->isModuleScopeContext());
     return AccessScope(resultDC, access == AccessLevel::Private);
-  case AccessLevel::Internal:
-    return AccessScope(resultDC->getParentModule());
+  case AccessLevel::Internal: {
+    auto parentModule = resultDC->getParentModule();
+
+    // Submodule internal value decls are visible from the parent parent module.
+    if (parentModule->getParent()) {
+      parentModule = cast<ModuleDecl>(parentModule->getParent());
+    }
+
+    return AccessScope(parentModule);
+  }
   case AccessLevel::Package: {
     auto pkg = resultDC->getPackageContext(/*lookupIfNotCurrent*/ true);
     if (!pkg) {

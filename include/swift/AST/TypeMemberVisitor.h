@@ -42,6 +42,7 @@ public:
   BAD_MEMBER(Operator)
   BAD_MEMBER(PrecedenceGroup)
   BAD_MEMBER(Macro)
+  BAD_MEMBER(Submodule)
 
   // The children of these are automatically inserted into the
   // surrounding context.

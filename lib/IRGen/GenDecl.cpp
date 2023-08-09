@@ -2567,6 +2567,9 @@ void IRGenModule::emitGlobalDecl(Decl *D) {
   case DeclKind::MacroExpansion:
     // Expansion already visited as auxiliary decls.
     return;
+
+  case DeclKind::Submodule:
+    return;
   }
 
   llvm_unreachable("bad decl kind!");
@@ -5589,6 +5592,7 @@ void IRGenModule::emitNestedTypeDecls(DeclRange members) {
     case DeclKind::Param:
     case DeclKind::Module:
     case DeclKind::PrecedenceGroup:
+    case DeclKind::Submodule:
       llvm_unreachable("decl not allowed in type context");
 
     case DeclKind::BuiltinTuple:

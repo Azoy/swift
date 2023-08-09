@@ -203,10 +203,10 @@ void swift::bindExtensions(ModuleDecl &mod) {
   // resolved to a worklist.
   SmallVector<ExtensionDecl *, 8> worklist;
 
-  for (auto file : mod.getFiles()) {
+  mod.forEachRecursiveFile([&](FileUnit *file) {
     auto *SF = dyn_cast<SourceFile>(file);
     if (!SF)
-      continue;
+      return;
 
     auto visitTopLevelDecl = [&](Decl *D) {
       if (auto ED = dyn_cast<ExtensionDecl>(D))
@@ -221,7 +221,7 @@ void swift::bindExtensions(ModuleDecl &mod) {
 
     for (auto *D : SF->getHoistedDecls())
       visitTopLevelDecl(D);
-  }
+  });
 
   // Phase 2 - repeatedly go through the worklist and attempt to bind each
   // extension there, removing it from the worklist if we succeed.

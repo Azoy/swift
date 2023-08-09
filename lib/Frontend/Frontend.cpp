@@ -1372,18 +1372,24 @@ bool CompilerInstance::performParseAndResolveImportsOnly() {
     }
   }
 
+  // Resolve any submodules in all the source files.
+  performSubmoduleCreation(mainModule);
+
   // Resolve imports for all the source files.
-  for (auto *file : mainModule->getFiles()) {
+  mainModule->forEachRecursiveFile([](FileUnit *file) {
     if (auto *SF = dyn_cast<SourceFile>(file))
       performImportResolution(*SF);
-  }
+  });
 
-  assert(llvm::all_of(mainModule->getFiles(), [](const FileUnit *File) -> bool {
-    auto *SF = dyn_cast<SourceFile>(File);
+  mainModule->forEachRecursiveFile([](FileUnit *file) {
+    auto *SF = dyn_cast<SourceFile>(file);
     if (!SF)
-      return true;
-    return SF->ASTStage >= SourceFile::ImportsResolved;
-  }) && "some files have not yet had their imports resolved");
+      return;
+
+    assert(SF->ASTStage >= SourceFile::ImportsResolved &&
+           "some files have not yet had their imports resolved");
+  });
+
   mainModule->setHasResolvedImports();
 
   bindExtensions(*mainModule);
@@ -1465,14 +1471,18 @@ bool CompilerInstance::loadPartialModulesAndImplicitImports(
 bool CompilerInstance::forEachFileToTypeCheck(
     llvm::function_ref<bool(SourceFile &)> fn) {
   if (isWholeModuleCompilation()) {
-    for (auto fileName : getMainModule()->getFiles()) {
-      auto *SF = dyn_cast<SourceFile>(fileName);
+    bool result = false;
+
+    getMainModule()->forEachRecursiveFile([&](FileUnit *file) {
+      auto *SF = dyn_cast<SourceFile>(file);
       if (!SF) {
-        continue;
+        return;
       }
-      if (fn(*SF))
-        return true;
-    }
+      if (!result && fn(*SF))
+        result = true;
+    });
+
+    return result;
   } else {
     for (auto *SF : getPrimarySourceFiles()) {
       if (fn(*SF))
@@ -1484,17 +1494,20 @@ bool CompilerInstance::forEachFileToTypeCheck(
 
 bool CompilerInstance::forEachSourceFile(
     llvm::function_ref<bool(SourceFile &)> fn) {
-  for (auto fileName : getMainModule()->getFiles()) {
-    auto *SF = dyn_cast<SourceFile>(fileName);
-    if (!SF) {
-      continue;
-    }
-    if (fn(*SF))
-      return true;
-    ;
-  }
+  bool result = false;
 
-  return false;
+  getMainModule()->forEachRecursiveFile([&](FileUnit *file) {
+    auto *SF = dyn_cast<SourceFile>(file);
+    if (!SF) {
+      return;
+    }
+
+    if (!result && fn(*SF)) {
+      result = true;
+    }
+  });
+
+  return result;
 }
 
 void CompilerInstance::finishTypeChecking() {

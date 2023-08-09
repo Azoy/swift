@@ -517,6 +517,10 @@ void TBDGenVisitor::visit(const TBDGenDescriptor &desc) {
   llvm::SmallVector<ModuleDecl*, 4> Modules;
   Modules.push_back(SwiftModule);
 
+  for (auto submodule : SwiftModule->getSubmodules()) {
+    Modules.push_back(submodule);
+  }
+
   auto &ctx = SwiftModule->getASTContext();
   for (auto Name: Opts.embedSymbolsFromModules) {
     if (auto *MD = ctx.getModuleByName(Name)) {
