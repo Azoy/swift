@@ -996,6 +996,32 @@ namespace {
         fields.push_back(
             field.getTypeInfo().buildTypeLayoutEntry(IGM, fieldTy, useStructLayouts));
       }
+
+      auto decl = T.getASTType()->getStructOrBoundGenericStruct();
+      auto rawLayout = decl->getAttrs().getAttribute<RawLayoutAttr>();
+
+      // If we have a raw layout struct who is fixed size, it means the
+      // layout of the struct is dependent on the thing it's like.
+      if (rawLayout) {
+        SILType loweredLikeType;
+
+        if (auto likeType = rawLayout->getResolvedScalarLikeType(decl)) {
+          loweredLikeType = IGM.getLoweredType(*likeType);
+        } else if (auto likeArray = rawLayout->getResolvedArrayLikeTypeAndCount(decl)) {
+          loweredLikeType = IGM.getLoweredType(likeArray->first);
+        }
+
+        // The given struct type T that we're building is fully concrete, but
+        // our like type may be an archetype that we need to substitute out.
+        auto subs = T.getASTType()->getContextSubstitutionMap(
+          IGM.getSwiftModule(), decl);
+
+        loweredLikeType = loweredLikeType.subst(IGM.getSILModule(), subs);
+
+        return IGM.getTypeInfo(loweredLikeType).buildTypeLayoutEntry(IGM,
+          loweredLikeType, useStructLayouts);
+      }
+
       assert(!fields.empty() &&
              "Empty structs should not be FixedStructTypeInfo");
 

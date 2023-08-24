@@ -30,6 +30,12 @@ set(SWIFTLIB_ESSENTIAL
   ASCII.swift
   Assert.swift
   AssertCommon.swift
+  Atomics/Atomic.swift
+  Atomics/IntegerConformances.swift
+  Atomics/MemoryOrderings.swift
+  Atomics/PointerConformances.swift
+  Atomics/Primitives.swift
+  Atomics/Storage.swift
   BidirectionalCollection.swift
   Bitset.swift
   Bool.swift
@@ -38,6 +44,7 @@ set(SWIFTLIB_ESSENTIAL
   BridgingBuffer.swift
   Builtin.swift
   BuiltinMath.swift
+  Cell.swift
   Character.swift
   CocoaArray.swift
   Codable.swift
@@ -78,6 +85,7 @@ set(SWIFTLIB_ESSENTIAL
   Hasher.swift
   Hashing.swift
   HashTable.swift
+  HeapObject.swift
   Identifiable.swift
   Indices.swift
   InputStream.swift
@@ -291,6 +299,9 @@ list(APPEND swift_stdlib_compile_flags "-Xfrontend" "-enable-experimental-concis
 
 list(APPEND swift_stdlib_compile_flags "-enable-experimental-feature" "Macros")
 list(APPEND swift_stdlib_compile_flags "-enable-experimental-feature" "FreestandingMacros")
+list(APPEND swift_stdlib_compile_flags "-enable-experimental-feature" "RawLayout")
+list(APPEND swift_stdlib_compile_flags "-enable-experimental-feature" "NoImplicitCopy")
+list(APPEND swift_stdlib_compile_flags "-DATOMICS_NATIVE_BUILTINS")
 
 if(SWIFT_CHECK_ESSENTIAL_STDLIB)
   add_swift_target_library(swift_stdlib_essential ${SWIFT_STDLIB_LIBRARY_BUILD_TYPES} IS_STDLIB IS_STDLIB_CORE

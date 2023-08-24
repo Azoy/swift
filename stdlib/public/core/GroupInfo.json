@@ -243,7 +243,15 @@
     "Int128.swift",
     "Duration.swift",
     "DurationProtocol.swift",
-    "Instant.swift"
+    "Instant.swift",
+    "Atomic.swift",
+    "IntegerConformances.swift",
+    "MemoryOrderings.swift",
+    "PointerConformances.swift",
+    "Primitives.swift",
+    "Storage.swift",
+    "Cell.swift",
+    "HeapObject.swift"
   ],
   "Result": [
     "Result.swift"
