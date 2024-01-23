@@ -148,7 +148,8 @@ extension Instruction {
          is ConvertFunctionInst,
          is ThinToThickFunctionInst,
          is AddressToPointerInst,
-         is GlobalAddrInst:
+         is GlobalAddrInst,
+         is UncheckedTrivialBitCastInst:
       return true
     default:
       return false

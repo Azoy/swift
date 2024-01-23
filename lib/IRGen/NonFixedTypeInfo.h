@@ -44,9 +44,10 @@ protected:
   WitnessSizedTypeInfo(llvm::Type *type, Alignment align, IsTriviallyDestroyable_t pod,
                        IsBitwiseTakable_t bt,
                        IsCopyable_t cp,
-                       IsABIAccessible_t abi)
+                       IsABIAccessible_t abi,
+                       bool rawLayout)
     : super(type, align, pod, bt, cp,
-            IsNotFixedSize, abi,
+            IsNotFixedSize, abi, rawLayout,
             SpecialTypeInfoKind::None) {}
 
 private:

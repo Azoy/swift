@@ -49,7 +49,8 @@ protected:
     : WitnessSizedTypeInfo<Impl>(type, Alignment(1),
                                  IsNotTriviallyDestroyable, IsNotBitwiseTakable,
                                  copyable,
-                                 abiAccessible) {}
+                                 abiAccessible,
+                                 /* containsRawLayout */ false) {}
 
 public:
   void assignWithCopy(IRGenFunction &IGF, Address dest, Address src, SILType T,

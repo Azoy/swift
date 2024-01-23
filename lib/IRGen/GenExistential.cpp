@@ -682,7 +682,8 @@ namespace {
                                                 align, IsNotTriviallyDestroyable, \
                                                 IsNotBitwiseTakable, \
                                                 IsCopyable, \
-                                                IsFixedSize), \
+                                                IsFixedSize, \
+                                                /* containsRawLayout */ false), \
         IsOptional(isOptional) {} \
     TypeLayoutEntry \
     *buildTypeLayoutEntry(IRGenModule &IGM, \
@@ -897,7 +898,7 @@ class OpaqueExistentialTypeInfo final :
     : super(protocols, ty, size,
             std::move(spareBits), align,
             IsNotTriviallyDestroyable, IsBitwiseTakable, IsCopyable,
-            IsFixedSize) {}
+            IsFixedSize, /* containsRawLayout */ false) {}
 
 public:
   OpaqueExistentialLayout getLayout() const {

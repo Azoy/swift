@@ -481,7 +481,8 @@ namespace {
                              align, IsNotTriviallyDestroyable,
                              IsNotBitwiseTakable,
                              IsCopyable,
-                             IsFixedSize),
+                             IsFixedSize,
+                             /* containsRawLayout */ false),
           clangDecl(clangDecl) {
       (void)clangDecl;
     }
@@ -656,7 +657,8 @@ namespace {
                              // TODO: Set this appropriately for the type's
                              // C++ import behavior.
                              IsCopyable,
-                             IsFixedSize),
+                             IsFixedSize,
+                             /* containsRawLayout */ false),
           ClangDecl(clangDecl) {
       (void)ClangDecl;
     }
@@ -953,11 +955,12 @@ namespace {
                         IsTriviallyDestroyable_t isTriviallyDestroyable,
                         IsBitwiseTakable_t isBT,
                         IsCopyable_t isCopyable,
-                        IsFixedSize_t alwaysFixedSize)
+                        IsFixedSize_t alwaysFixedSize,
+                        bool containsRawLayout)
       : StructTypeInfoBase(StructTypeInfoKind::FixedStructTypeInfo,
                            fields, T, size, std::move(spareBits), align,
                            isTriviallyDestroyable, isBT, isCopyable,
-                           alwaysFixedSize)
+                           alwaysFixedSize, containsRawLayout)
     {}
 
     TypeLayoutEntry
@@ -1082,7 +1085,7 @@ namespace {
       : StructTypeInfoBase(StructTypeInfoKind::NonFixedStructTypeInfo,
                            fields, fieldsAccessible,
                            T, align, isTriviallyDestroyable, isBT, isCopyable,
-                           structAccessible) {
+                           structAccessible, /* containsRawLayout */ false) {
     }
 
     TypeLayoutEntry
@@ -1253,7 +1256,8 @@ namespace {
                                          layout.isTriviallyDestroyable(),
                                          layout.isBitwiseTakable(),
                                          layout.isCopyable(),
-                                         layout.isAlwaysFixedSize());
+                                         layout.isAlwaysFixedSize(),
+                                         layout.containsRawLayout());
     }
 
     NonFixedStructTypeInfo *createNonFixed(ArrayRef<StructFieldInfo> fields,

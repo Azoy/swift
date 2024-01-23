@@ -46,8 +46,10 @@ protected:
                 IsBitwiseTakable_t bt,
                 IsCopyable_t copy,
                 IsFixedSize_t alwaysFixedSize,
+                bool containsRawLayout,
                 SpecialTypeInfoKind stik = SpecialTypeInfoKind::Fixed)
-      : TypeInfo(type, align, pod, bt, copy, alwaysFixedSize, IsABIAccessible, stik),
+      : TypeInfo(type, align, pod, bt, copy, alwaysFixedSize, IsABIAccessible,
+                 containsRawLayout, stik),
         SpareBits(spareBits) {
     assert(SpareBits.size() == size.getValueInBits());
     assert(isFixedSize());
@@ -61,8 +63,10 @@ protected:
                 IsBitwiseTakable_t bt,
                 IsCopyable_t copy,
                 IsFixedSize_t alwaysFixedSize,
+                bool containsRawLayout,
                 SpecialTypeInfoKind stik = SpecialTypeInfoKind::Fixed)
-      : TypeInfo(type, align, pod, bt, copy, alwaysFixedSize, IsABIAccessible, stik),
+      : TypeInfo(type, align, pod, bt, copy, alwaysFixedSize, IsABIAccessible,
+                 containsRawLayout, stik),
         SpareBits(std::move(spareBits)) {
     assert(SpareBits.size() == size.getValueInBits());
     assert(isFixedSize());

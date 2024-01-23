@@ -66,7 +66,8 @@ protected:
       : FixedTypeInfo(type, size, spareBits, align, pod,
                       // All currently implemented loadable types are bitwise-takable.
                       IsBitwiseTakable,
-                      copy, alwaysFixedSize, stik) {
+                      copy, alwaysFixedSize, /* containsRawLayout */ false,
+                      stik) {
     assert(isLoadable());
   }
 
@@ -80,13 +81,15 @@ protected:
       : FixedTypeInfo(type, size, std::move(spareBits), align, pod,
                       // All currently implemented loadable types are bitwise-takable.
                       IsBitwiseTakable,
-                      copy, alwaysFixedSize, stik) {
+                      copy, alwaysFixedSize, /* containsRawLayout */ false,
+                      stik) {
     assert(isLoadable());
   }
 
 public:
   // This is useful for metaprogramming.
   static bool isLoadable() { return true; }
+  static bool containsRawLayout() { return false; }
   
   /// Return the number of elements in an explosion of this type.
   virtual unsigned getExplosionSize() const = 0;

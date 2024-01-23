@@ -2803,7 +2803,7 @@ Address IRGenModule::getAddrOfSILGlobalVariable(SILGlobalVariable *var,
   if (forDefinition && !gvar->hasInitializer()) {
     if (initVal) {
       gvar->setInitializer(initVal);
-      if (var->isLet() ||
+      if ((var->isLet() && !ti.containsRawLayout()) ||
           (var->isInitializedObject() && canMakeStaticObjectReadOnly(var->getLoweredType()))) {
         gvar->setConstant(true);
       }

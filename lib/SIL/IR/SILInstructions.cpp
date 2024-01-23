@@ -2572,10 +2572,13 @@ UncheckedAddrCastInst::create(SILDebugLocation DebugLoc, SILValue Operand,
 
 UncheckedTrivialBitCastInst *
 UncheckedTrivialBitCastInst::create(SILDebugLocation DebugLoc, SILValue Operand,
-                              SILType Ty, SILFunction &F) {
-  SILModule &Mod = F.getModule();
+                              SILType Ty, SILFunction *F, SILModule &Mod) {
   SmallVector<SILValue, 8> TypeDependentOperands;
-  collectTypeDependentOperands(TypeDependentOperands, F, Ty.getASTType());
+
+  if (Ty.getASTType()->hasLocalArchetype()) {
+    collectTypeDependentOperands(TypeDependentOperands, *F, Ty.getASTType());
+  }
+
   unsigned size =
       totalSizeToAlloc<swift::Operand>(1 + TypeDependentOperands.size());
   void *Buffer = Mod.allocateInst(size, alignof(UncheckedTrivialBitCastInst));

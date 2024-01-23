@@ -1122,6 +1122,7 @@ struct BridgedBuilder{
   SWIFT_IMPORT_UNSAFE BRIDGED_INLINE BridgedInstruction createEndCOWMutation(BridgedValue instance,
                                                                              bool keepUnique) const;
   SWIFT_IMPORT_UNSAFE BRIDGED_INLINE BridgedInstruction createMarkDependence(BridgedValue value, BridgedValue base, bool isNonEscaping) const;
+  SWIFT_IMPORT_UNSAFE BRIDGED_INLINE BridgedInstruction createUncheckedTrivialBitCast(BridgedValue value, BridgedType type) const;
 };
 
 // Passmanager and Context

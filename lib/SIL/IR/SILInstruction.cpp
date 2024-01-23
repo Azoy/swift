@@ -989,9 +989,15 @@ MemoryBehavior SILInstruction::getMemoryBehavior() const {
     if (BInfo.ID == BuiltinValueKind::ZeroInitializer) {
       // The address form of `zeroInitializer` writes to its argument to
       // initialize it. The value form has no side effects.
-      return BI->getArguments().size() > 0
-        ? MemoryBehavior::MayWrite
-        : MemoryBehavior::None;
+      if (BI->getArguments().size() == 0) {
+        return MemoryBehavior::None;
+      }
+
+      if (isa<AllocStackInst>(BI->getArguments()[0])) {
+        return MemoryBehavior::None;
+      }
+
+      return MemoryBehavior::MayWrite;
     }
     if (BInfo.ID != BuiltinValueKind::None)
       return BInfo.isReadNone() ? MemoryBehavior::None

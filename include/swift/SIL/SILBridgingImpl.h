@@ -1612,6 +1612,10 @@ BridgedInstruction BridgedBuilder::createMarkDependence(BridgedValue value, Brid
   return {unbridged().createMarkDependence(regularLoc(), value.getSILValue(), base.getSILValue(), isNonEscaping)};
 }
 
+BridgedInstruction BridgedBuilder::createUncheckedTrivialBitCast(BridgedValue value, BridgedType type) const {
+  return {unbridged().createUncheckedTrivialBitCast(regularLoc(), value.getSILValue(), type.unbridged())};
+}
+
 SWIFT_END_NULLABILITY_ANNOTATIONS
 
 #endif

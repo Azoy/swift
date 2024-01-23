@@ -380,4 +380,9 @@ public struct Builder {
     let markDependence = bridged.createMarkDependence(value.bridged, base.bridged, isNonEscaping)
     return notifyNew(markDependence.getAs(MarkDependenceInst.self))
   }
+
+  public func createUncheckedTrivialBitCast(value: Value, type: Type) -> UncheckedTrivialBitCastInst {
+    let uncheckedTrivialBitCast = bridged.createUncheckedTrivialBitCast(value.bridged, type.bridged)
+    return notifyNew(uncheckedTrivialBitCast.getAs(UncheckedTrivialBitCastInst.self))
+  }
 }

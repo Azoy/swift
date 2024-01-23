@@ -322,10 +322,11 @@ namespace {
                        IsTriviallyDestroyable_t isTriviallyDestroyable,
                        IsBitwiseTakable_t isBT,
                        IsCopyable_t isCopyable,
-                       IsFixedSize_t alwaysFixedSize)
+                       IsFixedSize_t alwaysFixedSize,
+                       bool containsRawLayout)
       : TupleTypeInfoBase(fields, ty, size, std::move(spareBits), align,
                           isTriviallyDestroyable, isBT, isCopyable,
-                          alwaysFixedSize)
+                          alwaysFixedSize, containsRawLayout)
     {}
 
     TypeLayoutEntry
@@ -393,7 +394,7 @@ namespace {
                           IsABIAccessible_t tupleAccessible)
       : TupleTypeInfoBase(fields, fieldsABIAccessible,
                           T, minAlign, isTriviallyDestroyable, isBT, isCopyable,
-                          tupleAccessible) {
+                          tupleAccessible, /* containsRawLayout */ false) {
       }
 
     TupleNonFixedOffsets getNonFixedOffsets(IRGenFunction &IGF,
@@ -470,7 +471,8 @@ namespace {
                                         layout.isTriviallyDestroyable(),
                                         layout.isBitwiseTakable(),
                                         layout.isCopyable(),
-                                        layout.isAlwaysFixedSize());
+                                        layout.isAlwaysFixedSize(),
+                                        layout.containsRawLayout());
     }
 
     LoadableTupleTypeInfo *createLoadable(ArrayRef<TupleFieldInfo> fields,

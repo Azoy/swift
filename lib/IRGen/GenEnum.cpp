@@ -6463,10 +6463,11 @@ namespace {
                       IsTriviallyDestroyable_t isTriviallyDestroyable,
                       IsBitwiseTakable_t isBT,
                       IsCopyable_t copyable,
-                      IsFixedSize_t alwaysFixedSize)
+                      IsFixedSize_t alwaysFixedSize,
+                      bool containsRawLayout)
       : FixedEnumTypeInfoBase(strategy, T, S, std::move(SB), A,
                               isTriviallyDestroyable, isBT, copyable,
-                              alwaysFixedSize) {}
+                              alwaysFixedSize, containsRawLayout) {}
   };
 
   /// TypeInfo for loadable enum types.
@@ -6553,7 +6554,8 @@ namespace {
                          IsBitwiseTakable_t bt,
                          IsCopyable_t copy,
                          IsABIAccessible_t abiAccessible)
-      : EnumTypeInfoBase(strategy, irTy, align, pod, bt, copy, abiAccessible) {}
+      : EnumTypeInfoBase(strategy, irTy, align, pod, bt, copy, abiAccessible,
+                         /* containsRawLayout */ false) {}
   };
 
   /// TypeInfo for dynamically-sized enum types.
@@ -6591,7 +6593,8 @@ EnumImplStrategy::getFixedEnumTypeInfo(llvm::StructType *T, Size S,
                                        Alignment A,
                                        IsTriviallyDestroyable_t isTriviallyDestroyable,
                                        IsBitwiseTakable_t isBT,
-                                       IsCopyable_t isCopyable) {
+                                       IsCopyable_t isCopyable,
+                                       bool containsRawLayout) {
   TypeInfo *mutableTI;
   switch (TIK) {
   case Opaque:
@@ -6601,7 +6604,8 @@ EnumImplStrategy::getFixedEnumTypeInfo(llvm::StructType *T, Size S,
                                       isTriviallyDestroyable,
                                       isBT,
                                       isCopyable,
-                                      AlwaysFixedSize);
+                                      AlwaysFixedSize,
+                                      containsRawLayout);
     break;
   case Loadable:
     assert(isBT && "loadable enum not bitwise takable?!");
@@ -6666,7 +6670,8 @@ SingletonEnumImplStrategy::completeEnumTypeLayout(TypeConverter &TC,
         alignment,
         deinit & fixedEltTI.isTriviallyDestroyable(ResilienceExpansion::Maximal),
         fixedEltTI.isBitwiseTakable(ResilienceExpansion::Maximal),
-        copyable);
+        copyable,
+        fixedEltTI.containsRawLayout());
     }
   }
 }
@@ -6824,7 +6829,8 @@ TypeInfo *SinglePayloadEnumImplStrategy::completeFixedLayout(
       enumTy, Size(sizeWithTag), spareBits.build(), alignment,
       deinit & payloadTI.isTriviallyDestroyable(ResilienceExpansion::Maximal),
       payloadTI.isBitwiseTakable(ResilienceExpansion::Maximal),
-      copyable);
+      copyable,
+      payloadTI.containsRawLayout());
   if (TIK >= Loadable && CopyDestroyKind == Normal) {
     computePayloadTypesAndTagType(TC.IGM, *TI, PayloadTypesAndTagType);
     loweredType = Type;
@@ -6895,6 +6901,7 @@ MultiPayloadEnumImplStrategy::completeFixedLayout(TypeConverter &TC,
     ? IsNotTriviallyDestroyable : IsTriviallyDestroyable;
   IsBitwiseTakable_t isBT = IsBitwiseTakable;
   PayloadSize = 0;
+  bool containsRawLayout = false;
   for (auto &elt : ElementsWithPayload) {
     auto &fixedPayloadTI = cast<FixedTypeInfo>(*elt.ti);
     if (fixedPayloadTI.getFixedAlignment() > worstAlignment)
@@ -6903,6 +6910,7 @@ MultiPayloadEnumImplStrategy::completeFixedLayout(TypeConverter &TC,
       isTriviallyDestroyable = IsNotTriviallyDestroyable;
     if (!fixedPayloadTI.isBitwiseTakable(ResilienceExpansion::Maximal))
       isBT = IsNotBitwiseTakable;
+    containsRawLayout |= fixedPayloadTI.containsRawLayout();
 
     unsigned payloadBytes = fixedPayloadTI.getFixedSize().getValue();
     unsigned payloadBits = fixedPayloadTI.getFixedSize().getValueInBits();
@@ -7033,7 +7041,7 @@ MultiPayloadEnumImplStrategy::completeFixedLayout(TypeConverter &TC,
 
   getFixedEnumTypeInfo(enumTy, Size(sizeWithTag), std::move(spareBits),
                        worstAlignment, isTriviallyDestroyable, isBT,
-                       isCopyable);
+                       isCopyable, containsRawLayout);
   if (TIK >= Loadable &&
       (CopyDestroyKind == Normal || CopyDestroyKind == BitwiseTakable)) {
     computePayloadTypesAndTagType(TC.IGM, *TI, PayloadTypesAndTagType);

@@ -73,7 +73,8 @@ namespace {
                                     SpareBitVector &&spareBits, \
                                     bool isOptional) \
       : IndirectTypeInfo(type, size, std::move(spareBits), alignment, \
-                         IsNotTriviallyDestroyable, IsNotBitwiseTakable, IsCopyable, IsFixedSize), \
+                         IsNotTriviallyDestroyable, IsNotBitwiseTakable, IsCopyable, IsFixedSize, \
+                         /* containsRawLayout */ false), \
         ValueTypeAndIsOptional(valueType, isOptional) {} \
     void initializeWithCopy(IRGenFunction &IGF, Address destAddr, \
                             Address srcAddr, SILType T, \

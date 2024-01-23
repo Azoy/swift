@@ -100,7 +100,7 @@ protected:
     uint64_t OpaqueBits;
 
     SWIFT_INLINE_BITFIELD_BASE(TypeInfo,
-                             bitmax(NumSpecialTypeInfoKindBits,8)+6+1+1+1+3+1+1,
+                             bitmax(NumSpecialTypeInfoKindBits,8)+6+1+1+1+3+1+1+1,
       /// The kind of supplemental API this type has, if any.
       Kind : bitmax(NumSpecialTypeInfoKindBits,8),
 
@@ -127,7 +127,10 @@ protected:
       AlwaysFixedSize : 1,
 
       /// Whether this type is ABI-accessible from this SILModule.
-      ABIAccessible : 1
+      ABIAccessible : 1,
+
+      /// Whether this type is known to be or contain a raw layout type.
+      ContainsRawLayout : 1
     );
 
     /// FixedTypeInfo will use the remaining bits for the size.
@@ -153,6 +156,7 @@ protected:
            IsCopyable_t copyable,
            IsFixedSize_t alwaysFixedSize,
            IsABIAccessible_t abiAccessible,
+           bool containsRawLayout,
            SpecialTypeInfoKind stik) : StorageType(Type) {
     assert(stik >= SpecialTypeInfoKind::Fixed || !alwaysFixedSize);
     Bits.OpaqueBits = 0;
@@ -164,6 +168,7 @@ protected:
     Bits.TypeInfo.SubclassKind = InvalidSubclassKind;
     Bits.TypeInfo.AlwaysFixedSize = alwaysFixedSize;
     Bits.TypeInfo.ABIAccessible = abiAccessible;
+    Bits.TypeInfo.ContainsRawLayout = containsRawLayout;
   }
 
   /// Change the minimum alignment of a stored value of this type.
@@ -281,6 +286,12 @@ public:
   /// LoadableTypeInfo.
   IsLoadable_t isLoadable() const {
     return IsLoadable_t(getSpecialTypeInfoKind() >= SpecialTypeInfoKind::Loadable);
+  }
+
+  /// Whether this type is known to be or contains a raw layout type. If true,
+  /// global variables of this type must not be marked as constant.
+  bool containsRawLayout() const {
+    return Bits.TypeInfo.ContainsRawLayout;
   }
 
   llvm::Type *getStorageType() const { return StorageType; }

@@ -53,6 +53,9 @@ let initializeStaticGlobalsPass = FunctionPass(name: "initialize-static-globals"
     return
   }
 
+  // 
+  fixupAddressStores(in: function, context)
+
   // Sometimes structs are not stored in one piece, but as individual elements.
   // Merge such individual stores to a single store of the whole struct.
   mergeStores(in: function, context)
@@ -63,14 +66,10 @@ let initializeStaticGlobalsPass = FunctionPass(name: "initialize-static-globals"
     return
   }
 
-  if !allocInst.global.canBeInitializedStatically {
-    return
-  }
-
   var cloner = StaticInitCloner(cloneTo: allocInst.global, context)
   defer { cloner.deinitialize() }
 
-  _ = cloner.clone(storeToGlobal.source)
+  cloner.clone(storeToGlobal.source)
 
   // The initial value can contain a `begin_access` if it references another global variable by address, e.g.
   //   var p = Point(x: 10, y: 20)
@@ -81,6 +80,53 @@ let initializeStaticGlobalsPass = FunctionPass(name: "initialize-static-globals"
   context.erase(instruction: allocInst)
   context.erase(instruction: storeToGlobal)
   context.removeTriviallyDeadInstructionsIgnoringDebugUses(in: function)
+}
+
+private func fixupAddressStores(
+  in function: Function,
+  _ context: FunctionPassContext
+) {
+  var fixups: [(StoreInst, UncheckedAddrCastInst)] = []
+
+  for inst in function.instructions {
+    switch inst {
+    case let si as StoreInst:
+      if si.destination is StructElementAddrInst {
+        continue
+      }
+
+      guard let uaci = si.destination as? UncheckedAddrCastInst,
+            uaci.fromAddress is StructElementAddrInst else {
+        return
+      }
+
+      fixups.append((si, uaci))
+
+    default:
+      continue
+    }
+  }
+
+  for (store, addrCast) in fixups {
+    let builder = Builder(before: addrCast, context)
+
+    let bitcast = builder.createUncheckedTrivialBitCast(
+      value: store.source,
+      type: addrCast.fromAddress.type.objectType
+    )
+
+    builder.createStore(
+      source: bitcast,
+      destination: addrCast.fromAddress,
+      ownership: store.storeOwnership
+    )
+
+    context.erase(instruction: store)
+
+    if addrCast.uses.isEmpty {
+      context.erase(instruction: addrCast)
+    }
+  }
 }
 
 /// Merges stores to individual struct fields to a single store of the whole struct.
@@ -113,9 +159,9 @@ private func getSequenceOfElementStores(firstStore: StoreInst) -> ([StoreInst], 
     return nil
   }
   let structAddr = elementAddr.struct
-  if structAddr.type.isMoveOnly {
-    return nil
-  }
+  // if structAddr.type.isMoveOnly {
+  //   return nil
+  // }
   guard let fields = structAddr.type.getNominalFields(in: firstStore.parentFunction) else {
     return nil
   }
@@ -126,7 +172,7 @@ private func getSequenceOfElementStores(firstStore: StoreInst) -> ([StoreInst], 
   for inst in InstructionList(first: firstStore) {
     switch inst {
     case let store as StoreInst:
-      guard store.storeOwnership == .trivial,
+      guard //store.storeOwnership == .trivial,
             let sea = store.destination as? StructElementAddrInst,
             sea.struct == structAddr,
             // Multiple stores to the same element?

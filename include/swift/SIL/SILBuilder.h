@@ -1276,7 +1276,7 @@ public:
   UncheckedTrivialBitCastInst *
   createUncheckedTrivialBitCast(SILLocation Loc, SILValue Op, SILType Ty) {
     return insert(UncheckedTrivialBitCastInst::create(
-        getSILDebugLocation(Loc), Op, Ty, getFunction()));
+        getSILDebugLocation(Loc), Op, Ty, F, getModule()));
   }
 
   UncheckedBitwiseCastInst *
@@ -1643,7 +1643,10 @@ public:
   StructInst *createStruct(SILLocation Loc, SILType Ty,
                            ArrayRef<SILValue> Elements,
                            ValueOwnershipKind forwardingOwnershipKind) {
-    assert(isLoadableOrOpaque(Ty));
+    if (!(isInsertingIntoGlobal() || getFunction().isGlobalInitOnceFunction())) {
+      assert(isLoadableOrOpaque(Ty));
+    }
+
     return insert(StructInst::create(getSILDebugLocation(Loc), Ty, Elements,
                                      getModule(), forwardingOwnershipKind));
   }

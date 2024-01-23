@@ -5792,7 +5792,7 @@ class UncheckedTrivialBitCastInst final
 
   static UncheckedTrivialBitCastInst *
   create(SILDebugLocation DebugLoc, SILValue Operand, SILType Ty,
-         SILFunction &F);
+         SILFunction *F, SILModule &Mod);
 };
 
 /// Bitwise copy a value into another value of the same size or smaller.

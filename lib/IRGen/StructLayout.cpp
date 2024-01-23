@@ -89,6 +89,7 @@ StructLayout::StructLayout(IRGenModule &IGM,
     assert(builder.getHeaderSize() == Size(0));
     headerSize = Size(0);
     IsLoadable = false;
+    ContainsRawLayout = true;
 
     auto &Diags = IGM.Context.Diags;
     // Fixed size and alignment specified.
@@ -180,6 +181,7 @@ StructLayout::StructLayout(IRGenModule &IGM,
       SpareBits.clear();
       IsFixedLayout = true;
       IsLoadable = true;
+      ContainsRawLayout = false;
       IsKnownTriviallyDestroyable = deinit;
       IsKnownBitwiseTakable = IsBitwiseTakable;
       IsKnownAlwaysFixedSize = IsFixedSize;
@@ -192,6 +194,7 @@ StructLayout::StructLayout(IRGenModule &IGM,
       SpareBits = builder.getSpareBits();
       IsFixedLayout = builder.isFixedLayout();
       IsLoadable = builder.isLoadable();
+      ContainsRawLayout = builder.containsRawLayout();
       IsKnownTriviallyDestroyable = deinit & builder.isTriviallyDestroyable();
       IsKnownBitwiseTakable = builder.isBitwiseTakable();
       IsKnownAlwaysFixedSize = builder.isAlwaysFixedSize();
@@ -387,6 +390,7 @@ bool StructLayoutBuilder::addField(ElementLayout &elt,
   IsKnownBitwiseTakable &= eltTI.isBitwiseTakable(ResilienceExpansion::Maximal);
   IsKnownAlwaysFixedSize &= eltTI.isFixedSize(ResilienceExpansion::Minimal);
   IsLoadable &= eltTI.isLoadable();
+  ContainsRawLayout |= eltTI.containsRawLayout();
 
   if (eltTI.isKnownEmpty(ResilienceExpansion::Maximal)) {
     addEmptyElement(elt);

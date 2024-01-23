@@ -170,7 +170,8 @@ protected:
                                  Alignment A,
                                  IsTriviallyDestroyable_t isTriviallyDestroyable,
                                  IsBitwiseTakable_t isBT,
-                                 IsCopyable_t isCopyable);
+                                 IsCopyable_t isCopyable,
+                                 bool containsRawLayout);
   
 public:
   virtual ~EnumImplStrategy() { }

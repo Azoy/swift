@@ -40,8 +40,8 @@ struct StaticInitCloner<Context: MutatingContext> {
   }
 
   /// Transitively clones `value` including its defining instruction's operands.
+  @discardableResult
   mutating func clone(_ value: Value) -> Value {
-
     if isCloned(value: value) {
       return getClonedValue(of: value)
     }

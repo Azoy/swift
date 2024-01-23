@@ -151,7 +151,7 @@ SILBuilder::createUncheckedReinterpretCast(SILLocation Loc, SILValue Op,
   assert(isLoadableOrOpaque(Ty));
   if (Ty.isTrivial(getFunction()))
     return insert(UncheckedTrivialBitCastInst::create(
-        getSILDebugLocation(Loc), Op, Ty, getFunction()));
+        getSILDebugLocation(Loc), Op, Ty, F, getModule()));
 
   if (SILType::canRefCast(Op->getType(), Ty, getModule()))
     return createUncheckedRefCast(Loc, Op, Ty);
@@ -185,7 +185,7 @@ SILBuilder::createUncheckedForwardingCast(SILLocation Loc, SILValue Op,
   assert(isLoadableOrOpaque(Ty));
   if (Ty.isTrivial(getFunction()))
     return insert(UncheckedTrivialBitCastInst::create(
-        getSILDebugLocation(Loc), Op, Ty, getFunction()));
+        getSILDebugLocation(Loc), Op, Ty, F, getModule()));
 
   if (SILType::canRefCast(Op->getType(), Ty, getModule()))
     return createUncheckedRefCast(Loc, Op, Ty);

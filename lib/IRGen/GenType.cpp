@@ -1324,7 +1324,8 @@ namespace {
                               IsNotTriviallyDestroyable,
                               IsNotBitwiseTakable,
                               IsNotCopyable,
-                              IsFixedSize) {}
+                              IsFixedSize,
+                              /* containsRawLayout */ false) {}
   };
 
   /// A TypeInfo implementation for address-only types which can never
@@ -1338,6 +1339,7 @@ namespace {
                               IsNotCopyable,
                               IsNotFixedSize,
                               IsNotABIAccessible,
+                              /* containsRawLayout */ false,
                               SpecialTypeInfoKind::None) {}
 
     llvm::Value *getSize(IRGenFunction &IGF, SILType T) const override {
@@ -2539,7 +2541,8 @@ public:
                     IsNotTriviallyDestroyable, /* irrelevant */
                     IsNotBitwiseTakable, /* irrelevant */
                     IsCopyable, /* irrelevant */
-                    IsFixedSize /* irrelevant */),
+                    IsFixedSize, /* irrelevant */
+                    /* containsRawLayout */ false),
       NumExtraInhabitants(node.NumExtraInhabitants) {}
 
   TypeLayoutEntry

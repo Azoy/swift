@@ -402,6 +402,8 @@ Explosion irgen::emitConstantValue(IRGenModule &IGM, SILValue operand,
   } else if (auto *atp = dyn_cast<AddressToPointerInst>(operand)) {
     auto *val = emitConstantValue(IGM, atp->getOperand()).claimNextConstant();
     return val;
+  } else if (auto *utbci = dyn_cast<UncheckedTrivialBitCastInst>(operand)) {
+    return emitConstantValue(IGM, utbci->getOperand()).claimNextConstant();
   } else {
     llvm_unreachable("Unsupported SILInstruction in static initializer!");
   }

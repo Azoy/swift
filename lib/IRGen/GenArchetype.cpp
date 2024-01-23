@@ -180,7 +180,7 @@ class BitwiseCopyableArchetypeTypeInfo
   BitwiseCopyableArchetypeTypeInfo(llvm::Type *type,
                                    IsABIAccessible_t abiAccessible)
       : Super(type, Alignment(1), IsTriviallyDestroyable, IsBitwiseTakable,
-              IsCopyable, abiAccessible) {}
+              IsCopyable, abiAccessible, /* containsRawLayout */ false) {}
 
 public:
   static const BitwiseCopyableArchetypeTypeInfo *

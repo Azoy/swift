@@ -284,6 +284,7 @@ private:
   unsigned NextNonFixedOffsetIndex = 0;
   bool IsFixedLayout = true;
   bool IsLoadable = true;
+  bool ContainsRawLayout = false;
   IsTriviallyDestroyable_t IsKnownTriviallyDestroyable = IsTriviallyDestroyable;
   IsBitwiseTakable_t IsKnownBitwiseTakable = IsBitwiseTakable;
   IsCopyable_t IsKnownCopyable = IsCopyable;
@@ -330,6 +331,10 @@ public:
 
   /// Return whether the structure has a loadable layout.
   bool isLoadable() const { return IsLoadable; }
+
+  /// Return whether the structure is itself a raw layout type or one of its
+  /// fields is or has a raw layout element.
+  bool containsRawLayout() const { return ContainsRawLayout; }
 
   /// Return whether the structure is known to be POD in the local
   /// resilience scope.
@@ -406,8 +411,12 @@ class StructLayout {
   /// alignment are exact.
   bool IsFixedLayout;
 
-  /// Whether this layout 
+  /// Whether this layout can be loaded from an address.
   bool IsLoadable;
+
+  /// Whether this layout is raw layout or if one of its elements is/has a raw
+  /// layout component.
+  bool ContainsRawLayout;
 
   IsTriviallyDestroyable_t IsKnownTriviallyDestroyable;
   IsBitwiseTakable_t IsKnownBitwiseTakable;
@@ -442,6 +451,7 @@ public:
       SpareBits(builder.getSpareBits()),
       IsFixedLayout(builder.isFixedLayout()),
       IsLoadable(builder.isLoadable()),
+      ContainsRawLayout(builder.containsRawLayout()),
       IsKnownTriviallyDestroyable(builder.isTriviallyDestroyable()),
       IsKnownBitwiseTakable(builder.isBitwiseTakable()),
       IsKnownCopyable(builder.isCopyable()),
@@ -476,6 +486,7 @@ public:
 
   bool isFixedLayout() const { return IsFixedLayout; }
   bool isLoadable() const { return IsLoadable; }
+  bool containsRawLayout() const { return ContainsRawLayout; }
   llvm::Constant *emitSize(IRGenModule &IGM) const;
   llvm::Constant *emitAlignMask(IRGenModule &IGM) const;
 
