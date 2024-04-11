@@ -21,7 +21,6 @@ public struct _Ref<To: ~Copyable>: Copyable, ~Escapable {
   @_transparent
   public init(_ to: borrowing To) -> dependsOn(to) Self {
     pointer = UnsafePointer<To>(Builtin.unprotectedAddressOfBorrow(to))
-    return self
   }
 
   @available(SwiftStdlib 9999, *)
@@ -45,7 +44,6 @@ public struct _MutableRef<To: ~Copyable>: ~Copyable, ~Escapable {
   @_transparent
   public init(_ to: inout To) -> dependsOn(to) Self {
     pointer = UnsafeMutablePointer<To>(Builtin.unprotectedAddressOf(&to))
-    return self
   }
 
   @available(SwiftStdlib 9999, *)
