@@ -227,7 +227,9 @@ split_embedded_sources(
   EMBEDDED AssertCommon.swift
   EMBEDDED Availability.swift
   EMBEDDED Bool.swift
+    NORMAL Box.swift
   EMBEDDED Builtin.swift
+    NORMAL Cell.swift
     NORMAL CommandLine.swift
   EMBEDDED Duration.swift
   EMBEDDED DurationProtocol.swift
@@ -247,6 +249,7 @@ split_embedded_sources(
     NORMAL Print.swift
   EMBEDDED PtrAuth.swift
   EMBEDDED Random.swift
+    NORMAL Ref.swift
     NORMAL REPL.swift
   EMBEDDED Result.swift
   EMBEDDED Runtime.swift
@@ -333,6 +336,8 @@ list(APPEND swift_stdlib_compile_flags "-enable-experimental-feature" "Freestand
 list(APPEND swift_stdlib_compile_flags "-enable-experimental-feature" "Extern")
 list(APPEND swift_stdlib_compile_flags "-enable-experimental-feature" "BitwiseCopyable")
 list(APPEND swift_stdlib_compile_flags "-enable-experimental-feature" "BorrowingSwitch")
+list(APPEND swift_stdlib_compile_flags "-enable-experimental-feature" "RawLayout")
+list(APPEND swift_stdlib_compile_flags "-enable-experimental-feature" "NonescapableTypes")
 
 if("${SWIFT_NATIVE_SWIFT_TOOLS_PATH}" STREQUAL "")
   set(swift_bin_dir "${CMAKE_BINARY_DIR}/bin")
