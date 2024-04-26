@@ -19,6 +19,10 @@
 
 #include <cstddef>
 
+#if SWIFT_COMPILER_IS_MSVC
+#include <intrin.h>
+#endif
+
 namespace swift {
 
 /// Round the given value up to the given alignment, as a power of two.
@@ -31,6 +35,16 @@ static inline constexpr T roundUpToAlignment(T offset, T alignment) {
 /// power of two minus one).
 static inline size_t roundUpToAlignMask(size_t size, size_t alignMask) {
   return (size + alignMask) & ~alignMask;
+}
+
+static inline unsigned popcount(unsigned value) {
+#if SWIFT_COMPILER_IS_MSVC
+  return __popcnt(value);
+#elif __GNUC__
+  return __builtin_popcount(value);
+#else
+#error "Implement popcount"
+#endif
 }
 
 } // namespace swift
