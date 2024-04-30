@@ -6732,6 +6732,7 @@ public:
     case ParameterConvention::Indirect_Inout:
     case ParameterConvention::Indirect_InoutAliasable:
     case ParameterConvention::Indirect_In_Guaranteed:
+    case ParameterConvention::Ref:
       llvm_unreachable("callee convention cannot be indirect");
     case ParameterConvention::Pack_Guaranteed:
     case ParameterConvention::Pack_Owned:
@@ -7506,6 +7507,7 @@ StringRef swift::getStringForParameterConvention(ParameterConvention conv) {
   case ParameterConvention::Pack_Guaranteed: return "@pack_guaranteed ";
   case ParameterConvention::Pack_Owned: return "@pack_owned ";
   case ParameterConvention::Pack_Inout: return "@pack_inout ";
+  case ParameterConvention::Ref: return "@ref ";
   }
   llvm_unreachable("bad parameter convention");
 }

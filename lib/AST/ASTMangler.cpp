@@ -1142,6 +1142,7 @@ static char getParamConvention(ParameterConvention conv) {
     case ParameterConvention::Pack_Owned: return 'v';
     case ParameterConvention::Pack_Inout: return 'm';
     case ParameterConvention::Pack_Guaranteed: return 'p';
+    case ParameterConvention::Ref: return 'R';
   }
   llvm_unreachable("bad parameter convention");
 }

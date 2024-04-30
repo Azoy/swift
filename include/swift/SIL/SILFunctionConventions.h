@@ -597,6 +597,9 @@ inline bool SILModuleConventions::isIndirectSILParam(SILParameterInfo param,
   case ParameterConvention::Indirect_Inout:
   case ParameterConvention::Indirect_InoutAliasable:
     return true;
+
+  case ParameterConvention::Ref:
+    return true;
   }
   llvm_unreachable("covered switch isn't covered?!");
 }

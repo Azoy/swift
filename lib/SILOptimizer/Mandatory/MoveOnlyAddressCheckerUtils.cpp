@@ -430,6 +430,7 @@ static bool visitScopeEndsRequiringInit(
     case SILArgumentConvention::Pack_Guaranteed:
     case SILArgumentConvention::Pack_Owned:
     case SILArgumentConvention::Pack_Out:
+    case SILArgumentConvention::Ref:
       return false;
     case SILArgumentConvention::Indirect_Inout:
     case SILArgumentConvention::Indirect_InoutAliasable:
@@ -1016,6 +1017,7 @@ void UseState::initializeLiveness(
       case swift::SILArgumentConvention::Indirect_In_Guaranteed:
       case swift::SILArgumentConvention::Indirect_Inout:
       case swift::SILArgumentConvention::Indirect_InoutAliasable:
+      case swift::SILArgumentConvention::Ref:
         // We need to add our address to the initInst array to make sure that
         // later invariants that we assert upon remain true.
         LLVM_DEBUG(
@@ -2515,7 +2517,8 @@ bool GatherUsesVisitor::visitUse(Operand *op) {
 
   if (auto fas = FullApplySite::isa(user)) {
     switch (fas.getArgumentConvention(*op)) {
-    case SILArgumentConvention::Indirect_In_Guaranteed: {
+    case SILArgumentConvention::Indirect_In_Guaranteed:
+    case SILArgumentConvention::Ref: {
       LLVM_DEBUG(llvm::dbgs() << "in_guaranteed argument to function application\n");
       SmallVector<TypeTreeLeafTypeRange, 2> leafRanges;
       TypeTreeLeafTypeRange::get(op, getRootAddress(), leafRanges);

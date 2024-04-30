@@ -6587,6 +6587,7 @@ getActualParameterConvention(uint8_t raw) {
   CASE(Pack_Inout)
   CASE(Pack_Guaranteed)
   CASE(Pack_Owned)
+  CASE(Ref)
 #undef CASE
   }
   return std::nullopt;

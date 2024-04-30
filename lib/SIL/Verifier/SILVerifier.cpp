@@ -508,6 +508,7 @@ struct ImmutableAddressUseVerifier {
     switch (conv) {
     case SILArgumentConvention::Indirect_In_Guaranteed:
     case SILArgumentConvention::Pack_Guaranteed:
+    case SILArgumentConvention::Ref:
       return false;
 
     case SILArgumentConvention::Indirect_InoutAliasable:
@@ -6399,6 +6400,7 @@ public:
                          case ParameterConvention::Pack_Owned:
                          case ParameterConvention::Pack_Guaranteed:
                          case ParameterConvention::Pack_Inout:
+                         case ParameterConvention::Ref:
                            return true;
                          }
                        }),

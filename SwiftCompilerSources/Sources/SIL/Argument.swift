@@ -386,6 +386,9 @@ public enum ArgumentConvention : CustomStringConvertible {
   /// indirectOut arguments.
   case packOut
 
+  /// better convention
+  case ref
+
   public init(result: ResultConvention) {
     switch result {
     case .indirect:
@@ -403,7 +406,7 @@ public enum ArgumentConvention : CustomStringConvertible {
     switch self {
     case .indirectIn, .indirectInGuaranteed,
          .indirectInout, .indirectInoutAliasable, .indirectOut,
-         .packOut, .packInout, .packOwned, .packGuaranteed:
+         .packOut, .packInout, .packOwned, .packGuaranteed, .ref:
       return true
     case .directOwned, .directUnowned, .directGuaranteed:
       return false
@@ -413,7 +416,7 @@ public enum ArgumentConvention : CustomStringConvertible {
   public var isIndirectIn: Bool {
     switch self {
     case .indirectIn, .indirectInGuaranteed,
-         .packOwned, .packGuaranteed:
+         .packOwned, .packGuaranteed, .ref:
       return true
     case .directOwned, .directUnowned, .directGuaranteed,
          .indirectInout, .indirectInoutAliasable, .indirectOut,
@@ -429,14 +432,14 @@ public enum ArgumentConvention : CustomStringConvertible {
     case .indirectInGuaranteed, .directGuaranteed, .packGuaranteed,
          .indirectIn, .directOwned, .directUnowned,
          .indirectInout, .indirectInoutAliasable,
-         .packInout, .packOwned:
+         .packInout, .packOwned, .ref:
       return false
     }
   }
 
   public var isGuaranteed: Bool {
     switch self {
-    case .indirectInGuaranteed, .directGuaranteed, .packGuaranteed:
+    case .indirectInGuaranteed, .directGuaranteed, .packGuaranteed, .ref:
       return true
     case .indirectIn, .directOwned, .directUnowned,
          .indirectInout, .indirectInoutAliasable, .indirectOut,
@@ -454,7 +457,8 @@ public enum ArgumentConvention : CustomStringConvertible {
          .packOut,
          .packInout,
          .packOwned,
-         .packGuaranteed:
+         .packGuaranteed,
+         .ref:
       return true
 
     case .indirectInoutAliasable,
@@ -480,7 +484,8 @@ public enum ArgumentConvention : CustomStringConvertible {
          .directOwned,
          .packOut,
          .packOwned,
-         .packGuaranteed:
+         .packGuaranteed,
+         .ref:
       return false
     }
   }
@@ -511,6 +516,8 @@ public enum ArgumentConvention : CustomStringConvertible {
       return "packGuaranteed"
     case .packOut:
       return "packOut"
+    case .ref:
+      return "ref"
     }
   }
 }
@@ -537,6 +544,7 @@ extension BridgedArgumentConvention {
       case .Pack_Inout:              return .packInout
       case .Pack_Owned:              return .packOwned
       case .Pack_Guaranteed:         return .packGuaranteed
+      case .Ref:                     return .ref
       default:
         fatalError("unsupported argument convention")
     }
@@ -558,6 +566,7 @@ extension ArgumentConvention {
       case .packInout:              return .Pack_Inout
       case .packOwned:              return .Pack_Owned
       case .packGuaranteed:         return .Pack_Guaranteed
+      case .ref:                    return .Ref
     }
   }
 }

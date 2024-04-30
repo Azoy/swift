@@ -39,11 +39,11 @@ std::string LifetimeDependenceInfo::getString() const {
   };
   if (inheritLifetimeParamIndices && !inheritLifetimeParamIndices->isEmpty()) {
     lifetimeDependenceString =
-        "_inherit(" + getOnIndices(inheritLifetimeParamIndices) + ") ";
+        "_inherit(" + getOnIndices(inheritLifetimeParamIndices) + ")";
   }
   if (scopeLifetimeParamIndices && !scopeLifetimeParamIndices->isEmpty()) {
     lifetimeDependenceString +=
-        "_scope(" + getOnIndices(scopeLifetimeParamIndices) + ") ";
+        "_scope(" + getOnIndices(scopeLifetimeParamIndices) + ")";
   }
   return lifetimeDependenceString;
 }

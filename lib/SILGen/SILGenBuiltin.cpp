@@ -2027,6 +2027,19 @@ static ManagedValue emitBuiltinAddressOfRawLayout(SILGenFunction &SGF,
   return ManagedValue::forObjectRValueWithoutOwnership(bi);
 }
 
+static ManagedValue emitBuiltinRefTo(SILGenFunction &SGF, SILLocation loc,
+                                     SubstitutionMap subs,
+                                     PreparedArguments &&preparedArgs,
+                                     SGFContext C) {
+  auto &ctx = SGF.getASTContext();
+
+  // Take the address argument and cast it to RawPointer.
+  auto result = SGF.B.createAddressToPointer(loc, SGF.F.getArgument(0),
+                                             SILType::getRawPointerType(ctx),
+                                             /* stack protected */ false);
+  return ManagedValue::forObjectRValueWithoutOwnership(result);
+}
+
 std::optional<SpecializedEmitter>
 SpecializedEmitter::forDecl(SILGenModule &SGM, SILDeclRef function) {
   // Only consider standalone declarations in the Builtin module.

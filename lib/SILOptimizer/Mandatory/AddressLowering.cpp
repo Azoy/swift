@@ -3223,6 +3223,7 @@ void YieldRewriter::rewriteOperand(YieldInst *yieldInst, unsigned index) {
   case ParameterConvention::Pack_Guaranteed:
   case ParameterConvention::Pack_Owned:
   case ParameterConvention::Pack_Inout:
+  case ParameterConvention::Ref:
     return;
   case ParameterConvention::Indirect_Inout:
   case ParameterConvention::Indirect_InoutAliasable:

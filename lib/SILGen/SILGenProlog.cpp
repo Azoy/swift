@@ -131,6 +131,10 @@ struct LoweredParamGenerator {
     return parameterTypes.isFinished();
   }
 
+  size_t size() const {
+    return parameterTypes.size();
+  }
+
   void advance() {
     (void) claimNext();
   }
@@ -182,9 +186,10 @@ public:
   SILGenFunction &SGF;
   SILLocation loc;
   LoweredParamGenerator &parameters;
+  uint16_t argNo;
 
-  EmitBBArguments(SILLocation l, LoweredParamGenerator &parameters)
-      : SGF(parameters.SGF), loc(l), parameters(parameters) {}
+  EmitBBArguments(SILLocation l, LoweredParamGenerator &parameters, uint16_t argNo)
+      : SGF(parameters.SGF), loc(l), parameters(parameters), argNo(argNo) {}
 
   ManagedValue claimNextParameter() {
     return parameters.claimNext();
@@ -318,6 +323,14 @@ public:
       }
 
       return mv;
+    }
+
+    auto fnTy = SGF.F.getLoweredFunctionType();
+
+    if (auto lifetimeInfo = fnTy->getLifetimeDependenceInfoOrNull()) {
+      if (lifetimeInfo->checkScope(argNo)) {
+        return mv;
+      }
     }
 
     // This can happen if the value is resilient in the calling convention
@@ -662,7 +675,7 @@ private:
     loweredParams.configureParamData(pd, isNoImplicitCopy, lifetimeAnnotation);
 
     ManagedValue paramValue;
-    EmitBBArguments argEmitter(loc, loweredParams);
+    EmitBBArguments argEmitter(loc, loweredParams, ArgNo - 1);
     if (FormalParamTypes && FormalParamTypes->isOrigPackExpansion()) {
       paramValue = argEmitter.handlePackComponent(*FormalParamTypes);
     } else {
@@ -908,6 +921,7 @@ private:
             case SILArgumentConvention::Pack_Guaranteed:
             case SILArgumentConvention::Pack_Owned:
             case SILArgumentConvention::Pack_Out:
+            case SILArgumentConvention::Ref:
               llvm_unreachable("Should have been handled elsewhere");
             case SILArgumentConvention::Indirect_In:
               argrv = SGF.B.createMarkUnresolvedNonCopyableValueInst(

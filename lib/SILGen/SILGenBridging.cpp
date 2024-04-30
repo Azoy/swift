@@ -315,6 +315,7 @@ static ManagedValue emitManagedParameter(SILGenFunction &SGF, SILLocation loc,
     return SGF.emitManagedCopy(loc, value, valueTL);
 
   case ParameterConvention::Indirect_Inout:
+  case ParameterConvention::Ref:
     return ManagedValue::forLValue(value);
 
   case ParameterConvention::Indirect_In_Guaranteed:
@@ -441,6 +442,7 @@ static void buildFuncToBlockInvokeBody(SILGenFunction &SGF,
       case ParameterConvention::Pack_Guaranteed:
       case ParameterConvention::Pack_Owned:
       case ParameterConvention::Pack_Inout:
+      case ParameterConvention::Ref:
         llvm_unreachable("indirect params to blocks not supported");
       }
       
@@ -2168,6 +2170,7 @@ void SILGenFunction::emitForeignToNativeThunk(SILDeclRef thunk) {
           break;
         case ParameterConvention::Indirect_Inout:
         case ParameterConvention::Indirect_InoutAliasable:
+        case ParameterConvention::Ref:
           param = ManagedValue::forLValue(paramValue);
           break;
         case ParameterConvention::Indirect_In:

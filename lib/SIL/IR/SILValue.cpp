@@ -318,6 +318,7 @@ ValueOwnershipKind::ValueOwnershipKind(const SILFunction &F, SILType Type,
   case SILArgumentConvention::Pack_Out:
   case SILArgumentConvention::Pack_Owned:
   case SILArgumentConvention::Pack_Guaranteed:
+  case SILArgumentConvention::Ref:
     value = OwnershipKind::None;
     return;
   case SILArgumentConvention::Direct_Owned:

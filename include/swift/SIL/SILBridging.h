@@ -137,6 +137,7 @@ enum class BridgedArgumentConvention {
   Indirect_Inout,
   Indirect_InoutAliasable,
   Indirect_Out,
+  Ref,
   Direct_Owned,
   Direct_Unowned,
   Direct_Guaranteed,
@@ -175,6 +176,7 @@ struct BridgedParameterInfo {
       case BridgedArgumentConvention::Pack_Inout:              return swift::ParameterConvention::Pack_Inout;
       case BridgedArgumentConvention::Pack_Guaranteed:         return swift::ParameterConvention::Pack_Guaranteed;
       case BridgedArgumentConvention::Pack_Out:                break;
+      case BridgedArgumentConvention::Ref:                     return swift::ParameterConvention::Ref;
     }
     llvm_unreachable("invalid parameter convention");
   }

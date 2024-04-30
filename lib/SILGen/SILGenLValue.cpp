@@ -1881,6 +1881,9 @@ namespace {
       RValue rvalue;
       FormalEvaluationScope scope(SGF);
 
+      llvm::errs() << "BASE:\n";
+      base.dump();
+
       auto args =
           std::move(*this).prepareAccessorArgs(SGF, loc, base, getter);
 
@@ -3138,7 +3141,19 @@ LValue SILGenLValue::visitRec(Expr *e, SGFAccessKind accessKind,
   if (e->getType()->is<LValueType>() || e->isSemanticallyInOutExpr()) {
     return visitRecInOut(*this, e, accessKind, options, orig);
   }
-  
+
+  if (auto subscript = dyn_cast<SubscriptExpr>(e)) {
+    auto decl = subscript->getDecl().getDecl();
+    auto fnType = decl->getInterfaceType()->castTo<AnyFunctionType>();
+    fnType->dump();
+
+    // If the subscript has lifetime dependency information, then self is passed
+    // indirectly and we do have an lvalue.
+    if (fnType->hasLifetimeDependenceInfo()) {
+      llvm::errs() << "DO SOMETHING FOR THIS SUBSCRIPT:\n";
+    }
+  }
+
   // If the base is a load of a noncopyable type (or, eventually, when we have
   // a `borrow x` operator, the operator is used on the base here), we want to
   // apply the lvalue within a formal access to the original value instead of
@@ -4146,6 +4161,9 @@ LValue SILGenLValue::visitSubscriptExpr(SubscriptExpr *e,
                                          /*for borrow*/ false),
                        getBaseOptions(options, strategy));
   assert(lv.isValid());
+
+  llvm::errs() << "LV AFTER VISIT REC:\n";
+  lv.dump();
 
   // Now that the base components have been resolved, check the isolation for
   // this subscript decl.

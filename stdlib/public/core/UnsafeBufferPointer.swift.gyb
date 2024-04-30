@@ -732,8 +732,8 @@ extension Unsafe${Mutable}BufferPointer where Element: ~Copyable {
   /// initialized or `Pointee` must be a trivial type. This buffer pointer's
   /// `count` must be equal to the originally allocated size of the memory
   /// block.
-  @inlinable
   @_preInverseGenerics
+  @_transparent
   public func deallocate() {
     _position?.deallocate()
   }
@@ -1166,6 +1166,7 @@ extension UnsafeMutableBufferPointer where Element: ~Copyable {
   ///   - value: The value used to initialize the buffer element's memory.
   ///   - index: The index of the element to initialize
   @_alwaysEmitIntoClient
+  @_transparent
   public func initializeElement(at index: Index, to value: consuming Element) {
     _debugPrecondition(startIndex <= index && index < endIndex)
     let p = baseAddress._unsafelyUnwrappedUnchecked.advanced(by: index)

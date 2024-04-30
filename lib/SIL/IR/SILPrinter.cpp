@@ -1592,6 +1592,7 @@ public:
     case ParameterConvention::Pack_Guaranteed:
     case ParameterConvention::Pack_Owned:
     case ParameterConvention::Pack_Inout:
+    case ParameterConvention::Ref:
       llvm_unreachable("unexpected callee convention!");
     }
     switch (fnType->getIsolation()) {

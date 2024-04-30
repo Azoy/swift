@@ -715,6 +715,8 @@ static CanSILFunctionType getAutoDiffPullbackType(
     case ParameterConvention::Indirect_InoutAliasable:
       conv = ResultConvention::Indirect;
       break;
+    case ParameterConvention::Ref:
+      llvm_unreachable("not supported");
     }
     return conv;
   };
@@ -1052,6 +1054,9 @@ CanSILFunctionType SILFunctionType::getAutoDiffTransposeFunctionType(
     case ParameterConvention::Indirect_InoutAliasable:
       newConv = ResultConvention::Indirect;
       break;
+
+    case ParameterConvention::Ref:
+      llvm_unreachable("not supported");
     }
     return {param.getInterfaceType(), newConv};
   };
@@ -1638,7 +1643,7 @@ private:
       // pattern for the type.
       if (!param.isOrigPackExpansion()) {
         visit(param.getOrigType(), param.getSubstParams()[0],
-              /*forSelf*/false);
+              /*forSelf*/false, origType.getAs<AnyFunctionType>());
         return;
       }
 
@@ -1668,7 +1673,8 @@ private:
     if (hasSelf && !hasForeignSelf) {
       auto origParamType = origType.getFunctionParamType(numOrigParams - 1);
       auto substParam = params.back();
-      visit(origParamType, substParam, /*forSelf*/true);
+      visit(origParamType, substParam, /*forSelf*/true,
+            origType.getAs<AnyFunctionType>());
     }
 
     TopLevelOrigType = AbstractionPattern::getInvalid();
@@ -1676,7 +1682,7 @@ private:
   }
 
   void visit(AbstractionPattern origType, AnyFunctionType::Param substParam,
-             bool forSelf) {
+             bool forSelf, CanAnyFunctionType origFnType) {
     // FIXME: we should really be using the flags from the original
     // parameter here, right?
     auto flags = substParam.getParameterFlags();
@@ -1695,17 +1701,18 @@ private:
       return addPackParameter(packTy, flags.getValueOwnership(), flags);
     }
 
-    visit(flags.getValueOwnership(), forSelf, origType, substType, flags);
+    visit(flags.getValueOwnership(), forSelf, origType, substType, flags,
+          origFnType);
   }
 
   void visit(ValueOwnership ownership, bool forSelf,
              AbstractionPattern origType, CanType substType,
-             ParameterTypeFlags origFlags) {
+             ParameterTypeFlags origFlags, CanAnyFunctionType origFnType) {
     assert(!isa<InOutType>(substType));
 
     // Tuples get expanded unless they're inout.
     if (origType.isTuple() && ownership != ValueOwnership::InOut) {
-      expandTuple(ownership, forSelf, origType, substType, origFlags);
+      expandTuple(ownership, forSelf, origType, substType, origFlags, origFnType);
       return;
     }
 
@@ -1718,8 +1725,13 @@ private:
     CanType loweredType = substTL.getLoweredType().getASTType();
 
     ParameterConvention convention;
+
     if (ownership == ValueOwnership::InOut) {
       convention = ParameterConvention::Indirect_Inout;
+    } else if (origFnType &&
+               origFnType->hasLifetimeDependenceInfo() &&
+               origFnType->getLifetimeDependenceInfo().checkScope(origParamIndex)) {
+      convention = ParameterConvention::Ref;
     } else if (isFormallyPassedIndirectly(origType, substType, substTLConv)) {
       convention = Convs.getIndirect(ownership, forSelf, origParamIndex,
                                      origType, substTLConv);
@@ -1742,14 +1754,14 @@ private:
   /// Recursively expand a tuple type into separate parameters.
   void expandTuple(ValueOwnership ownership, bool forSelf,
                    AbstractionPattern origType, CanType substType,
-                   ParameterTypeFlags oldFlags) {
+                   ParameterTypeFlags oldFlags, CanAnyFunctionType origFnType) {
     assert(ownership != ValueOwnership::InOut);
     assert(origType.isTuple());
 
     origType.forEachTupleElement(substType, [&](TupleElementGenerator &elt) {
       if (!elt.isOrigPackExpansion()) {
         visit(ownership, forSelf, elt.getOrigType(), elt.getSubstTypes()[0],
-              oldFlags);
+              oldFlags, origFnType);
         return;
       }
 
@@ -1848,7 +1860,8 @@ private:
       // This is a "self", but it's not a Swift self, we handle it differently.
       visit(ForeignSelf->SubstSelfParam.getValueOwnership(),
             /*forSelf=*/false, ForeignSelf->OrigSelfParam,
-            ForeignSelf->SubstSelfParam.getParameterType(), {});
+            ForeignSelf->SubstSelfParam.getParameterType(), {},
+            CanAnyFunctionType(nullptr));
     }
     return true;
   }

@@ -2487,7 +2487,9 @@ public:
     /// This is a true inout argument.
     InOut,
 
-    LastLVKindWithoutExtra = InOut,
+    Ref,
+
+    LastLVKindWithoutExtra = Ref,
 
     /// The l-value needs to be converted to a pointer type.
     LValueToPointer,
@@ -2578,6 +2580,7 @@ private:
   static ValueMembers::Index getValueMemberIndexForKind(KindTy kind) {
     switch (kind) {
     case InOut:
+    case Ref:
     case LValueToPointer:
     case LValueArrayToPointer:
       return ValueMembers::indexOf<LValueStorage>();
@@ -2756,6 +2759,9 @@ public:
     case InOut:
       args[argIndex++] = emitInOut(SGF);
       return;
+    case Ref:
+      args[argIndex++] = emitRef(SGF);
+      return;
     case LValueToPointer:
     case LValueArrayToPointer:
     case RValueArrayToPointer:
@@ -2782,6 +2788,10 @@ public:
 private:
   ManagedValue emitInOut(SILGenFunction &SGF) {
     return emitAddress(SGF, AccessKind::ReadWrite);
+  }
+
+  ManagedValue emitRef(SILGenFunction &SGF) {
+    return emitAddress(SGF, AccessKind::Read);
   }
 
   ManagedValue emitBorrowIndirect(SILGenFunction &SGF) {
@@ -2865,6 +2875,7 @@ private:
 
     switch (Kind) {
     case InOut:
+    case Ref:
     case BorrowedLValue:
     case ConsumedLValue:
     case DefaultArgument:
@@ -3506,14 +3517,16 @@ private:
     // substituted argument type by abstraction and/or bridging.
     auto paramSlice = claimNextParameters(1);
     SILParameterInfo param = paramSlice.front();
-    assert(arg.hasLValueType() == param.isIndirectInOut());
+    auto isRef = param.getConvention() == ParameterConvention::Ref;
+    assert(arg.hasLValueType() == param.isIndirectInOut() ||
+           arg.hasLValueType() == isRef);
 
     // Make sure we use the same value category for these so that we
     // can hereafter just use simple equality checks to test for
     // abstraction.
     auto substArgType = arg.getSubstRValueType();
     SILType loweredSubstArgType = SGF.getLoweredType(substArgType);
-    if (param.isIndirectInOut()) {
+    if (param.isIndirectInOut() || isRef) {
       loweredSubstArgType =
         SILType::getPrimitiveAddressType(loweredSubstArgType.getASTType());
     }
@@ -3532,6 +3545,12 @@ private:
     if (param.isIndirectInOut()) {
       emitInOut(std::move(arg), loweredSubstArgType, loweredSubstParamType,
                 origParamType, substArgType);
+      return;
+    }
+
+    if (isRef) {
+      emitRef(std::move(arg), loweredSubstArgType, loweredSubstParamType,
+              origParamType, substArgType, param);
       return;
     }
 
@@ -3625,7 +3644,8 @@ private:
   void emitIndirect(ArgumentSource &&arg,
                     SILType loweredSubstArgType,
                     AbstractionPattern origParamType,
-                    SILParameterInfo param) {
+                    SILParameterInfo param,
+                    bool isForRef = false) {
     auto contexts = getRValueEmissionContexts(loweredSubstArgType, param);
     ManagedValue result;
 
@@ -3698,6 +3718,83 @@ private:
     // Leave an empty space in the ManagedValue sequence and
     // remember that we had an inout argument.
     DelayedArguments.emplace_back(DelayedArgument::InOut, std::move(lv), loc);
+    Args.push_back(ManagedValue());
+    return;
+  }
+
+  void emitRef(ArgumentSource &&arg, SILType loweredSubstArgType,
+               SILType loweredSubstParamType, AbstractionPattern origType,
+               CanType substType, SILParameterInfo param) {
+    SILLocation loc = arg.getLocation();
+
+    LValue lv;
+
+    // If the argument is already lowered to an LValue, it must be the
+    // receiver of a self argument, which will be the first inout.
+    if (arg.isLValue()) {
+      lv = std::move(arg).asKnownLValue();
+    } else {
+      auto *e = std::move(arg).asKnownExpr()->getSemanticsProvidingExpr();
+
+      // Look through loads to find the declref lvalue.
+      if (auto load = dyn_cast<LoadExpr>(e)) {
+        e = load->getSubExpr();
+      }
+
+      if (auto declRef = dyn_cast<DeclRefExpr>(e)) {
+        if (auto var = dyn_cast<VarDecl>(declRef->getDecl())) {
+          // if (var->isSelfParameter()) {
+          //   auto selfAddr = ManagedValue::forLValue(SGF.F.getSelfArgument());
+
+          //   lv = LValue::forAddress(SGFAccessKind::BorrowedAddressRead,
+          //                           selfAddr, std::nullopt, origType,
+          //                           substType);
+          // } else {
+            auto localVar = SGF.maybeEmitValueOfLocalVarDecl(var,
+                                                             AccessKind::Read);
+
+            if (localVar && !localVar.isLValue()) {
+              auto contexts = getRValueEmissionContexts(loweredSubstArgType, param);
+              auto rvalue = SGF.emitRValueAsSingleValue(e, contexts.FinalContext);
+
+              auto alloc = SGF.B.createAllocStack(loc,
+                                          loweredSubstParamType.getObjectType());
+
+              SGF.emitManagedStoreBorrow(loc, rvalue.getValue(), alloc);
+
+              auto managedAlloc = ManagedValue::forLValue(alloc);
+              lv = LValue::forAddress(SGFAccessKind::BorrowedAddressRead,
+                                      managedAlloc, std::nullopt, origType,
+                                      substType);
+            } else {
+              lv = SGF.emitLValue(e, SGFAccessKind::BorrowedAddressRead);
+            }
+          //}
+        }
+      } else {
+        auto contexts = getRValueEmissionContexts(loweredSubstArgType, param);
+        auto rvalue = SGF.emitRValueAsSingleValue(e, contexts.FinalContext);
+
+        auto alloc = SGF.B.createAllocStack(loc,
+                                    loweredSubstParamType.getObjectType());
+
+        SGF.emitManagedStoreBorrow(loc, rvalue.getValue(), alloc);
+
+        auto managedAlloc = ManagedValue::forLValue(alloc);
+        lv = LValue::forAddress(SGFAccessKind::BorrowedAddressRead,
+                                managedAlloc, std::nullopt, origType,
+                                substType);
+      }
+    }
+
+    if (loweredSubstParamType.hasAbstractionDifference(Rep,
+                                                       loweredSubstArgType)) {
+      lv.addSubstToOrigComponent(origType, loweredSubstParamType);
+    }
+
+    // Leave an empty space in the ManagedValue sequence and remember that we
+    //had a ref argument.
+    DelayedArguments.emplace_back(DelayedArgument::Ref, std::move(lv), loc);
     Args.push_back(ManagedValue());
     return;
   }
@@ -5599,6 +5696,7 @@ RValue SILGenFunction::emitApply(
     case ParameterConvention::Pack_Guaranteed:
     case ParameterConvention::Pack_Owned:
     case ParameterConvention::Pack_Inout:
+    case ParameterConvention::Ref:
       // We may need to support this at some point, but currently only imported
       // objc methods are returns_inner_pointer.
       llvm_unreachable("indirect self argument to method that"
@@ -6834,6 +6932,7 @@ bool AccessorBaseArgPreparer::shouldLoadBaseAddress() const {
   // address we were given.  This is semantically required.
   case ParameterConvention::Indirect_Inout:
   case ParameterConvention::Indirect_InoutAliasable:
+  case ParameterConvention::Ref:
     return false;
 
   case ParameterConvention::Pack_Guaranteed:
@@ -6905,6 +7004,21 @@ ArgumentSource AccessorBaseArgPreparer::prepareAccessorAddressBaseArg() {
     return ArgumentSource(
         loc,
         LValue::forAddress(SGFAccessKind::ReadWrite, base, std::nullopt,
+                           AbstractionPattern(baseFormalType), baseFormalType));
+  }
+
+  if (selfParam.getConvention() == ParameterConvention::Ref) {
+    // It sometimes happens that we get r-value bases here, e.g. when calling a
+    // mutating setter on a materialized temporary.  Just don't claim the value.
+    if (!base.isLValue()) {
+      base = ManagedValue::forLValue(base.getValue());
+    }
+
+    // FIXME: this assumes that there's never meaningful reabstraction of self
+    // arguments.
+    return ArgumentSource(
+        loc,
+        LValue::forAddress(SGFAccessKind::BorrowedAddressRead, base, std::nullopt,
                            AbstractionPattern(baseFormalType), baseFormalType));
   }
 
@@ -7120,6 +7234,10 @@ RValue SILGenFunction::emitGetAccessor(
   // property access, but the location is useful in backtraces so it should be
   // preserved.
   loc.markExplicit();
+
+  llvm::errs() << "SELF VALUE:\n";
+  selfValue.dump();
+  F.dump();
 
   Callee getter = emitSpecializedAccessorFunctionRef(
       *this, loc, get, substitutions, selfValue, isSuper, isDirectUse,

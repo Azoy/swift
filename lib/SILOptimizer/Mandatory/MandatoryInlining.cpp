@@ -123,6 +123,7 @@ static  bool fixupReferenceCounts(
     case ParameterConvention::Indirect_Inout:
     case ParameterConvention::Indirect_InoutAliasable:
     case ParameterConvention::Pack_Inout:
+    case ParameterConvention::Ref:
       break;
 
     case ParameterConvention::Indirect_In_Guaranteed: {

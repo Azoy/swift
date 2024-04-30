@@ -502,6 +502,9 @@ static OperandOwnership getFunctionArgOwnership(SILArgumentConvention argConv,
     return hasScopeInCaller ? OperandOwnership::Borrow
                             : OperandOwnership::InstantaneousUse;
 
+  case SILArgumentConvention::Ref:
+    return OperandOwnership::InstantaneousUse;
+
   case SILArgumentConvention::Direct_Unowned:
     return OperandOwnership::UnownedInstantaneousUse;
 

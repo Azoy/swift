@@ -576,6 +576,8 @@ static ManagedValue createInputFunctionArgument(
   case SILArgumentConvention::Pack_Inout:
     // An inout parameter is +0 and guaranteed, but represents an lvalue.
     return ManagedValue::forLValue(arg);
+  case SILArgumentConvention::Ref:
+    return ManagedValue::forLValue(arg);
   case SILArgumentConvention::Indirect_Out:
   case SILArgumentConvention::Pack_Out:
     llvm_unreachable("unsupported convention for API");

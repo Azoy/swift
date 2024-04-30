@@ -167,6 +167,7 @@ static bool isSimplePartialApply(SILModule &M,
     case ParameterConvention::Pack_Inout:
     case ParameterConvention::Pack_Guaranteed:
     case ParameterConvention::Pack_Owned:
+    case ParameterConvention::Ref:
       // Indirect and pack arguments are trivially word sized.
       return true;
         
@@ -463,6 +464,7 @@ rewriteKnownCalleeWithExplicitContext(SILFunction *callee,
     case ParameterConvention::Indirect_Inout:
     case ParameterConvention::Indirect_InoutAliasable:
     case ParameterConvention::Pack_Inout:
+    case ParameterConvention::Ref:
       // Put a RawPointer in the box, which we can turn back into an address
       // in the function
       boxFields.push_back(SILField(C.TheRawPointerType, /*mutable*/false));
@@ -623,7 +625,8 @@ rewriteKnownCalleeWithExplicitContext(SILFunction *callee,
           projectedArg = proj;
           break;
         case ParameterConvention::Indirect_Inout:
-        case ParameterConvention::Indirect_InoutAliasable: {
+        case ParameterConvention::Indirect_InoutAliasable:
+        case ParameterConvention::Ref: {
           // The box capture is a RawPointer with the value of the capture
           // address.
           auto ptrVal = B.createLoad(loc, proj, LoadOwnershipQualifier::Trivial);
@@ -669,7 +672,8 @@ rewriteKnownCalleeWithExplicitContext(SILFunction *callee,
           projectedArg = proj;
           break;
         case ParameterConvention::Indirect_Inout:
-        case ParameterConvention::Indirect_InoutAliasable: {
+        case ParameterConvention::Indirect_InoutAliasable:
+        case ParameterConvention::Ref: {
           // The box capture is a RawPointer with the value of the capture
           // address.
           auto ptrVal = B.createLoad(loc, proj, LoadOwnershipQualifier::Unqualified);
@@ -795,7 +799,8 @@ rewriteKnownCalleeWithExplicitContext(SILFunction *callee,
         break;
         
       case ParameterConvention::Indirect_InoutAliasable:
-      case ParameterConvention::Indirect_Inout: {
+      case ParameterConvention::Indirect_Inout:
+      case ParameterConvention::Ref: {
         // Pass a pointer to the argument into the box.
         auto p = B.createAddressToPointer(loc, arg,
                                           SILType::getRawPointerType(C),

@@ -274,6 +274,7 @@ static_assert((int)BridgedArgumentConvention::Pack_Owned == (int)swift::SILArgum
 static_assert((int)BridgedArgumentConvention::Pack_Inout == (int)swift::SILArgumentConvention::Pack_Inout);
 static_assert((int)BridgedArgumentConvention::Pack_Guaranteed == (int)swift::SILArgumentConvention::Pack_Guaranteed);
 static_assert((int)BridgedArgumentConvention::Pack_Out == (int)swift::SILArgumentConvention::Pack_Out);
+static_assert((int)BridgedArgumentConvention::Ref == (int)swift::SILArgumentConvention::Ref);
 
 
 //===----------------------------------------------------------------------===//

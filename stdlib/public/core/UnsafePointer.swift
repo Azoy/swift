@@ -262,8 +262,8 @@ extension UnsafePointer where Pointee: ~Copyable {
   /// This pointer must be a pointer to the start of a previously allocated
   /// memory block. The memory must not be initialized or `Pointee` must be a
   /// trivial type.
-  @inlinable
   @_preInverseGenerics
+  @_transparent
   public func deallocate() {
     // Passing zero alignment to the runtime forces "aligned
     // deallocation". Since allocation via `UnsafeMutable[Raw][Buffer]Pointer`
@@ -779,8 +779,8 @@ extension UnsafeMutablePointer where Pointee: ~Copyable {
   ///
   /// - Parameter count: The amount of memory to allocate, counted in instances
   ///   of `Pointee`.
-  @inlinable
   @_preInverseGenerics
+  @_transparent
   public static func allocate(
     capacity count: Int
   ) -> UnsafeMutablePointer<Pointee> {
@@ -812,8 +812,8 @@ extension UnsafeMutablePointer where Pointee: ~Copyable {
   /// This pointer must be a pointer to the start of a previously allocated
   /// memory block. The memory must not be initialized or `Pointee` must be a
   /// trivial type.
-  @inlinable
   @_preInverseGenerics
+  @_transparent
   public func deallocate() {
     // Passing zero alignment to the runtime forces "aligned
     // deallocation". Since allocation via `UnsafeMutable[Raw][Buffer]Pointer`
@@ -900,6 +900,7 @@ extension UnsafeMutablePointer where Pointee: ~Copyable {
   /// - Parameters:
   ///   - value: The instance to initialize this pointer's pointee to.
   @_alwaysEmitIntoClient
+  @_transparent
   public func initialize(to value: consuming Pointee) {
     Builtin.initialize(value, self._rawValue)
   }
@@ -930,8 +931,8 @@ extension UnsafeMutablePointer where Pointee: ~Copyable {
   /// `move()`, the memory is uninitialized.
   ///
   /// - Returns: The instance referenced by this pointer.
-  @inlinable
   @_preInverseGenerics
+  @_transparent
   public func move() -> Pointee {
     return Builtin.take(_rawValue)
   }

@@ -1164,6 +1164,9 @@ SILFunction *VJPCloner::Implementation::createEmptyPullback() {
     case ParameterConvention::Pack_Inout:
       conv = ResultConvention::Pack;
       break;
+
+    case ParameterConvention::Ref:
+      llvm_unreachable("not supported");
     }
     return {tanType, conv};
   };

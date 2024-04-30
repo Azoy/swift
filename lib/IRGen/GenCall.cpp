@@ -1638,6 +1638,7 @@ const TypeInfo &SignatureExpansion::expand(SILParameterInfo param) {
   switch (auto conv = param.getConvention()) {
   case ParameterConvention::Indirect_In:
   case ParameterConvention::Indirect_In_Guaranteed:
+  case ParameterConvention::Ref:
     addIndirectValueParameterAttributes(IGM, Attrs, ti, ParamIRTypes.size());
     addPointerParameter(IGM.getStorageType(getSILFuncConventions().getSILType(
         param, IGM.getMaximalTypeExpansionContext())));

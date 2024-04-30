@@ -170,6 +170,8 @@ public struct ParameterInfo : CustomStringConvertible {
       return false
     case .packInout, .packOwned, .packGuaranteed:
       return true
+    case .ref:
+      return true
     case .indirectOut, .packOut:
       fatalError("invalid parameter convention")
     }

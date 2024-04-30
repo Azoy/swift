@@ -4086,9 +4086,12 @@ enum class ParameterConvention : uint8_t {
   /// being transferred into this function.  Whether the elements are passed
   /// indirectly is recorded in the pack type.
   Pack_Guaranteed,
+
+  /// The better convention
+  Ref,
 };
 // Check that the enum values fit inside Bits.SILFunctionType.
-static_assert(unsigned(ParameterConvention::Pack_Guaranteed) < (1<<4),
+static_assert(unsigned(ParameterConvention::Ref) < (1<<4),
               "fits in Bits.SILFunctionType");
 
 // Does this parameter convention require indirect storage? This reflects a
@@ -4100,6 +4103,7 @@ inline bool isIndirectFormalParameter(ParameterConvention conv) {
   case ParameterConvention::Indirect_Inout:
   case ParameterConvention::Indirect_InoutAliasable:
   case ParameterConvention::Indirect_In_Guaranteed:
+  case ParameterConvention::Ref:
     return true;
 
   case ParameterConvention::Direct_Unowned:
@@ -4126,6 +4130,7 @@ inline bool isConsumedParameter(ParameterConvention conv) {
   case ParameterConvention::Indirect_In_Guaranteed:
   case ParameterConvention::Pack_Inout:
   case ParameterConvention::Pack_Guaranteed:
+  case ParameterConvention::Ref:
     return false;
   }
   llvm_unreachable("bad convention kind");
@@ -4139,6 +4144,7 @@ inline bool isGuaranteedParameter(ParameterConvention conv) {
   case ParameterConvention::Direct_Guaranteed:
   case ParameterConvention::Indirect_In_Guaranteed:
   case ParameterConvention::Pack_Guaranteed:
+  case ParameterConvention::Ref:
     return true;
 
   case ParameterConvention::Indirect_Inout:
@@ -4167,6 +4173,7 @@ inline bool isMutatingParameter(ParameterConvention conv) {
   case ParameterConvention::Direct_Unowned:
   case ParameterConvention::Direct_Owned:
   case ParameterConvention::Pack_Owned:
+  case ParameterConvention::Ref:
     return false;
   }
   llvm_unreachable("bad convention kind");
@@ -4187,6 +4194,7 @@ inline bool isPackParameter(ParameterConvention conv) {
   case ParameterConvention::Direct_Guaranteed:
   case ParameterConvention::Direct_Unowned:
   case ParameterConvention::Direct_Owned:
+  case ParameterConvention::Ref:
     return false;
   }
   llvm_unreachable("bad convention kind");

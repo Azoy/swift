@@ -2051,6 +2051,7 @@ private:
       return SGF.emitUndef(innerTy);
     case ParameterConvention::Indirect_Inout:
     case ParameterConvention::Pack_Inout:
+    case ParameterConvention::Ref:
       llvm_unreachable("inout reabstraction handled elsewhere");
     case ParameterConvention::Indirect_InoutAliasable:
       llvm_unreachable("abstraction difference in aliasable argument not "
@@ -2220,6 +2221,7 @@ private:
     case ParameterConvention::Indirect_InoutAliasable:
     case ParameterConvention::Indirect_In:
     case ParameterConvention::Indirect_In_Guaranteed:
+    case ParameterConvention::Ref:
       llvm_unreachable("not a pack convention");
     }
     llvm_unreachable("bad convention");
@@ -2660,6 +2662,7 @@ ManagedValue TranslateArguments::expandPackInnerParam(
   case ParameterConvention::Direct_Owned:
   case ParameterConvention::Direct_Unowned:
   case ParameterConvention::Direct_Guaranteed:
+  case ParameterConvention::Ref:
     llvm_unreachable("not a pack parameter convention");
 
   case ParameterConvention::Pack_Inout:
@@ -2801,6 +2804,7 @@ static ManagedValue manageYield(SILGenFunction &SGF, SILValue value,
   case ParameterConvention::Indirect_Inout:
   case ParameterConvention::Indirect_InoutAliasable:
   case ParameterConvention::Pack_Inout:
+  case ParameterConvention::Ref:
     return ManagedValue::forLValue(value);
   case ParameterConvention::Direct_Owned:
   case ParameterConvention::Indirect_In:

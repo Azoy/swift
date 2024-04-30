@@ -561,6 +561,9 @@ void DistributedAccessor::decodeArgument(unsigned argumentIdx,
   case ParameterConvention::Pack_Inout:
     llvm_unreachable("pack parameters are not supported");
 
+  case ParameterConvention::Ref:
+    llvm_unreachable("ref parameters are not supported");
+
   case ParameterConvention::Direct_Guaranteed:
   case ParameterConvention::Direct_Unowned: {
     auto paramTy = param.getSILStorageInterfaceType();

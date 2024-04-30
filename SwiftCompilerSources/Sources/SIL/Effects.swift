@@ -540,7 +540,7 @@ public struct SideEffects : CustomStringConvertible, NoReflectionChildren {
       switch convention {
       case .indirectIn, .packOwned:
         result.memory.write = false
-      case .indirectInGuaranteed, .packGuaranteed:
+      case .indirectInGuaranteed, .packGuaranteed, .ref:
         result.memory.write = false
         result.ownership.destroy = false
       case .indirectOut, .packOut, .packInout:

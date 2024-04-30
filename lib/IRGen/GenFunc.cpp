@@ -846,6 +846,7 @@ CanType irgen::getArgumentLoweringType(CanType type, SILParameterInfo paramInfo,
   // address.
   case ParameterConvention::Indirect_In:
   case ParameterConvention::Indirect_In_Guaranteed:
+  case ParameterConvention::Ref:
     if (isNoEscape)
       return CanInOutType::get(type);
     else
@@ -1513,6 +1514,7 @@ static llvm::Value *emitPartialApplicationForwarder(
   case ParameterConvention::Pack_Guaranteed:
   case ParameterConvention::Pack_Owned:
   case ParameterConvention::Pack_Inout:
+  case ParameterConvention::Ref:
     llvm_unreachable("indirect or pack callables not supported");
   }
 
@@ -1626,6 +1628,7 @@ static llvm::Value *emitPartialApplicationForwarder(
 
     case ParameterConvention::Indirect_In_Guaranteed:
     case ParameterConvention::Direct_Guaranteed:
+    case ParameterConvention::Ref:
       dependsOnContextLifetime = true;
       if (outType->getCalleeConvention() ==
             ParameterConvention::Direct_Unowned) {
@@ -1751,6 +1754,7 @@ static llvm::Value *emitPartialApplicationForwarder(
         break;
       }
       case ParameterConvention::Indirect_In_Guaranteed:
+      case ParameterConvention::Ref:
         if (outType->isNoEscape()) {
           cast<LoadableTypeInfo>(fieldTI).loadAsCopy(subIGF, fieldAddr, param);
         } else {
@@ -2320,6 +2324,7 @@ std::optional<StackAddress> irgen::emitFunctionPartialApplication(
       case ParameterConvention::Direct_Guaranteed:
       case ParameterConvention::Indirect_Inout:
       case ParameterConvention::Indirect_InoutAliasable:
+      case ParameterConvention::Ref:
         cast<LoadableTypeInfo>(fieldLayout.getType())
             .initialize(IGF, args, fieldAddr, isOutlined);
         break;

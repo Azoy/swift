@@ -683,6 +683,7 @@ bool SILCombiner::eraseApply(FullApplySite FAS, const UserListTy &Users) {
         case ParameterConvention::Direct_Guaranteed:
         case ParameterConvention::Pack_Guaranteed:
         case ParameterConvention::Pack_Inout:
+        case ParameterConvention::Ref:
           break;
       }
     }

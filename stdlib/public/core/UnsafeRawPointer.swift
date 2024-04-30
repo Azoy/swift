@@ -278,7 +278,7 @@ extension UnsafeRawPointer {
   ///
   /// The memory to be deallocated must be uninitialized or initialized to a
   /// trivial type.
-  @inlinable
+  @_transparent
   public func deallocate() {
     // Passing zero alignment to the runtime forces "aligned
     // deallocation". Since allocation via `UnsafeMutable[Raw][Buffer]Pointer`
@@ -862,7 +862,7 @@ extension UnsafeMutableRawPointer {
   ///     bytes. `alignment` must be a whole power of 2.
   /// - Returns: A pointer to a newly allocated region of memory. The memory is
   ///   allocated, but not initialized.
-  @inlinable
+  @_transparent
   public static func allocate(
     byteCount: Int, alignment: Int
   ) -> UnsafeMutableRawPointer {
@@ -890,7 +890,7 @@ extension UnsafeMutableRawPointer {
   ///
   /// The memory to be deallocated must be uninitialized or initialized to a
   /// trivial type.
-  @inlinable
+  @_transparent
   public func deallocate() {
     // Passing zero alignment to the runtime forces "aligned
     // deallocation". Since allocation via `UnsafeMutable[Raw][Buffer]Pointer`

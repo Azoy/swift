@@ -404,6 +404,7 @@ public:
     case SILArgumentConvention::Indirect_Inout:
     case SILArgumentConvention::Indirect_InoutAliasable:
     case SILArgumentConvention::Pack_Inout:
+    case SILArgumentConvention::Ref:
       return conv;
     case SILArgumentConvention::Direct_Owned:
     case SILArgumentConvention::Direct_Unowned:

@@ -2201,6 +2201,7 @@ bool GatherUniqueStorageUses::visitUse(Operand *use, AccessUseType useTy) {
     case SILArgumentConvention::Indirect_In:
     case SILArgumentConvention::Pack_Owned:
     case SILArgumentConvention::Pack_Guaranteed:
+    case SILArgumentConvention::Ref:
       return visitApplyOperand(use, visitor,
                                &UniqueStorageUseVisitor::visitLoad);
     case SILArgumentConvention::Direct_Unowned:

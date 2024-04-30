@@ -2150,6 +2150,14 @@ static ValueDecl *getAddressOfRawLayout(ASTContext &ctx, Identifier id) {
   return builder.build(id);
 }
 
+static ValueDecl *getRefTo(ASTContext &ctx, Identifier id) {
+  BuiltinFunctionBuilder builder(ctx, /* genericParamCount */ 0);
+
+  builder.setResult(makeConcrete(ctx.TheRawPointerType));
+
+  return builder.build(id);
+}
+
 /// An array of the overloaded builtin kinds.
 static const OverloadedBuiltinKind OverloadedBuiltinKinds[] = {
   OverloadedBuiltinKind::None,
@@ -3226,6 +3234,9 @@ ValueDecl *swift::getBuiltinValueDecl(ASTContext &Context, Identifier Id) {
 
   case BuiltinValueKind::AddressOfRawLayout:
     return getAddressOfRawLayout(Context, Id);
+
+  case BuiltinValueKind::RefTo:
+    return getRefTo(Context, Id);
   }
 
   llvm_unreachable("bad builtin value!");

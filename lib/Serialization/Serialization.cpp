@@ -5181,6 +5181,7 @@ static uint8_t getRawStableParameterConvention(swift::ParameterConvention pc) {
   SIMPLE_CASE(ParameterConvention, Pack_Owned)
   SIMPLE_CASE(ParameterConvention, Pack_Inout)
   SIMPLE_CASE(ParameterConvention, Pack_Guaranteed)
+  SIMPLE_CASE(ParameterConvention, Ref)
   }
   llvm_unreachable("bad parameter convention kind");
 }

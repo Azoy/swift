@@ -133,6 +133,10 @@ public:
     return values.empty();
   }
 
+  size_t size() const {
+    return values.size();
+  }
+
   /// Given that this generation is not finished, advance to the
   /// next element.
   void advance() {

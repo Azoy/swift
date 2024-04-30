@@ -29,6 +29,7 @@ struct SILArgumentConvention {
     Indirect_Inout,
     Indirect_InoutAliasable,
     Indirect_Out,
+    Ref,
     Direct_Owned,
     Direct_Unowned,
     Direct_Guaranteed,
@@ -73,6 +74,9 @@ struct SILArgumentConvention {
     case ParameterConvention::Pack_Inout:
       Value = SILArgumentConvention::Pack_Inout;
       return;
+    case ParameterConvention::Ref:
+      Value = SILArgumentConvention::Ref;
+      return;
     }
     llvm_unreachable("covered switch isn't covered?!");
   }
@@ -80,7 +84,7 @@ struct SILArgumentConvention {
   operator ConventionType() const { return Value; }
 
   bool isIndirectConvention() const {
-    return Value <= SILArgumentConvention::Indirect_Out;
+    return Value <= SILArgumentConvention::Ref;
   }
 
   bool isInoutConvention() const {
@@ -98,6 +102,7 @@ struct SILArgumentConvention {
       case SILArgumentConvention::Pack_Owned:
       case SILArgumentConvention::Pack_Guaranteed:
       case SILArgumentConvention::Pack_Out:
+      case SILArgumentConvention::Ref:
         return false;
     }
     llvm_unreachable("covered switch isn't covered?!");
@@ -118,6 +123,7 @@ struct SILArgumentConvention {
     case SILArgumentConvention::Pack_Inout:
     case SILArgumentConvention::Pack_Guaranteed:
     case SILArgumentConvention::Pack_Out:
+    case SILArgumentConvention::Ref:
       return false;
     }
     llvm_unreachable("covered switch isn't covered?!");
@@ -128,6 +134,7 @@ struct SILArgumentConvention {
     case SILArgumentConvention::Indirect_In_Guaranteed:
     case SILArgumentConvention::Direct_Guaranteed:
     case SILArgumentConvention::Pack_Guaranteed:
+    case SILArgumentConvention::Ref:
       return true;
     case SILArgumentConvention::Indirect_Inout:
     case SILArgumentConvention::Indirect_In:
@@ -150,6 +157,7 @@ struct SILArgumentConvention {
     case SILArgumentConvention::Indirect_Out:
     case SILArgumentConvention::Indirect_In_Guaranteed:
     case SILArgumentConvention::Indirect_Inout:
+    case SILArgumentConvention::Ref:
       return true;
 
     case SILArgumentConvention::Indirect_InoutAliasable:
@@ -182,6 +190,7 @@ struct SILArgumentConvention {
     case SILArgumentConvention::Pack_Inout:
     case SILArgumentConvention::Pack_Owned:
     case SILArgumentConvention::Pack_Guaranteed:
+    case SILArgumentConvention::Ref:
       return false;
     }
     llvm_unreachable("covered switch isn't covered?!");
