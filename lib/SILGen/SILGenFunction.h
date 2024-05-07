@@ -478,6 +478,9 @@ public:
   /// a local variable.
   llvm::DenseMap<ValueDecl*, VarLoc> VarLocs;
 
+  /// butt
+  llvm::SmallVector<AllocStackInst *, 2> DependentTemporaries;
+
   /// The local auxiliary declarations for the parameters of this function that
   /// need to be emitted inside the next brace statement.
   llvm::SmallVector<VarDecl *, 2> LocalAuxiliaryDecls;

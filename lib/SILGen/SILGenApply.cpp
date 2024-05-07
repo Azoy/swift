@@ -3728,18 +3728,25 @@ private:
     SILLocation loc = arg.getLocation();
 
     LValue lv;
+    ManagedValue rv;
+
+    llvm::errs() << "EMITTING REF ARGUMENT:\n";
+    arg.dump();
 
     // If the argument is already lowered to an LValue, it must be the
     // receiver of a self argument, which will be the first inout.
     if (arg.isLValue()) {
       lv = std::move(arg).asKnownLValue();
-    } else {
+    } else if (arg.isExpr()) {
       auto *e = std::move(arg).asKnownExpr()->getSemanticsProvidingExpr();
 
       // Look through loads to find the declref lvalue.
       if (auto load = dyn_cast<LoadExpr>(e)) {
         e = load->getSubExpr();
       }
+
+      llvm::errs() << "REF EXPRESSION:\n";
+      e->dump();
 
       if (auto declRef = dyn_cast<DeclRefExpr>(e)) {
         if (auto var = dyn_cast<VarDecl>(declRef->getDecl())) {
@@ -3753,12 +3760,17 @@ private:
             auto localVar = SGF.maybeEmitValueOfLocalVarDecl(var,
                                                              AccessKind::Read);
 
+            llvm::errs() << "LOCAL VAR:\n";
+            localVar.dump();
+
             if (localVar && !localVar.isLValue()) {
               auto contexts = getRValueEmissionContexts(loweredSubstArgType, param);
               auto rvalue = SGF.emitRValueAsSingleValue(e, contexts.FinalContext);
 
               auto alloc = SGF.B.createAllocStack(loc,
                                           loweredSubstParamType.getObjectType());
+
+              SGF.DependentTemporaries.push_back(alloc);
 
               SGF.emitManagedStoreBorrow(loc, rvalue.getValue(), alloc);
 
@@ -3768,23 +3780,40 @@ private:
                                       substType);
             } else {
               lv = SGF.emitLValue(e, SGFAccessKind::BorrowedAddressRead);
+
+              llvm::errs() << "LV:\n";
+              lv.dump();
             }
           //}
         }
       } else {
         auto contexts = getRValueEmissionContexts(loweredSubstArgType, param);
-        auto rvalue = SGF.emitRValueAsSingleValue(e, contexts.FinalContext);
+        rv = SGF.emitRValueAsSingleValue(e, contexts.FinalContext);
+      }
+    } else {
+      auto value = std::move(arg).getAsSingleValue(SGF).getValue();
 
-        auto alloc = SGF.B.createAllocStack(loc,
+      if (auto load = dyn_cast<LoadBorrowInst>(value)) {
+        load->getOperand()->dump();
+        lv = LValue::forAddress(SGFAccessKind::BorrowedAddressRead,
+                                ManagedValue::forRValueWithoutOwnership(load->getOperand()), std::nullopt, origType,
+                                substType);
+        lv.dump();
+      }
+    }
+
+    if (!lv.isValid()) {
+      auto alloc = SGF.B.createAllocStack(loc,
                                     loweredSubstParamType.getObjectType());
 
-        SGF.emitManagedStoreBorrow(loc, rvalue.getValue(), alloc);
+        SGF.DependentTemporaries.push_back(alloc);
+
+        SGF.emitManagedStoreBorrow(loc, rv.getValue(), alloc);
 
         auto managedAlloc = ManagedValue::forLValue(alloc);
         lv = LValue::forAddress(SGFAccessKind::BorrowedAddressRead,
                                 managedAlloc, std::nullopt, origType,
                                 substType);
-      }
     }
 
     if (loweredSubstParamType.hasAbstractionDifference(Rep,
@@ -7008,6 +7037,7 @@ ArgumentSource AccessorBaseArgPreparer::prepareAccessorAddressBaseArg() {
   }
 
   if (selfParam.getConvention() == ParameterConvention::Ref) {
+    llvm::errs() << "SHOULD WE LOAD A REF BASE ACCESSOR ARGUMENT THING\n";
     // It sometimes happens that we get r-value bases here, e.g. when calling a
     // mutating setter on a materialized temporary.  Just don't claim the value.
     if (!base.isLValue()) {
@@ -7235,10 +7265,6 @@ RValue SILGenFunction::emitGetAccessor(
   // preserved.
   loc.markExplicit();
 
-  llvm::errs() << "SELF VALUE:\n";
-  selfValue.dump();
-  F.dump();
-
   Callee getter = emitSpecializedAccessorFunctionRef(
       *this, loc, get, substitutions, selfValue, isSuper, isDirectUse,
       isOnSelfParameter);
@@ -7248,6 +7274,9 @@ RValue SILGenFunction::emitGetAccessor(
   CallEmission emission(*this, std::move(getter), std::move(writebackScope));
   if (implicitActorHopTarget)
     emission.setImplicitlyAsync(implicitActorHopTarget);
+
+  llvm::errs() << "GET ACCESSOR SELF PARAM:\n";
+  selfValue.dump();
 
   // Self ->
   if (hasSelf) {

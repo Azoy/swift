@@ -1881,9 +1881,6 @@ namespace {
       RValue rvalue;
       FormalEvaluationScope scope(SGF);
 
-      llvm::errs() << "BASE:\n";
-      base.dump();
-
       auto args =
           std::move(*this).prepareAccessorArgs(SGF, loc, base, getter);
 
@@ -3109,6 +3106,7 @@ public:
 
   LValue visitDeclRefExpr(DeclRefExpr *e, SGFAccessKind accessKind,
                           LValueOptions options) {
+    llvm::errs() << "HERE IS MY ACCESS KIND: " << (accessKind == SGFAccessKind::BorrowedObjectRead) << "\n";
     if (accessKind == SGFAccessKind::BorrowedObjectRead) {
       auto rv = emitImmediateBaseValue(e);
       CanType formalType = getSubstFormalRValueType(e);
@@ -3142,17 +3140,9 @@ LValue SILGenLValue::visitRec(Expr *e, SGFAccessKind accessKind,
     return visitRecInOut(*this, e, accessKind, options, orig);
   }
 
-  if (auto subscript = dyn_cast<SubscriptExpr>(e)) {
-    auto decl = subscript->getDecl().getDecl();
-    auto fnType = decl->getInterfaceType()->castTo<AnyFunctionType>();
-    fnType->dump();
-
-    // If the subscript has lifetime dependency information, then self is passed
-    // indirectly and we do have an lvalue.
-    if (fnType->hasLifetimeDependenceInfo()) {
-      llvm::errs() << "DO SOMETHING FOR THIS SUBSCRIPT:\n";
-    }
-  }
+  llvm::errs() << "VISIT RECS EXPR:\n";
+  e->dump();
+  orig.dump();
 
   // If the base is a load of a noncopyable type (or, eventually, when we have
   // a `borrow x` operator, the operator is used on the base here), we want to
@@ -3160,10 +3150,11 @@ LValue SILGenLValue::visitRec(Expr *e, SGFAccessKind accessKind,
   // an actual loaded copy.
   if (SILGenBorrowedBaseVisitor::isNonCopyableBaseBorrow(SGF, e)) {
     SILGenBorrowedBaseVisitor visitor(*this, SGF, orig);
-    auto accessKind = SGFAccessKind::BorrowedObjectRead;
+    auto borrowedAccessKind = accessKind == SGFAccessKind::BorrowedAddressRead ?
+        accessKind : SGFAccessKind::BorrowedObjectRead;
     assert(!e->getType()->is<LValueType>()
         && "maybe need SGFAccessKind::BorrowedAddressRead ?");
-    return visitor.visit(e, accessKind, options);
+    return visitor.visit(e, borrowedAccessKind, options);
   }
 
   // Otherwise we have a non-lvalue type (references, values, metatypes,
@@ -3832,9 +3823,11 @@ static SGFAccessKind getBaseAccessKind(SILGenModule &SGM,
                                        bool forBorrowExpr) {
   switch (strategy.getKind()) {
   case AccessStrategy::Storage:
+    llvm::errs() << "ACCESS STRAT STORAGE:\n";
     return getBaseAccessKindForStorage(accessKind);
 
   case AccessStrategy::MaterializeToTemporary: {
+    llvm::errs() << "ACCESS STRAT MATERIALIZE:\n";
     assert(accessKind == SGFAccessKind::ReadWrite);
     auto writeBaseKind = getBaseAccessKind(SGM, member, SGFAccessKind::Write,
                                            strategy.getWriteStrategy(),
@@ -3868,6 +3861,7 @@ static SGFAccessKind getBaseAccessKind(SILGenModule &SGM,
   case AccessStrategy::DirectToAccessor:
   case AccessStrategy::DispatchToAccessor:
   case AccessStrategy::DispatchToDistributedThunk: {
+    llvm::errs() << "ACCESS STRAT DIRECT:\n";
     auto accessor = member->getOpaqueAccessor(strategy.getAccessor());
     return getBaseAccessKindForAccessor(SGM, accessor, baseFormalType,
                                         forBorrowExpr);
@@ -4162,7 +4156,7 @@ LValue SILGenLValue::visitSubscriptExpr(SubscriptExpr *e,
                        getBaseOptions(options, strategy));
   assert(lv.isValid());
 
-  llvm::errs() << "LV AFTER VISIT REC:\n";
+  llvm::errs() << "LV AFTER VISITING REC:\n";
   lv.dump();
 
   // Now that the base components have been resolved, check the isolation for

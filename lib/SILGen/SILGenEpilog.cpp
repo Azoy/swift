@@ -315,6 +315,10 @@ emitEpilog(SILLocation TopLevel, bool UsesCustomEpilog) {
   SILLocation returnLoc(TopLevel);
   std::tie(maybeReturnValue, returnLoc) = emitEpilogBB(TopLevel);
 
+  for (auto alloc : DependentTemporaries) {
+    B.createDeallocStack(alloc->getLoc(), alloc);
+  }
+
   SILBasicBlock *ResultBB = nullptr;
   
   if (!maybeReturnValue) {

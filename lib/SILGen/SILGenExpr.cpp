@@ -2580,12 +2580,19 @@ RValue RValueEmitter::visitSubscriptExpr(SubscriptExpr *E, SGFContext C) {
   // Any writebacks for this access are tightly scoped.
   FormalEvaluationScope scope(SGF);
 
+  llvm::errs() << "FUNCTION:\n";
+  SGF.F.dump();
+
+  llvm::errs() << "SUBSCRIPT:\n";
   E->dump();
 
   LValue lv = SGF.emitLValue(E, SGFAccessKind::OwnedObjectRead);
 
-  llvm::errs() << "LVALUE FOR SUBSCRIPT:\n";
+  llvm::errs() << "LVALUE FROM SUBSCRIPT:\n";
   lv.dump();
+
+  llvm::errs() << "FUNCTION ONE LAST TIME:\n";
+  SGF.F.dump();
 
   // We can't load at +0 without further analysis, since the formal access into
   // the lvalue will end immediately.
