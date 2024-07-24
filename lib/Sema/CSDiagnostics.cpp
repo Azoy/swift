@@ -476,6 +476,9 @@ bool RequirementFailure::diagnoseAsError() {
 
     case RequirementKind::SameShape:
       return false;
+
+    case RequirementKind::Value:
+      llvm_unreachable("Value requirement not supported here");
     }
 
     if (auto *repr = namingDecl->getOpaqueResultTypeRepr()) {
@@ -7838,6 +7841,7 @@ void NonEphemeralConversionFailure::emitSuggestionNotes() const {
   case ConversionRestrictionKind::ObjCTollFreeBridgeToCF:
   case ConversionRestrictionKind::CGFloatToDouble:
   case ConversionRestrictionKind::DoubleToCGFloat:
+  case ConversionRestrictionKind::ValueGeneric:
     llvm_unreachable("Expected an ephemeral conversion!");
   }
 }

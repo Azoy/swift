@@ -7270,6 +7270,10 @@ Expr *ExprRewriter::coerceToType(Expr *expr, Type toType,
       finishApply(implicitInit, toType, callLocator, callLocator);
       return implicitInit;
     }
+
+    case ConversionRestrictionKind::ValueGeneric: {
+      return cs.cacheType(new (ctx) TypeValueExpr(expr, toType));
+    }
     }
   }
 
@@ -7712,6 +7716,7 @@ Expr *ExprRewriter::coerceToType(Expr *expr, Type toType,
   case TypeKind::GenericFunction:
   case TypeKind::GenericTypeParam:
   case TypeKind::DependentMember:
+  case TypeKind::Integer:
     break;
   }
 
@@ -7790,6 +7795,7 @@ Expr *ExprRewriter::coerceToType(Expr *expr, Type toType,
   case TypeKind::Pack:
   case TypeKind::PackExpansion:
   case TypeKind::PackElement:
+  case TypeKind::Integer:
     break;
 
   case TypeKind::BuiltinTuple:

@@ -2214,6 +2214,7 @@ createSpecializedStructOrClassType(NominalOrBoundGenericNominalType *Type,
     case TypeKind::BuiltinDefaultActorStorage:
     case TypeKind::BuiltinNonDefaultDistributedActorStorage:
     case TypeKind::SILMoveOnlyWrapped:
+    case TypeKind::Integer:
       LLVM_DEBUG(llvm::dbgs() << "Unhandled type: ";
                  DbgTy.getType()->dump(llvm::dbgs()); llvm::dbgs() << "\n");
       MangledName = "<unknown>";

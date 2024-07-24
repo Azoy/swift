@@ -1643,6 +1643,7 @@ static ManagedValue emitCreateAsyncTask(SILGenFunction &SGF, SILLocation loc,
 
     auto genericSig = subs.getGenericSignature().getCanonicalSignature();
     auto genericResult = GenericTypeParamType::get(/*isParameterPack*/ false,
+                                                   /*isValue*/ false,
                                                    /*depth*/ 0, /*index*/ 0,
                                                    SGF.getASTContext());
 
