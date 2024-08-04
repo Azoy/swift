@@ -4963,8 +4963,7 @@ TypeConverter::getInterfaceBoxTypeForCapture(ValueDecl *captured,
 
         // Remap the depth. This is necessary because the 'var' box might
         // capture a subset of the captured environments of the closure.
-        return GenericTypeParamType::get(
-            /*isParameterPack=*/false, /*isValue*/ false,
+        return GenericTypeParamType::getType(
             genericSig.getNextDepth() - capturedEnvs.size() + capturedEnvIndex,
             paramTy->getIndex(),
             C);

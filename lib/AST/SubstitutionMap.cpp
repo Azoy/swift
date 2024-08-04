@@ -544,10 +544,9 @@ Type QueryOverrideSubs::operator()(SubstitutableType *type) const {
       }
 
       return GenericTypeParamType::get(
-          gp->isParameterPack(),
-          gp->isValue(),
+          gp->getParamKind(),
           gp->getDepth() + info.OrigDepth - info.BaseDepth,
-          gp->getIndex(), info.Ctx);
+          gp->getIndex(), gp->getValueType(), info.Ctx);
     }
   }
 
@@ -599,21 +598,22 @@ SubstitutionMap::combineSubstitutionMaps(SubstitutionMap firstSubMap,
       if (how == CombineSubstitutionMaps::AtDepth) {
         if (gp->getDepth() < firstDepthOrIndex)
           return Type();
-        return GenericTypeParamType::get(gp->isParameterPack(),
-                                         gp->isValue(),
+        return GenericTypeParamType::get(gp->getParamKind(),
                                          gp->getDepth() + secondDepthOrIndex -
                                              firstDepthOrIndex,
-                                         gp->getIndex(), ctx);
+                                         gp->getIndex(), gp->getValueType(),
+                                         ctx);
       }
 
       assert(how == CombineSubstitutionMaps::AtIndex);
       if (gp->getIndex() < firstDepthOrIndex)
         return Type();
       return GenericTypeParamType::get(
-          gp->isParameterPack(),
-          gp->isValue(),
+          gp->getParamKind(),
           gp->getDepth(),
-          gp->getIndex() + secondDepthOrIndex - firstDepthOrIndex, ctx);
+          gp->getIndex() + secondDepthOrIndex - firstDepthOrIndex,
+          gp->getValueType(),
+          ctx);
     }
 
     return type;

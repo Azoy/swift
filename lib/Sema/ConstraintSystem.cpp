@@ -2145,7 +2145,6 @@ void ConstraintSystem::openGenericRequirement(
   case RequirementKind::Superclass:
   case RequirementKind::SameType:
   case RequirementKind::SameShape:
-  case RequirementKind::Value:
     openedReq = Requirement(kind, openedFirst, substFn(req.getSecondType()));
     break;
   case RequirementKind::Layout:
@@ -7480,9 +7479,6 @@ static bool doesMemberHaveUnfulfillableConstraintsWithExistentialBase(
     switch (req.getKind()) {
     case RequirementKind::SameShape:
       llvm_unreachable("Same-shape requirement not supported here");
-
-    case RequirementKind::Value:
-      llvm_unreachable("Value requirement not supported here");
 
     case RequirementKind::Superclass: {
       if (req.getFirstType()->getRootGenericParam()->getDepth() > 0 &&

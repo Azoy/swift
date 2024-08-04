@@ -108,9 +108,7 @@ mapTypeOutOfOpenedExistentialContext(CanType t) {
   SmallVector<GenericTypeParamType *, 2> params;
   SmallVector<Requirement, 2> requirements;
   for (const unsigned i : indices(openedTypes)) {
-    auto *param = GenericTypeParamType::get(
-        /*isParameterPack*/ false, /*isValue*/ false, /*depth*/ 0,
-        /*index*/ i, ctx);
+    auto *param = GenericTypeParamType::getType(/*depth*/ 0, /*index*/ i, ctx);
     params.push_back(param);
 
     Type constraintTy = openedTypes[i]->getExistentialType();

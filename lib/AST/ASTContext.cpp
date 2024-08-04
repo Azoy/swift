@@ -608,8 +608,7 @@ struct ASTContext::Implementation {
   };
 
   llvm::DenseMap<ModuleDecl*, ModuleType*> ModuleTypes;
-  llvm::DenseMap<std::pair<unsigned, unsigned>, GenericTypeParamType *>
-    GenericParamTypes;
+  llvm::FoldingSet<GenericTypeParamType> GenericParamTypes;
   llvm::FoldingSet<GenericFunctionType> GenericFunctionTypes;
   llvm::FoldingSet<SILFunctionType> SILFunctionTypes;
   llvm::FoldingSet<SILPackType> SILPackTypes;
@@ -861,7 +860,6 @@ void ASTContext::Implementation::dump(llvm::raw_ostream &os) const {
   SIZE_AND_BYTES(NextMacroDiscriminator);
   SIZE_AND_BYTES(NextDiscriminator);
   SIZE_AND_BYTES(ModuleTypes);
-  SIZE_AND_BYTES(GenericParamTypes);
   SIZE_AND_BYTES(SILBlockStorageTypes);
   SIZE_AND_BYTES(SILMoveOnlyWrappedTypes);
   SIZE_AND_BYTES(BuiltinIntegerTypes);
@@ -3118,7 +3116,7 @@ size_t ASTContext::getTotalMemory() const {
     getImpl().Cleanups.capacity() +
     llvm::capacity_in_bytes(getImpl().ModuleLoaders) +
     llvm::capacity_in_bytes(getImpl().ModuleTypes) +
-    llvm::capacity_in_bytes(getImpl().GenericParamTypes) +
+    // getImpl().GenericParamTypes ?
     // getImpl().GenericFunctionTypes ?
     // getImpl().SILFunctionTypes ?
     llvm::capacity_in_bytes(getImpl().SILBlockStorageTypes) +
@@ -4730,25 +4728,47 @@ GenericFunctionType::GenericFunctionType(
   }
 }
 
-GenericTypeParamType *GenericTypeParamType::get(bool isParameterPack,
-                                                bool isValue, unsigned depth,
-                                                unsigned index,
+GenericTypeParamType *GenericTypeParamType::get(GenericTypeParamKind paramKind,
+                                                unsigned depth, unsigned index,
+                                                Type valueType,
                                                 const ASTContext &ctx) {
-  const auto depthKey = depth | ((isParameterPack ? 1 : 0) << 30);
-  const auto indexKey = index | ((isValue ? 1 : 0) << 30);
-  auto known = ctx.getImpl().GenericParamTypes.find({depthKey, indexKey});
-  if (known != ctx.getImpl().GenericParamTypes.end())
-    return known->second;
+  llvm::FoldingSetNodeID id;
+  GenericTypeParamType::Profile(id, paramKind, depth, index, valueType);
+
+  void *insertPos;
+  if (auto gpTy = ctx.getImpl().GenericParamTypes.FindNodeOrInsertPos(id, insertPos))
+    return gpTy;
 
   RecursiveTypeProperties props = RecursiveTypeProperties::HasTypeParameter;
-  if (isParameterPack)
+  if (paramKind == GenericTypeParamKind::Pack)
     props |= RecursiveTypeProperties::HasParameterPack;
 
   auto result = new (ctx, AllocationArena::Permanent)
-      GenericTypeParamType(isParameterPack, isValue, depth, index, props,
-                           ctx);
-  ctx.getImpl().GenericParamTypes[{depthKey, indexKey}] = result;
+      GenericTypeParamType(paramKind, depth, index, valueType, props, ctx);
+  ctx.getImpl().GenericParamTypes.InsertNode(result, insertPos);
   return result;
+}
+
+GenericTypeParamType *GenericTypeParamType::getType(unsigned depth,
+                                                    unsigned index,
+                                                    const ASTContext &ctx) {
+  return GenericTypeParamType::get(GenericTypeParamKind::Type, depth, index,
+                                   /*valueType*/ Type(), ctx);
+}
+
+GenericTypeParamType *GenericTypeParamType::getPack(unsigned depth,
+                                                    unsigned index,
+                                                    const ASTContext &ctx) {
+  return GenericTypeParamType::get(GenericTypeParamKind::Pack, depth, index,
+                                   /*valueType*/ Type(), ctx);
+}
+
+GenericTypeParamType *GenericTypeParamType::getValue(unsigned depth,
+                                                     unsigned index,
+                                                     Type valueType,
+                                                     const ASTContext &ctx) {
+  return GenericTypeParamType::get(GenericTypeParamKind::Value, depth, index,
+                                   valueType, ctx);
 }
 
 ArrayRef<GenericTypeParamType *>
@@ -6127,7 +6147,7 @@ GenericParamList *ASTContext::getSelfGenericParamList(DeclContext *dc) const {
   // DeclContext this was called with. Since this is just a giant
   // hack for SIL mode, that should be OK.
   auto *selfParam = GenericTypeParamDecl::createImplicit(
-      dc, Id_Self, /*depth*/ 0, /*index*/ 0);
+      dc, Id_Self, /*depth*/ 0, /*index*/ 0, GenericTypeParamKind::Type);
 
   theParamList = GenericParamList::create(
       const_cast<ASTContext &>(*this), SourceLoc(), {selfParam}, SourceLoc());
@@ -6140,9 +6160,7 @@ CanGenericSignature ASTContext::getSingleGenericParameterSignature() const {
   if (auto theSig = getImpl().SingleGenericParameterSignature)
     return theSig;
 
-  auto param = GenericTypeParamType::get(/*isParameterPack*/ false,
-                                         /*isValue*/ false, /*depth*/ 0,
-                                         /*index*/ 0, *this);
+  auto param = GenericTypeParamType::getType(/*depth*/ 0, /*index*/ 0, *this);
   auto sig = GenericSignature::get(param, { });
   auto canonicalSig = CanGenericSignature(sig);
   getImpl().SingleGenericParameterSignature = canonicalSig;
@@ -6151,10 +6169,8 @@ CanGenericSignature ASTContext::getSingleGenericParameterSignature() const {
 
 Type OpenedArchetypeType::getSelfInterfaceTypeFromContext(GenericSignature parentSig,
                                                           ASTContext &ctx) {
-  return GenericTypeParamType::get(/*isParameterPack=*/ false,
-                                   /*isValue*/ false,
-                                   parentSig.getNextDepth(), /*index=*/ 0,
-                                   ctx);
+  return GenericTypeParamType::getType(parentSig.getNextDepth(), /*index=*/ 0,
+                                       ctx);
 }
 
 CanGenericSignature

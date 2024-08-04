@@ -4646,9 +4646,6 @@ static ConstraintFix *fixRequirementFailure(ConstraintSystem &cs, Type type1,
   case RequirementKind::Layout:
   case RequirementKind::Conformance:
     return MissingConformance::forRequirement(cs, type1, type2, reqLoc);
-
-  case RequirementKind::Value:
-    return SkipSameTypeRequirement::create(cs, type1, type2, reqLoc);
   }
   llvm_unreachable("covered switch");
 }
@@ -15817,11 +15814,6 @@ void ConstraintSystem::addConstraint(Requirement req,
       llvm_unreachable("unexpected LayoutConstraint kind");
     }
     return;
-
-  case RequirementKind::Value:
-    // FIXME: Should we be adding a constraint here? Is there some new constraint
-    // to add?
-    break;
   }
 
   auto firstType = req.getFirstType();

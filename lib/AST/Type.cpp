@@ -1701,9 +1701,9 @@ CanType TypeBase::computeCanonicalType() {
     assert(gpDecl->getDepth() != GenericTypeParamDecl::InvalidDepth &&
            "parameter hasn't been validated");
     Result =
-        GenericTypeParamType::get(gpDecl->isParameterPack(),
-                                  gpDecl->isValue(), gpDecl->getDepth(),
-                                  gpDecl->getIndex(), gpDecl->getASTContext());
+        GenericTypeParamType::get(gpDecl->getParamKind(), gpDecl->getDepth(),
+                                  gpDecl->getIndex(), gpDecl->getValueType(),
+                                  gpDecl->getASTContext());
     break;
   }
 
@@ -2008,6 +2008,19 @@ ArrayRef<Type> TypeAliasType::getDirectGenericArgs() const {
   return getSubstitutionMap().getInnermostReplacementTypes();
 }
 
+GenericTypeParamType *GenericTypeParamType::get(GenericTypeParamDecl *param) {
+  auto &ctx = param->getASTContext();
+
+  RecursiveTypeProperties props = RecursiveTypeProperties::HasTypeParameter;
+  if (param->isParameterPack())
+    props |= RecursiveTypeProperties::HasParameterPack;
+
+  auto type = new (ctx, AllocationArena::Permanent) GenericTypeParamType(props);
+  type->ParamOrDepthIndex = param;
+  type->ParamKind = param->getParamKind();
+  return type;
+}
+
 unsigned GenericTypeParamType::getDepth() const {
   if (auto param = getDecl()) {
     return param->getDepth();
@@ -2052,12 +2065,11 @@ Identifier GenericTypeParamType::getName() const {
   return name;
 }
 
-bool GenericTypeParamType::isValue() const {
-  if (auto param = getDecl()) {
-    return param->isValue();
-  }
+Type GenericTypeParamType::getValueType() const {
+  if (getDecl())
+    return getDecl()->getValueType();
 
-  return IsValue;
+  return ValueType;
 }
 
 const llvm::fltSemantics &BuiltinFloatType::getAPFloatSemantics() const {
@@ -3918,8 +3930,6 @@ CanType ProtocolCompositionType::getMinimalCanonicalType(
     switch (Req.getKind()) {
     case RequirementKind::SameShape:
       llvm_unreachable("Same-shape requirement not supported here");
-    case RequirementKind::Value:
-      llvm_unreachable("Value requirement not supported here");
     case RequirementKind::Superclass:
     case RequirementKind::Conformance:
       MinimalMembers.push_back(Req.getSecondType());

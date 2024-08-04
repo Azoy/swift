@@ -4714,7 +4714,6 @@ hasInvariantSelfRequirement(const ProtocolDecl *proto,
       continue;
     case RequirementKind::Conformance:
     case RequirementKind::Layout:
-    case RequirementKind::Value:
       continue;
     }
 
@@ -4754,7 +4753,6 @@ static void diagnoseInvariantSelfRequirement(
     break;
   case RequirementKind::Conformance:
   case RequirementKind::Layout:
-  case RequirementKind::Value:
     llvm_unreachable("Invalid requirement kind");
   }
 

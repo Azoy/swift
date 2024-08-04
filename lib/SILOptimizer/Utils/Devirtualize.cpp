@@ -966,20 +966,16 @@ getWitnessMethodSubstitutions(
         }
 
         if (depth < baseDepth) {
-          paramType = GenericTypeParamType::get(
-              paramType->isParameterPack(),
-              paramType->isValue(),
-              depth, paramType->getIndex(), ctx);
+          paramType = GenericTypeParamType::get(paramType->getParamKind(),
+              depth, paramType->getIndex(), paramType->getValueType(), ctx);
 
           return Type(paramType).subst(baseSubMap);
         }
 
         depth = depth - baseDepth + 1;
 
-        paramType = GenericTypeParamType::get(
-            paramType->isParameterPack(),
-            paramType->isValue(),
-            depth, paramType->getIndex(), ctx);
+        paramType = GenericTypeParamType::get(paramType->getParamKind(),
+            depth, paramType->getIndex(), paramType->getValueType(), ctx);
         return Type(paramType).subst(origSubMap);
       },
       [&](CanType type, Type substType, ProtocolDecl *proto) {
@@ -999,10 +995,8 @@ getWitnessMethodSubstitutions(
         if (depth < baseDepth) {
           type = CanType(type.transform([&](Type t) -> Type {
             if (t->isEqual(paramType)) {
-              return GenericTypeParamType::get(
-                  paramType->isParameterPack(),
-                  paramType->isValue(),
-                  depth, paramType->getIndex(), ctx);
+              return GenericTypeParamType::get(paramType->getParamKind(),
+                  depth, paramType->getIndex(), paramType->getValueType(), ctx);
             }
 
             assert(!t->is<GenericTypeParamType>());
@@ -1016,10 +1010,8 @@ getWitnessMethodSubstitutions(
 
         type = CanType(type.transform([&](Type t) -> Type {
           if (t->isEqual(paramType)) {
-            return GenericTypeParamType::get(
-                paramType->isParameterPack(),
-                paramType->isValue(),
-                depth, paramType->getIndex(), ctx);
+            return GenericTypeParamType::get(paramType->getParamKind(),
+                depth, paramType->getIndex(), paramType->getValueType(), ctx);
           }
 
           assert(!t->is<GenericTypeParamType>());
