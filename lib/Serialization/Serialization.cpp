@@ -4200,8 +4200,7 @@ public:
         S.Out, S.ScratchRecord, abbrCode,
         S.addDeclBaseNameRef(genericParam->getName()),
         genericParam->isImplicit(),
-        getRawStableGenericParamKind(genericParam->getParamKind()),
-        genericParam->getDepth(), genericParam->getIndex());
+        S.addTypeRef(genericParam->getDeclaredInterfaceType()->getCanonicalType()));
   }
 
   void visitAssociatedTypeDecl(const AssociatedTypeDecl *assocType) {
