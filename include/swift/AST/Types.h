@@ -426,10 +426,9 @@ protected:
     NumParams : 16
   );
 
-  SWIFT_INLINE_BITFIELD_FULL(ArchetypeType, TypeBase, 1+1+1+16,
+  SWIFT_INLINE_BITFIELD_FULL(ArchetypeType, TypeBase, 1+1+16,
     HasSuperclass : 1,
     HasLayoutConstraint : 1,
-    HasValue : 1,
     : NumPadBits,
     NumProtocols : 16
   );
@@ -6529,17 +6528,7 @@ protected:
   }
 
   size_t numTrailingObjects(OverloadToken<Type>) const {
-    auto numTypes = 0;
-
-    if (Bits.ArchetypeType.HasSuperclass) {
-      numTypes += 1;
-    }
-
-    if (Bits.ArchetypeType.HasValue) {
-      numTypes += 1;
-    }
-
-    return numTypes;
+    return Bits.ArchetypeType.HasSuperclass ? 1 : 0;
   }
 
   size_t numTrailingObjects(OverloadToken<LayoutConstraint>) const {
@@ -6587,7 +6576,7 @@ public:
   Type getSuperclass() const {
     if (!Bits.ArchetypeType.HasSuperclass) return Type();
 
-    return getSubclassTrailingObjects<Type>()[0];
+    return *getSubclassTrailingObjects<Type>();
   }
 
   /// Retrieve the layout constraint of this type, if such a requirement exists.
@@ -6599,15 +6588,7 @@ public:
 
   /// Retrieve the value type of this generic parameter, if such a requirement
   /// exists.
-  Type getValueType() const {
-    if (!Bits.ArchetypeType.HasValue) return Type();
-
-    if (Bits.ArchetypeType.HasSuperclass) {
-      return getSubclassTrailingObjects<Type>()[1];
-    }
-
-    return getSubclassTrailingObjects<Type>()[0];
-  }
+  Type getValueType() const;
 
   /// Retrieve the nested type with the given associated type.
   Type getNestedType(AssociatedTypeDecl *assocType);
@@ -6652,7 +6633,7 @@ protected:
                 Type InterfaceType,
                 ArrayRef<ProtocolDecl *> ConformsTo,
                 Type Superclass, LayoutConstraint Layout,
-                Type ValueType, GenericEnvironment *Environment);
+                GenericEnvironment *Environment);
 };
 BEGIN_CAN_TYPE_WRAPPER(ArchetypeType, SubstitutableType)
 END_CAN_TYPE_WRAPPER(ArchetypeType, SubstitutableType)
@@ -6675,8 +6656,7 @@ public:
                                GenericEnvironment *GenericEnv,
                                Type InterfaceType,
                                SmallVectorImpl<ProtocolDecl *> &ConformsTo,
-                               Type Superclass, LayoutConstraint Layout,
-                               Type ValueType);
+                               Type Superclass, LayoutConstraint Layout);
 
   static bool classof(const TypeBase *T) {
     return T->getKind() == TypeKind::PrimaryArchetype;
@@ -6686,8 +6666,7 @@ private:
                        GenericEnvironment *GenericEnv,
                        Type InterfaceType,
                        ArrayRef<ProtocolDecl *> ConformsTo,
-                       Type Superclass, LayoutConstraint Layout,
-                       Type ValueType);
+                       Type Superclass, LayoutConstraint Layout);
 };
 BEGIN_CAN_TYPE_WRAPPER(PrimaryArchetypeType, ArchetypeType)
 END_CAN_TYPE_WRAPPER(PrimaryArchetypeType, ArchetypeType)
@@ -6705,7 +6684,7 @@ class OpaqueTypeArchetypeType final : public ArchetypeType,
   static OpaqueTypeArchetypeType *getNew(
       GenericEnvironment *environment, Type interfaceType,
       ArrayRef<ProtocolDecl*> conformsTo, Type superclass,
-      LayoutConstraint layout, Type valueType);
+      LayoutConstraint layout);
 
 public:
   /// Get an opaque archetype representing the underlying type of the given
@@ -6735,8 +6714,7 @@ private:
                           RecursiveTypeProperties properties,
                           Type interfaceType,
                           ArrayRef<ProtocolDecl*> conformsTo,
-                          Type superclass, LayoutConstraint layout,
-                          Type valueType);
+                          Type superclass, LayoutConstraint layout);
 };
 BEGIN_CAN_TYPE_WRAPPER(OpaqueTypeArchetypeType, ArchetypeType)
 END_CAN_TYPE_WRAPPER(OpaqueTypeArchetypeType, ArchetypeType)
@@ -6845,7 +6823,7 @@ class OpenedArchetypeType final : public LocalArchetypeType,
   static CanTypeWrapper<OpenedArchetypeType>
   getNew(GenericEnvironment *environment, Type interfaceType,
          ArrayRef<ProtocolDecl *> conformsTo, Type superclass,
-         LayoutConstraint layout, Type valueType);
+         LayoutConstraint layout);
 
 public:
   /// Compute the parameter that serves as the \c Self type for an opened
@@ -6926,7 +6904,7 @@ public:
 private:
   OpenedArchetypeType(GenericEnvironment *environment, Type interfaceType,
                       ArrayRef<ProtocolDecl *> conformsTo, Type superclass,
-                      LayoutConstraint layout, Type valueType);
+                      LayoutConstraint layout);
 };
 BEGIN_CAN_TYPE_WRAPPER(OpenedArchetypeType, LocalArchetypeType)
   CanOpenedArchetypeType getRoot() const {
@@ -7166,8 +7144,12 @@ public:
   Type getValueType() const;
 
   void Profile(llvm::FoldingSetNodeID &ID) {
+    // Note: We explicitly don't use 'getName()' because for canonical forms
+    // which don't store an identifier we'll go create a tau based form. We
+    // really want to just plumb down the null Identifier because that's what's
+    // inside the cache.
     Profile(ID, getParamKind(), getDepth(), getIndex(), getValueType(),
-            getName());
+            Name);
   }
   static void Profile(llvm::FoldingSetNodeID &ID,
                       GenericTypeParamKind paramKind, unsigned depth,

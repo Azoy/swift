@@ -4745,8 +4745,11 @@ GenericTypeParamType *GenericTypeParamType::get(Identifier name,
   if (paramKind == GenericTypeParamKind::Pack)
     props |= RecursiveTypeProperties::HasParameterPack;
 
+  auto canType = GenericTypeParamType::get(paramKind, depth, index, valueType,
+                                           ctx);
+
   auto result = new (ctx, AllocationArena::Permanent)
-      GenericTypeParamType(paramKind, depth, index, valueType, props, ctx);
+      GenericTypeParamType(name, canType, ctx);
   ctx.getImpl().GenericParamTypes.InsertNode(result, insertPos);
   return result;
 }
@@ -4764,8 +4767,22 @@ GenericTypeParamType *GenericTypeParamType::get(GenericTypeParamKind paramKind,
                                                 unsigned depth, unsigned index,
                                                 Type valueType,
                                                 const ASTContext &ctx) {
-  return GenericTypeParamType::get(Identifier(), paramKind, depth, index,
-                                   valueType, ctx);
+  llvm::FoldingSetNodeID id;
+  GenericTypeParamType::Profile(id, paramKind, depth, index, valueType,
+                                Identifier());
+
+  void *insertPos;
+  if (auto gpTy = ctx.getImpl().GenericParamTypes.FindNodeOrInsertPos(id, insertPos))
+    return gpTy;
+
+  RecursiveTypeProperties props = RecursiveTypeProperties::HasTypeParameter;
+  if (paramKind == GenericTypeParamKind::Pack)
+    props |= RecursiveTypeProperties::HasParameterPack;
+
+  auto result = new (ctx, AllocationArena::Permanent)
+      GenericTypeParamType(paramKind, depth, index, valueType, props, ctx);
+  ctx.getImpl().GenericParamTypes.InsertNode(result, insertPos);
+  return result;
 }
 
 GenericTypeParamType *GenericTypeParamType::getType(unsigned depth,
@@ -5329,29 +5346,18 @@ static RecursiveTypeProperties getOpaqueTypeArchetypeProperties(
 OpaqueTypeArchetypeType *OpaqueTypeArchetypeType::getNew(
     GenericEnvironment *environment, Type interfaceType,
     ArrayRef<ProtocolDecl *> conformsTo, Type superclass,
-    LayoutConstraint layout, Type valueType) {
+    LayoutConstraint layout) {
   auto properties = getOpaqueTypeArchetypeProperties(
       environment->getOpaqueSubstitutions());
   auto arena = getArena(properties);
-
-  auto numTypes = 0;
-
-  if (superclass) {
-    numTypes += 1;
-  }
-
-  if (valueType) {
-    numTypes += 1;
-  }
-
   auto size = OpaqueTypeArchetypeType::totalSizeToAlloc<
       ProtocolDecl *, Type, LayoutConstraint>(
-         conformsTo.size(), numTypes, layout ? 1 : 0);
+         conformsTo.size(), superclass ? 1 : 0, layout ? 1 : 0);
   ASTContext &ctx = interfaceType->getASTContext();
   auto mem = ctx.Allocate(size, alignof(OpaqueTypeArchetypeType), arena);
   return ::new (mem)
       OpaqueTypeArchetypeType(environment, properties, interfaceType,
-                              conformsTo, superclass, layout, valueType);
+                              conformsTo, superclass, layout);
 }
 
 Type OpaqueTypeArchetypeType::get(
@@ -5363,7 +5369,7 @@ Type OpaqueTypeArchetypeType::get(
 CanTypeWrapper<OpenedArchetypeType> OpenedArchetypeType::getNew(
     GenericEnvironment *environment, Type interfaceType,
     ArrayRef<ProtocolDecl *> conformsTo, Type superclass,
-    LayoutConstraint layout, Type valueType) {
+    LayoutConstraint layout) {
   // FIXME: It'd be great if all of our callers could submit interface types.
   // But the constraint solver submits archetypes when e.g. trying to issue
   // checks against members of existential types.
@@ -5371,26 +5377,15 @@ CanTypeWrapper<OpenedArchetypeType> OpenedArchetypeType::getNew(
   //         && "superclass must be interface type");
   auto arena = AllocationArena::Permanent;
   ASTContext &ctx = interfaceType->getASTContext();
-
-  auto numTypes = 0;
-
-  if (superclass) {
-    numTypes += 1;
-  }
-
-  if (valueType) {
-    numTypes += 1;
-  }
-
   void *mem = ctx.Allocate(
     OpenedArchetypeType::totalSizeToAlloc<ProtocolDecl *,Type,LayoutConstraint>(
       conformsTo.size(),
-      numTypes,
+      superclass ? 1 : 0,
       layout ? 1 : 0),
       alignof(OpenedArchetypeType), arena);
 
   return CanOpenedArchetypeType(::new (mem) OpenedArchetypeType(
-      environment, interfaceType, conformsTo, superclass, layout, valueType));
+      environment, interfaceType, conformsTo, superclass, layout));
 }
 
 CanTypeWrapper<OpenedArchetypeType>

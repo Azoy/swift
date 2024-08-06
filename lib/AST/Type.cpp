@@ -3420,7 +3420,7 @@ ArchetypeType::ArchetypeType(TypeKind Kind,
                              Type InterfaceType,
                              ArrayRef<ProtocolDecl *> ConformsTo,
                              Type Superclass, LayoutConstraint Layout,
-                             Type ValueType, GenericEnvironment *Environment)
+                             GenericEnvironment *Environment)
   : SubstitutableType(Kind, &Ctx, properties),
     InterfaceType(InterfaceType),
     Environment(Environment)
@@ -3429,11 +3429,10 @@ ArchetypeType::ArchetypeType(TypeKind Kind,
   Bits.ArchetypeType.HasSuperclass = static_cast<bool>(Superclass);
   Bits.ArchetypeType.HasLayoutConstraint = static_cast<bool>(Layout);
   Bits.ArchetypeType.NumProtocols = ConformsTo.size();
-  Bits.ArchetypeType.HasValue = static_cast<bool>(ValueType);
 
   // Record the superclass.
   if (Superclass)
-    getSubclassTrailingObjects<Type>()[0] = Superclass;
+    *getSubclassTrailingObjects<Type>() = Superclass;
 
   // Record the layout constraint.
   if (Layout)
@@ -3442,15 +3441,6 @@ ArchetypeType::ArchetypeType(TypeKind Kind,
   // Copy the protocols.
   std::uninitialized_copy(ConformsTo.begin(), ConformsTo.end(),
                           getSubclassTrailingObjects<ProtocolDecl *>());
-
-  // Record the value type.
-  if (ValueType) {
-    if (Superclass) {
-      getSubclassTrailingObjects<Type>()[1] = ValueType;
-    } else {
-      getSubclassTrailingObjects<Type>()[0] = ValueType;
-    }
-  }
 }
 
 ArchetypeType *ArchetypeType::getParent() const {
@@ -3501,6 +3491,13 @@ bool ArchetypeType::requiresClass() const {
   return false;
 }
 
+Type ArchetypeType::getValueType() const {
+  if (auto gp = getInterfaceType()->getAs<GenericTypeParamType>())
+    return gp->getValueType();
+
+  return Type();
+}
+
 Type ArchetypeType::getNestedType(AssociatedTypeDecl *assocType) {
   Type interfaceType = getInterfaceType();
   Type memberInterfaceType =
@@ -3541,12 +3538,10 @@ PrimaryArchetypeType::PrimaryArchetypeType(const ASTContext &Ctx,
                                      GenericEnvironment *GenericEnv,
                                      Type InterfaceType,
                                      ArrayRef<ProtocolDecl *> ConformsTo,
-                                     Type Superclass, LayoutConstraint Layout,
-                                     Type ValueType)
+                                     Type Superclass, LayoutConstraint Layout)
   : ArchetypeType(TypeKind::PrimaryArchetype, Ctx,
                   RecursiveTypeProperties::HasPrimaryArchetype,
-                  InterfaceType, ConformsTo, Superclass, Layout, ValueType,
-                  GenericEnv)
+                  InterfaceType, ConformsTo, Superclass, Layout, GenericEnv)
 {
   assert(!InterfaceType->isParameterPack());
 }
@@ -3557,8 +3552,7 @@ PrimaryArchetypeType::getNew(const ASTContext &Ctx,
                       Type InterfaceType,
                       SmallVectorImpl<ProtocolDecl *> &ConformsTo,
                       Type Superclass,
-                      LayoutConstraint Layout,
-                      Type ValueType) {
+                      LayoutConstraint Layout) {
   assert(!Superclass || Superclass->getClassOrBoundGenericClass());
   assert(GenericEnv && "missing generic environment for archetype");
 
@@ -3566,23 +3560,13 @@ PrimaryArchetypeType::getNew(const ASTContext &Ctx,
   ProtocolType::canonicalizeProtocols(ConformsTo);
 
   auto arena = AllocationArena::Permanent;
-
-  auto numTypes = 0;
-
-  if (Superclass)
-    numTypes += 1;
-
-  if (ValueType)
-    numTypes += 1;
-
   void *mem = Ctx.Allocate(
     PrimaryArchetypeType::totalSizeToAlloc<ProtocolDecl *, Type, LayoutConstraint>(
-          ConformsTo.size(), numTypes, Layout ? 1 : 0),
+          ConformsTo.size(), Superclass ? 1 : 0, Layout ? 1 : 0),
       alignof(PrimaryArchetypeType), arena);
 
   return CanPrimaryArchetypeType(::new (mem) PrimaryArchetypeType(
-      Ctx, GenericEnv, InterfaceType, ConformsTo, Superclass, Layout,
-      ValueType));
+      Ctx, GenericEnv, InterfaceType, ConformsTo, Superclass, Layout));
 }
 
 OpaqueTypeArchetypeType::OpaqueTypeArchetypeType(
@@ -3590,10 +3574,10 @@ OpaqueTypeArchetypeType::OpaqueTypeArchetypeType(
     RecursiveTypeProperties properties,
     Type interfaceType,
     ArrayRef<ProtocolDecl*> conformsTo,
-    Type superclass, LayoutConstraint layout, Type valueType)
+    Type superclass, LayoutConstraint layout)
   : ArchetypeType(TypeKind::OpaqueTypeArchetype, interfaceType->getASTContext(),
                   properties, interfaceType, conformsTo, superclass, layout,
-                  valueType, environment)
+                  environment)
 {
   assert(!interfaceType->isParameterPack());
 }
@@ -3617,11 +3601,11 @@ SubstitutionMap OpaqueTypeArchetypeType::getSubstitutions() const {
 OpenedArchetypeType::OpenedArchetypeType(
     GenericEnvironment *environment, Type interfaceType,
     ArrayRef<ProtocolDecl *> conformsTo, Type superclass,
-    LayoutConstraint layout, Type valueType)
+    LayoutConstraint layout)
   : LocalArchetypeType(TypeKind::OpenedArchetype,
                        interfaceType->getASTContext(),
                        RecursiveTypeProperties::HasOpenedExistential,
-                       interfaceType, conformsTo, superclass, layout, valueType,
+                       interfaceType, conformsTo, superclass, layout,
                        environment)
 {
   assert(!interfaceType->isParameterPack());
@@ -3638,8 +3622,7 @@ PackArchetypeType::PackArchetypeType(
     : ArchetypeType(TypeKind::PackArchetype, Ctx,
                     RecursiveTypeProperties::HasPrimaryArchetype |
                     RecursiveTypeProperties::HasPackArchetype,
-                    InterfaceType, ConformsTo, Superclass, Layout, Type(),
-                    GenericEnv) {
+                    InterfaceType, ConformsTo, Superclass, Layout, GenericEnv) {
   assert(InterfaceType->isParameterPack());
   *getTrailingObjects<PackShape>() = Shape;
 }
@@ -3690,7 +3673,7 @@ ElementArchetypeType::ElementArchetypeType(
     : LocalArchetypeType(TypeKind::ElementArchetype, Ctx,
                          RecursiveTypeProperties::HasElementArchetype,
                          InterfaceType,
-                         ConformsTo, Superclass, Layout, Type(), GenericEnv) {
+                         ConformsTo, Superclass, Layout, GenericEnv) {
 }
 
 CanTypeWrapper<ElementArchetypeType> ElementArchetypeType::getNew(

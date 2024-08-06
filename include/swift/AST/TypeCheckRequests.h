@@ -5025,6 +5025,22 @@ public:
   bool isCached() const { return true; }
 };
 
+class GenericTypeParamDeclGetValueTypeRequest
+    : public SimpleRequest<GenericTypeParamDeclGetValueTypeRequest,
+                           Type(GenericTypeParamDecl *decl),
+                           RequestFlags::Cached> {
+public:
+  using SimpleRequest::SimpleRequest;
+
+private:
+  friend SimpleRequest;
+
+  Type evaluate(Evaluator &evaluator, GenericTypeParamDecl *decl) const;
+
+public:
+  bool isCached() const { return true; }
+};
+
 #define SWIFT_TYPEID_ZONE TypeChecker
 #define SWIFT_TYPEID_HEADER "swift/AST/TypeCheckerTypeIDZone.def"
 #include "swift/Basic/DefineTypeIDZone.h"
