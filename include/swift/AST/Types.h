@@ -7741,7 +7741,7 @@ public:
   static IntegerType *get(StringRef value, bool isNegative,
                           const ASTContext &ctx);
 
-  APInt getValue();
+  APInt getValue() const;
 
   StringRef getDigitsText() const {
     return Value;

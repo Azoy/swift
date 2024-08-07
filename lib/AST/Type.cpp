@@ -5911,7 +5911,7 @@ SILFunctionType::withPatternSpecialization(CanGenericSignature sig,
                           witnessConformance);
 }
 
-APInt IntegerType::getValue() {
+APInt IntegerType::getValue() const {
   return BuiltinIntegerWidth::arbitrary().parse(getDigitsText(), /*radix*/ 0,
                                                 isNegative());
 }

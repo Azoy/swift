@@ -176,6 +176,7 @@ static unsigned getGenericRequirementKind(TypeResolutionOptions options) {
   case TypeResolverContext::CustomAttr:
   case TypeResolverContext::Inverted:
   case TypeResolverContext::ValueGenericArgument:
+  case TypeResolverContext::RawLayoutAttr:
     break;
   }
 
@@ -4947,11 +4948,12 @@ TypeResolver::resolveDeclRefTypeRepr(DeclRefTypeRepr *repr,
 
   // Referencing a value generic by name, e.g. 'let N' and referencing 'N', is
   // only valid as a generic argument, in generic requirements, when being
-  // used as an expression, and in SIL mode.
+  // used as an expression, inside of the @_rawLayout attribute, and in SIL mode.
   if (result->isValueParameter() &&
       !(options.isGenericArgument() ||
         options.isGenericRequirement() ||
         options.isAnyExpr() ||
+        options.is(TypeResolverContext::RawLayoutAttr) ||
         options.contains(TypeResolutionFlags::SILMode))) {
     if (!options.contains(TypeResolutionFlags::SilenceErrors)) {
       diagnose(repr->getNameLoc(), diag::value_generic_unexpected, result);
@@ -5273,6 +5275,7 @@ NeverNullType TypeResolver::resolveImplicitlyUnwrappedOptionalType(
   case TypeResolverContext::CustomAttr:
   case TypeResolverContext::Inverted:
   case TypeResolverContext::ValueGenericArgument:
+  case TypeResolverContext::RawLayoutAttr:
     doDiag = true;
     break;
   }
