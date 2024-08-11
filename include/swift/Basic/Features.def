@@ -401,6 +401,9 @@ EXPERIMENTAL_FEATURE(Extern, true)
 // Enable trailing comma for comma-separated lists.
 EXPERIMENTAL_FEATURE(TrailingComma, false)
 
+// Enable values in generic signatures, e.g. <let N: Int>
+EXPERIMENTAL_FEATURE(ValueGenerics, true)
+
 #undef EXPERIMENTAL_FEATURE_EXCLUDED_FROM_MODULE_INTERFACE
 #undef EXPERIMENTAL_FEATURE
 #undef UPCOMING_FEATURE
