@@ -3959,7 +3959,7 @@ ManglingError Remangler::mangleInteger(Node *node, unsigned int depth) {
 }
 
 ManglingError Remangler::mangleNegativeInteger(Node *node, unsigned int depth) {
-  Buffer << "$n" << node->getIndex();
+  Buffer << "$n" << -node->getIndex();
 
   return ManglingError::Success;
 }
