@@ -684,6 +684,10 @@ public:
       }
     }
 
+    if (auto typeValue = dyn_cast<TypeValueExpr>(E)) {
+      checkType(typeValue->getParamType(), E->getLoc());
+    }
+
     return Action::Continue(E);
   }
 
