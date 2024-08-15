@@ -89,7 +89,7 @@ StructLayout::StructLayout(IRGenModule &IGM, std::optional<CanType> type,
     IsKnownTriviallyDestroyable = triviallyDestroyable;
     IsKnownBitwiseTakable = bitwiseTakable;
     SpareBits.clear();
-    assert(!copyable);
+    assert(!copyable || rawLayout->shouldCopyAsLikeType());
     IsKnownCopyable = copyable;
     assert(builder.getHeaderSize() == Size(0));
     headerSize = Size(0);

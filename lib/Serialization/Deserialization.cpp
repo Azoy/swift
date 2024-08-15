@@ -6380,9 +6380,10 @@ llvm::Error DeclDeserializer::deserializeDeclCommon() {
         uint32_t rawSize;
         uint8_t rawAlign;
         bool movesAsLike;
+        bool copiesAsLike;
         serialization::decls_block::RawLayoutDeclAttrLayout::
           readRecord(scratch, isImplicit, typeID, countID, rawSize, rawAlign,
-                     movesAsLike);
+                     movesAsLike, copiesAsLike);
         
         if (typeID) {
           auto type = MF.getTypeChecked(typeID);
@@ -6393,6 +6394,7 @@ llvm::Error DeclDeserializer::deserializeDeclCommon() {
           if (!countID) {
             Attr = new (ctx) RawLayoutAttr(typeRepr,
                                            movesAsLike,
+                                           copiesAsLike,
                                            SourceLoc(),
                                            SourceRange());
             break;
@@ -6404,7 +6406,7 @@ llvm::Error DeclDeserializer::deserializeDeclCommon() {
             auto countRepr = new (ctx) FixedTypeRepr(count.get(), SourceLoc());
 
             Attr = new (ctx) RawLayoutAttr(typeRepr, countRepr, movesAsLike,
-                                           SourceLoc(),
+                                           copiesAsLike, SourceLoc(),
                                            SourceRange());
             break;
           }

@@ -3988,6 +3988,15 @@ ParserStatus Parser::parseNewDeclAttribute(DeclAttributes &Attributes,
         movesAsLike = true;
       }
 
+      bool copiesAsLike = false;
+
+      // @_rawLayout(like: T, copiesAsLike)
+      if (consumeIf(tok::comma) && Tok.isAny(tok::identifier) &&
+          !parseSpecificIdentifier("copiesAsLike",
+            diag::attr_rawlayout_expected_label, "copiesAsLike")) {
+        copiesAsLike = true;
+      }
+
       SourceLoc rParenLoc;
       if (!consumeIf(tok::r_paren, rParenLoc)) {
         diagnose(Tok.getLoc(), diag::attr_expected_rparen,
@@ -3996,7 +4005,8 @@ ParserStatus Parser::parseNewDeclAttribute(DeclAttributes &Attributes,
       }
 
       attr = new (Context) RawLayoutAttr(likeType.get(), movesAsLike,
-                                         AtLoc, SourceRange(Loc, rParenLoc));
+                                         copiesAsLike, AtLoc,
+                                         SourceRange(Loc, rParenLoc));
     } else if (firstLabel.is("likeArrayOf")) {
       // @_rawLayout(likeArrayOf: T, count: N)
       auto likeType = parseType(diag::expected_type);
@@ -4041,6 +4051,15 @@ ParserStatus Parser::parseNewDeclAttribute(DeclAttributes &Attributes,
         movesAsLike = true;
       }
 
+      bool copiesAsLike = false;
+
+      // @_rawLayout(likeArrayOf: T, count: N, copiesAsLike)
+      if (consumeIf(tok::comma) && Tok.isAny(tok::identifier) &&
+          !parseSpecificIdentifier("copiesAsLike",
+            diag::attr_rawlayout_expected_label, "copiesAsLike")) {
+        copiesAsLike = true;
+      }
+
       SourceLoc rParenLoc;
       if (!consumeIf(tok::r_paren, rParenLoc)) {
         diagnose(Tok.getLoc(), diag::attr_expected_rparen,
@@ -4049,7 +4068,7 @@ ParserStatus Parser::parseNewDeclAttribute(DeclAttributes &Attributes,
       }
       
       attr = new (Context) RawLayoutAttr(likeType.get(), countType.get(),
-                                         movesAsLike, AtLoc,
+                                         movesAsLike, copiesAsLike, AtLoc,
                                          SourceRange(Loc, rParenLoc));
     } else {
       diagnose(Loc, diag::attr_rawlayout_expected_label,

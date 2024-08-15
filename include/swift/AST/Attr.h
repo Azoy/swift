@@ -2539,6 +2539,8 @@ class RawLayoutAttr final : public DeclAttribute {
   unsigned Alignment = 0;
   /// If a value of this raw layout type should move like its `LikeType`.
   bool MovesAsLike = false;
+  /// If a value of this raw layout type should copy like its `LikeType`.
+  bool CopiesAsLike = false;
   /// The resolved like type.
   mutable Type CachedResolvedLikeType = Type();
   /// The resolved count type.
@@ -2548,18 +2550,20 @@ class RawLayoutAttr final : public DeclAttribute {
 
 public:
   /// Construct a `@_rawLayout(like: T)` attribute.
-  RawLayoutAttr(TypeRepr *LikeType, bool movesAsLike, SourceLoc AtLoc,
-                SourceRange Range)
-      : DeclAttribute(DeclAttrKind::RawLayout, AtLoc, Range,
-                      /*implicit*/ false),
-        LikeType(LikeType), MovesAsLike(movesAsLike) {}
-
-  /// Construct a `@_rawLayout(likeArrayOf: T, count: N)` attribute.
-  RawLayoutAttr(TypeRepr *LikeType, TypeRepr *CountType, bool movesAsLike,
+  RawLayoutAttr(TypeRepr *LikeType, bool movesAsLike, bool copiesAsLike,
                 SourceLoc AtLoc, SourceRange Range)
       : DeclAttribute(DeclAttrKind::RawLayout, AtLoc, Range,
                       /*implicit*/ false),
-        LikeType(LikeType), CountType(CountType), MovesAsLike(movesAsLike) {}
+        LikeType(LikeType), MovesAsLike(movesAsLike),
+        CopiesAsLike(copiesAsLike) {}
+
+  /// Construct a `@_rawLayout(likeArrayOf: T, count: N)` attribute.
+  RawLayoutAttr(TypeRepr *LikeType, TypeRepr *CountType, bool movesAsLike,
+                bool copiesAsLike, SourceLoc AtLoc, SourceRange Range)
+      : DeclAttribute(DeclAttrKind::RawLayout, AtLoc, Range,
+                      /*implicit*/ false),
+        LikeType(LikeType), CountType(CountType), MovesAsLike(movesAsLike),
+        CopiesAsLike(copiesAsLike) {}
 
   /// Construct a `@_rawLayout(size: N, alignment: M)` attribute.
   RawLayoutAttr(unsigned Size, unsigned Alignment, SourceLoc AtLoc,
@@ -2620,6 +2624,11 @@ public:
   /// Whether a value of this raw layout should move like its `LikeType`.
   bool shouldMoveAsLikeType() const {
     return MovesAsLike;
+  }
+
+  /// Whether a value of this raw layout should move like its `LikeType`.
+  bool shouldCopyAsLikeType() const {
+    return CopiesAsLike;
   }
 
   static bool classof(const DeclAttribute *DA) {

@@ -7570,7 +7570,7 @@ void AttributeChecker::visitRawLayoutAttr(RawLayoutAttr *attr) {
     return;
   }
   
-  if (sd->canBeCopyable()) {
+  if (sd->canBeCopyable() && !attr->shouldCopyAsLikeType()) {
     diagnoseAndRemoveAttr(attr, diag::attr_rawlayout_cannot_be_copyable);
   }
   

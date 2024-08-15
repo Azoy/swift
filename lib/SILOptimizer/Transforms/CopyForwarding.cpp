@@ -277,6 +277,21 @@ static bool visitAddressUsers(SILValue address, SILInstruction *ignoredUser,
       break;
     case SILInstructionKind::DeallocStackInst:
       break;
+    case SILInstructionKind::BuiltinInst:
+      if (auto kind = cast<BuiltinInst>(UserInst)->getBuiltinKind()) {
+        switch (kind.value()) {
+        case BuiltinValueKind::ZeroInitializer:
+          if (!visitor.visitNormalUse(UserInst))
+            return false;
+
+          continue;
+
+        default:
+          break;
+        }
+      }
+
+      LLVM_FALLTHROUGH;
     default:
       // Most likely one of:
       //   init_enum_data_addr

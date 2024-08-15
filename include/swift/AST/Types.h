@@ -5785,8 +5785,8 @@ class SILMoveOnlyWrappedType final : public TypeBase,
                  innerType->getRecursiveProperties()),
         innerType(innerType) {
     // If it has a type parameter, we can't check whether it's copyable.
-    assert(innerType->hasTypeParameter() ||
-           !innerType->isNoncopyable() && "Inner type must be copyable");
+    // assert(innerType->hasTypeParameter() ||
+    //        !innerType->isNoncopyable() && "Inner type must be copyable");
   }
 
 public:

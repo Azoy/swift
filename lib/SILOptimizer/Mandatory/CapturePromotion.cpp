@@ -1170,6 +1170,22 @@ public:
     markCurrentOpAsMutation();
     return true;
   }
+
+  bool visitBuiltinInst(BuiltinInst *bi) {
+    if (auto kind = bi->getBuiltinKind()) {
+      switch (kind.value()) {
+      case BuiltinValueKind::ZeroInitializer: {
+        markCurrentOpAsMutation();
+        return true;
+      }
+
+      default:
+        return false;
+      }
+    }
+
+    return false;
+  }
 };
 
 } // end anonymous namespace
