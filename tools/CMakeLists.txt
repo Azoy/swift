@@ -12,9 +12,9 @@ option(BUILD_SOURCEKIT_XPC_SERVICE
   ${BUILD_SOURCEKIT_XPC_SERVICE_default})
 
 # Add generated SourceKit UID header to global dependencies.
-if(SWIFT_BUILD_SOURCEKIT)
-  list(APPEND LLVM_COMMON_DEPENDS generated_sourcekit_uids)
-endif()
+# if(SWIFT_BUILD_SOURCEKIT)
+#   list(APPEND LLVM_COMMON_DEPENDS generated_sourcekit_uids)
+# endif()
 
 add_swift_tool_subdirectory(driver)
 add_swift_tool_subdirectory(swift-compatibility-symbols)
@@ -41,9 +41,9 @@ add_swift_tool_subdirectory(swift-demangle-fuzzer)
 add_swift_tool_subdirectory(swift-reflection-fuzzer)
 endif()
 
-if(SWIFT_BUILD_SOURCEKIT)
-  add_swift_tool_subdirectory(SourceKit)
-endif()
+# if(SWIFT_BUILD_SOURCEKIT)
+#   add_swift_tool_subdirectory(SourceKit)
+# endif()
 
 if(SWIFT_HOST_VARIANT STREQUAL "macosx")
   # Only build Darwin-specific tools when deploying to OS X.

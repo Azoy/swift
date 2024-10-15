@@ -8525,6 +8525,13 @@ ConstraintSystem::SolutionKind ConstraintSystem::simplifyConformsToConstraint(
         }
       }
     }
+
+    // If we're attempting to bind an array literal to a 'Vector' parameter,
+    // then we can remove this constraint.
+    if (type->isVector()) {
+      return SolutionKind::Solved;
+    }
+
   } break;
 
   default:

@@ -4554,6 +4554,8 @@ ERROR(collection_literal_heterogeneous,none,
       " explicit type annotation if this is intentional", (Type))
 ERROR(collection_literal_empty,none,
       "empty collection literal requires an explicit type", ())
+ERROR(vector_literal_incorrect_count,none,
+      "expected %0 elements in vector literal, but got %1", (Type, Type))
 
 ERROR(unresolved_member_no_inference,none,
       "reference to member %0 cannot be resolved without a contextual type",

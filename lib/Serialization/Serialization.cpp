@@ -5352,6 +5352,12 @@ static TypeAliasDecl *findTypeAliasForBuiltin(ASTContext &Ctx, Type T) {
   assert(FullName.str().starts_with(BUILTIN_TYPE_NAME_PREFIX));
   StringRef TypeName = FullName.substr(8);
 
+  // If this builtin type is generic, then chop off the generic args.
+  auto langle = TypeName.find('<');
+  if (langle != StringRef::npos) {
+    TypeName = TypeName.take_front(langle);
+  }
+
   SmallVector<ValueDecl*, 4> CurModuleResults;
   Ctx.TheBuiltinModule->lookupValue(Ctx.getIdentifier(TypeName),
                                     NLKind::QualifiedLookup,

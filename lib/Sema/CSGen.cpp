@@ -2097,6 +2097,7 @@ namespace {
     
     Type visitArrayExpr(ArrayExpr *expr) {
       auto &ctx = CS.getASTContext();
+      auto &DE = ctx.Diags;
 
       // An array expression can be of a type T that conforms to the
       // ExpressibleByArrayLiteral protocol.
@@ -2145,6 +2146,43 @@ namespace {
         return contextualType;
       }
 
+      if (contextualType && contextualType->isVector()) {
+        contextualType = CS.getContextualType(expr, /*forConstraint*/ true);
+        contextualType = CS.openOpaqueType(
+            contextualType, contextualPurpose, locator);
+        auto vectorTy = contextualType->castTo<BoundGenericStructType>();
+
+        // <let Count: Int, Element>
+
+        // Attempt to bind the number of elements in the literal with the
+        // contextual count. This will diagnose if the literal does not enough
+        // or too many elements.
+        auto contextualCount = vectorTy->getGenericArgs()[0];
+        auto literalCount = IntegerType::get(
+            std::to_string(expr->getNumElements()),
+            /* isNegative */ false,
+            vectorTy->getASTContext());
+
+        // If our contextual count is not known, e.g., Vector = [1, 2],
+        // then just eagerly bind the count to what the literal count is.
+        if (contextualCount->isTypeVariableOrMember()) {
+          CS.addConstraint(ConstraintKind::Bind, contextualCount, literalCount,
+                           locator);
+        }
+
+        // Otherwise, if these counts aren't equal bail early.
+        if (contextualCount->is<IntegerType>() &&
+            !contextualCount->isEqual(literalCount)) {
+          DE.diagnose(expr->getStartLoc(), diag::vector_literal_incorrect_count,
+                      contextualCount, literalCount);
+          return nullptr;
+        }
+
+        auto elementType = vectorTy->getGenericArgs()[1];
+        joinElementTypes(elementType);
+        return contextualType;
+      }
+
       // Produce a specialized diagnostic if this is an attempt to initialize
       // or convert an array literal to a dictionary e.g.
       // `let _: [String: Int] = ["A", 0]`
@@ -2165,7 +2203,6 @@ namespace {
       };
 
       if (isDictionaryContextualType(contextualType)) {
-        auto &DE = CS.getASTContext().Diags;
         auto numElements = expr->getNumElements();
 
         // Empty and single element array literals with dictionary contextual

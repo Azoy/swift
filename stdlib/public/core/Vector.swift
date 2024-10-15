@@ -13,8 +13,14 @@
 /// A fixed-size array.
 @available(SwiftStdlib 6.1, *)
 @frozen
-@_rawLayout(likeArrayOf: Element, count: Count, movesAsLike)
-public struct Vector<let Count: Int, Element: ~Copyable>: ~Copyable {}
+// @_rawLayout(likeArrayOf: Element, count: Count, movesAsLike)
+public struct Vector<let Count: Int, Element: ~Copyable>: ~Copyable {
+  @usableFromInline
+  var storage: Builtin.Vector<4, Int>
+}
+
+@available(SwiftStdlib 6.1, *)
+extension Vector: Copyable where Element: Copyable {}
 
 @available(SwiftStdlib 6.1, *)
 extension Vector: @unchecked Sendable where Element: Sendable & ~Copyable {}
@@ -60,24 +66,24 @@ extension Vector where Element: ~Copyable {
   ///
   /// - Parameter body: A closure that returns an owned `Element` to emplace at
   ///                   the passed in index.
-  @available(SwiftStdlib 6.1, *)
-  @_alwaysEmitIntoClient
-  public init<E: Error>(_ body: (Int) throws(E) -> Element) throws(E) {
-    for i in 0 ..< Count {
-      do {
-        try buffer.initializeElement(at: i, to: body(i))
-      } catch {
-        // The closure threw an error. We need to deinitialize every element
-        // we've initialized up to this point.
-        for j in 0 ..< i {
-          buffer.deinitializeElement(at: j)
-        }
+  // @available(SwiftStdlib 6.1, *)
+  // @_alwaysEmitIntoClient
+  // public init<E: Error>(_ body: (Int) throws(E) -> Element) throws(E) {
+  //   for i in 0 ..< Count {
+  //     do {
+  //       try buffer.initializeElement(at: i, to: body(i))
+  //     } catch {
+  //       // The closure threw an error. We need to deinitialize every element
+  //       // we've initialized up to this point.
+  //       for j in 0 ..< i {
+  //         buffer.deinitializeElement(at: j)
+  //       }
 
-        // Throw the error we were given back out to the caller.
-        throw error
-      }
-    }
-  }
+  //       // Throw the error we were given back out to the caller.
+  //       throw error
+  //     }
+  //   }
+  // }
 }
 
 @available(SwiftStdlib 6.1, *)
@@ -88,7 +94,12 @@ extension Vector where Element: Copyable {
   @available(SwiftStdlib 6.1, *)
   @_alwaysEmitIntoClient
   public init(repeating value: Element) {
-    buffer.initialize(repeating: value)
+    storage = Builtin.emplace {
+      let start = UnsafeMutablePointer<Element>($0)
+      let buffer = UnsafeMutableBufferPointer<Element>(start: start, count: Count)
+
+      buffer.initialize(repeating: value)
+    }
   }
 }
 
@@ -96,19 +107,19 @@ extension Vector where Element: Copyable {
 // Copy
 //===----------------------------------------------------------------------===//
 
-@available(SwiftStdlib 6.1, *)
-extension Vector where Element: Copyable {
-  /// Returns a fresh owned copy of the current vector.
-  ///
-  /// - Returns: A fresh owned copy of the current vector.
-  @available(SwiftStdlib 6.1, *)
-  @_alwaysEmitIntoClient
-  public borrowing func copy() -> Vector<Count, Element> {
-    Vector<Count, Element> {
-      self[$0]
-    }
-  }
-}
+// @available(SwiftStdlib 6.1, *)
+// extension Vector where Element: Copyable {
+//   /// Returns a fresh owned copy of the current vector.
+//   ///
+//   /// - Returns: A fresh owned copy of the current vector.
+//   @available(SwiftStdlib 6.1, *)
+//   @_alwaysEmitIntoClient
+//   public borrowing func copy() -> Vector<Count, Element> {
+//     Vector<Count, Element> {
+//       self[$0]
+//     }
+//   }
+// }
 
 //===----------------------------------------------------------------------===//
 // RandomAccessCollection APIs

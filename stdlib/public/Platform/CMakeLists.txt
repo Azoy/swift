@@ -21,25 +21,25 @@ if(SWIFT_FREESTANDING_FLAVOR STREQUAL "apple" AND NOT SWIFT_FREESTANDING_IS_DARW
   set(swiftDarwin_target_sdks ALL_APPLE_PLATFORMS FREESTANDING)
 endif()
 
-set(swiftDarwin_common_options
-      IS_SDK_OVERLAY
-      ${swift_platform_sources}
-      POSIXError.swift
-      MachError.swift
+# set(swiftDarwin_common_options
+#       IS_SDK_OVERLAY
+#       ${swift_platform_sources}
+#       POSIXError.swift
+#       MachError.swift
 
-      "${SWIFT_SOURCE_DIR}/stdlib/linker-support/magic-symbols-for-install-name.c"
+#       "${SWIFT_SOURCE_DIR}/stdlib/linker-support/magic-symbols-for-install-name.c"
 
-      GYB_SOURCES
-        ${swift_platform_gyb_sources}
-        Darwin.swift.gyb
+#       GYB_SOURCES
+#         ${swift_platform_gyb_sources}
+#         Darwin.swift.gyb
 
-      SWIFT_COMPILE_FLAGS
-        ${SWIFT_RUNTIME_SWIFT_COMPILE_FLAGS}
-        ${SWIFT_STANDARD_LIBRARY_SWIFT_FLAGS}
-        -Xfrontend -disable-objc-attr-requires-foundation-module
-        ${swift_platform_compile_flags}
-      LINK_FLAGS "${SWIFT_RUNTIME_SWIFT_LINK_FLAGS}"
-      DEPENDS ${darwin_depends})
+#       SWIFT_COMPILE_FLAGS
+#         ${SWIFT_RUNTIME_SWIFT_COMPILE_FLAGS}
+#         ${SWIFT_STANDARD_LIBRARY_SWIFT_FLAGS}
+#         -Xfrontend -disable-objc-attr-requires-foundation-module
+#         ${swift_platform_compile_flags}
+#       LINK_FLAGS "${SWIFT_RUNTIME_SWIFT_LINK_FLAGS}"
+#       DEPENDS ${darwin_depends})
 
 
 if(BOOTSTRAPPING_MODE STREQUAL "BOOTSTRAPPING" AND
@@ -71,62 +71,62 @@ if(BOOTSTRAPPING_MODE STREQUAL "BOOTSTRAPPING" AND
       BOOTSTRAPPING 1)
 endif()
 
-add_swift_target_library(swiftDarwin ${SWIFT_STDLIB_LIBRARY_BUILD_TYPES}
-    ${swiftDarwin_common_options}
-    TARGET_SDKS "${swiftDarwin_target_sdks}"
-    INSTALL_IN_COMPONENT sdk-overlay
-    MACCATALYST_BUILD_FLAVOR "zippered"
-    INSTALL_BINARY_SWIFTMODULE FALSE)
+# add_swift_target_library(swiftDarwin ${SWIFT_STDLIB_LIBRARY_BUILD_TYPES}
+#     ${swiftDarwin_common_options}
+#     TARGET_SDKS "${swiftDarwin_target_sdks}"
+#     INSTALL_IN_COMPONENT sdk-overlay
+#     MACCATALYST_BUILD_FLAVOR "zippered"
+#     INSTALL_BINARY_SWIFTMODULE FALSE)
 
-if(SWIFT_SHOULD_BUILD_EMBEDDED_STDLIB)
-  set(SWIFT_ENABLE_REFLECTION OFF)
+# if(SWIFT_SHOULD_BUILD_EMBEDDED_STDLIB)
+#   set(SWIFT_ENABLE_REFLECTION OFF)
 
-  add_custom_target(embedded-darwin)
-  add_dependencies(embedded-libraries embedded-darwin)
-  foreach(entry ${EMBEDDED_STDLIB_TARGET_TRIPLES})
-    string(REGEX REPLACE "[ \t]+" ";" list "${entry}")
-    list(GET list 0 arch)
-    list(GET list 1 mod)
-    list(GET list 2 triple)
+#   add_custom_target(embedded-darwin)
+#   add_dependencies(embedded-libraries embedded-darwin)
+#   foreach(entry ${EMBEDDED_STDLIB_TARGET_TRIPLES})
+#     string(REGEX REPLACE "[ \t]+" ";" list "${entry}")
+#     list(GET list 0 arch)
+#     list(GET list 1 mod)
+#     list(GET list 2 triple)
 
-    if(NOT "${mod}" MATCHES "-macos$")
-      continue()
-    endif()
+#     if(NOT "${mod}" MATCHES "-macos$")
+#       continue()
+#     endif()
 
-    set(SWIFT_SDK_embedded_ARCH_${arch}_MODULE "${mod}")
-    set(SWIFT_SDK_embedded_LIB_SUBDIR "embedded")
-    set(SWIFT_SDK_embedded_ARCH_${arch}_TRIPLE "${triple}")
-    set(SWIFT_SDK_embedded_PATH ${SWIFT_SDK_OSX_PATH})
-    set(SWIFT_SDK_embedded_ARCH_${arch}_PATH ${SWIFT_SDK_OSX_PATH})
-    set(SWIFT_SDK_embedded_USE_ISYSROOT TRUE)
-    add_swift_target_library_single(
-      embedded-darwin-${mod}
-      swiftDarwin
-      ONLY_SWIFTMODULE
-      IS_SDK_OVERLAY IS_FRAGILE
+#     set(SWIFT_SDK_embedded_ARCH_${arch}_MODULE "${mod}")
+#     set(SWIFT_SDK_embedded_LIB_SUBDIR "embedded")
+#     set(SWIFT_SDK_embedded_ARCH_${arch}_TRIPLE "${triple}")
+#     set(SWIFT_SDK_embedded_PATH ${SWIFT_SDK_OSX_PATH})
+#     set(SWIFT_SDK_embedded_ARCH_${arch}_PATH ${SWIFT_SDK_OSX_PATH})
+#     set(SWIFT_SDK_embedded_USE_ISYSROOT TRUE)
+#     add_swift_target_library_single(
+#       embedded-darwin-${mod}
+#       swiftDarwin
+#       ONLY_SWIFTMODULE
+#       IS_SDK_OVERLAY IS_FRAGILE
 
-      Platform.swift
-      TiocConstants.swift
-      POSIXError.swift
-      MachError.swift
+#       Platform.swift
+#       TiocConstants.swift
+#       POSIXError.swift
+#       MachError.swift
 
-      GYB_SOURCES
-        tgmath.swift.gyb
-        Darwin.swift.gyb
+#       GYB_SOURCES
+#         tgmath.swift.gyb
+#         Darwin.swift.gyb
       
-      SWIFT_COMPILE_FLAGS
-        -Xcc -D__MACH__ -Xcc -D__APPLE__ -Xcc -ffreestanding -enable-experimental-feature Embedded
-      C_COMPILE_FLAGS
-        -D__MACH__ -D__APPLE__ -ffreestanding
-      MODULE_DIR "${CMAKE_BINARY_DIR}/lib/swift/embedded"
-      SDK "embedded"
-      ARCHITECTURE "${arch}"
-      DEPENDS embedded-stdlib-${mod}
-      INSTALL_IN_COMPONENT stdlib
-      )
-    add_dependencies(embedded-darwin embedded-darwin-${mod})
-  endforeach()
-endif()
+#       SWIFT_COMPILE_FLAGS
+#         -Xcc -D__MACH__ -Xcc -D__APPLE__ -Xcc -ffreestanding -enable-experimental-feature Embedded
+#       C_COMPILE_FLAGS
+#         -D__MACH__ -D__APPLE__ -ffreestanding
+#       MODULE_DIR "${CMAKE_BINARY_DIR}/lib/swift/embedded"
+#       SDK "embedded"
+#       ARCHITECTURE "${arch}"
+#       DEPENDS embedded-stdlib-${mod}
+#       INSTALL_IN_COMPONENT stdlib
+#       )
+#     add_dependencies(embedded-darwin embedded-darwin-${mod})
+#   endforeach()
+# endif()
 
 set(swiftGlibc_target_sdks CYGWIN FREEBSD OPENBSD LINUX HAIKU)
 if(SWIFT_FREESTANDING_FLAVOR STREQUAL "linux")
