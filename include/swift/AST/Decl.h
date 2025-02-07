@@ -4656,6 +4656,16 @@ public:
   /// Type if it `isEscapable` instead of using this.
   CanBeInvertible::Result canBeEscapable() const;
 
+  /// Return the `ConstructorDecl` for a struct or enum's `copy init`
+  /// declaration. Returns null if the type is a class, or does not have a
+  /// declared `copy init`.
+  ConstructorDecl *getCopyConstructor();
+
+  /// Return the `ConstructorDecl` for a struct or enum's `move init`
+  /// declaration. Returns null if the type is a class, or does not have a
+  /// declared `move init`.
+  ConstructorDecl *getMoveConstructor();
+
   bool suppressesConformance(KnownProtocolKind kp) const;
 
   // Implement isa/cast/dyncast/etc.

@@ -594,6 +594,9 @@ public:
   void visitLifetimeAttr(LifetimeAttr *attr);
   void visitAddressableSelfAttr(AddressableSelfAttr *attr);
   void visitAddressableForDependenciesAttr(AddressableForDependenciesAttr *attr);
+
+  void visitCopyAttr(CopyAttr *attr);
+  void visitMoveAttr(MoveAttr *attr);
 };
 
 } // end anonymous namespace
@@ -8099,6 +8102,18 @@ AttributeChecker::visitAddressableForDependenciesAttr(
   if (isa<ClassDecl>(D)) {
     Ctx.Diags.diagnose(attr->getLocation(), diag::class_cannot_be_addressable_for_dependencies);
   }
+}
+
+void AttributeChecker::visitCopyAttr(CopyAttr *attr) {
+  auto init = cast<ConstructorDecl>(D);
+
+  ASSERT(init->getParameters()->size() == 1);
+  ASSERT(init->getParameters()->front()->getSpecifier() == ParamSpecifier::Borrowing);
+  ASSERT(init->getParameters()->front()->getInterfaceType()->isEqual(init->getResultInterfaceType()));
+}
+
+void AttributeChecker::visitMoveAttr(MoveAttr *attr) {
+
 }
 
 namespace {

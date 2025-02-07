@@ -1081,6 +1081,15 @@ HasUserDefinedDesignatedInitRequest::evaluate(Evaluator &evaluator,
       continue;
 
     auto *ctor = cast<ConstructorDecl>(member);
+
+    // 'copy init' are not real inits.
+    if (ctor->getAttrs().hasAttribute<CopyAttr>())
+      continue;
+
+    // 'move init' are not real inits.
+    if (ctor->getAttrs().hasAttribute<MoveAttr>())
+      continue;
+
     if (ctor->isDesignatedInit() && !ctor->isSynthesized())
       return true;
   }

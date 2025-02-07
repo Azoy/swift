@@ -352,7 +352,7 @@ if(SWIFT_BUILD_SDK_OVERLAY)
   endif()
 endif()
 
-if(SWIFT_BUILD_LIBEXEC)
-add_subdirectory(libexec)
-endif()
+# if(SWIFT_BUILD_LIBEXEC)
+# add_subdirectory(libexec)
+# endif()
 

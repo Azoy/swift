@@ -24,6 +24,7 @@
 #include "Explosion.h"
 #include "GenEnum.h"
 #include "GenOpaque.h"
+#include "GenType.h"
 #include "LoadableTypeInfo.h"
 #include "Outlining.h"
 #include "TypeInfo.h"
@@ -228,6 +229,10 @@ public:
 
   void initializeWithCopy(IRGenFunction &IGF, Address dest, Address src,
                           SILType T, bool isOutlined) const override {
+    if (tryEmitCopyUsingCopyInit(IGF, dest, src, T)) {
+      return;
+    }
+
     // If we're POD, use the generic routine.
     if (this->isTriviallyDestroyable(ResilienceExpansion::Maximal) &&
         isa<LoadableTypeInfo>(this)) {

@@ -163,6 +163,26 @@ struct OwnershipModelEliminatorVisitor
 
   bool visitLoadBorrowInst(LoadBorrowInst *lbi);
   bool visitMoveValueInst(MoveValueInst *mvi) {
+    if (auto structDecl = mvi->getType().getStructOrBoundGenericStruct()) {
+      if (auto moveInit = structDecl->getMoveConstructor()) {
+        auto apply = withBuilder<SILValue>(mvi, [&](SILBuilder &B, SILLocation loc) {
+          auto declRef = SILDeclRef(moveInit);
+          auto fn = B.getModule().lookUpFunction(declRef);
+          auto fnRef = B.createFunctionRef(loc, fn);
+          auto metatypeType =
+              MetatypeType::get(mvi->getType().getASTType(),
+                                MetatypeRepresentation::Thin)->getCanonicalType();
+          auto silMetatypeType = SILType::getPrimitiveObjectType(metatypeType);
+          auto metatype = B.createMetatype(loc, silMetatypeType);
+          auto subs = mvi->getType().getASTType()->getContextSubstitutionMap();
+          return B.createApply(loc, fnRef, subs, {mvi->getOperand(), metatype});
+        });
+
+        eraseInstructionAndRAUW(mvi, apply);
+        return true;
+      }
+    }
+
     eraseInstructionAndRAUW(mvi, mvi->getOperand());
     return true;
   }
@@ -347,10 +367,16 @@ bool OwnershipModelEliminatorVisitor::visitCopyValueInst(CopyValueInst *cvi) {
 
   // Now that we have set the unqualified ownership flag, emitCopyValueOperation
   // operation will delegate to the appropriate strong_release, etc.
-  withBuilder<void>(cvi, [&](SILBuilder &b, SILLocation loc) {
-    b.emitCopyValueOperation(loc, cvi->getOperand());
+  auto value = withBuilder<SILValue>(cvi, [&](SILBuilder &b, SILLocation loc) {
+    return b.emitCopyValueOperation(loc, cvi->getOperand());
   });
-  eraseInstructionAndRAUW(cvi, cvi->getOperand());
+
+  if (FullApplySite::isa(value)) {
+    eraseInstructionAndRAUW(cvi, value);
+  } else {
+    eraseInstructionAndRAUW(cvi, cvi->getOperand());
+  }
+
   return true;
 }
 

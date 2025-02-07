@@ -1191,7 +1191,12 @@ static void addValueWitness(IRGenModule &IGM, ConstantStructBuilder &B,
     goto standard;
 
   case ValueWitness::InitializeWithCopy:
-    if (concreteTI.isTriviallyDestroyable(ResilienceExpansion::Maximal)) {
+    if (auto nominal = concreteType.getNominalOrBoundGenericNominal()) {
+      if (nominal->getCopyConstructor()) {
+        goto standard;
+        return;
+      }
+    } else if (concreteTI.isTriviallyDestroyable(ResilienceExpansion::Maximal)) {
       return addFunction(getMemCpyFunction(IGM, concreteTI));
     } else if (concreteTI.isSingleSwiftRetainablePointer(ResilienceExpansion::Maximal)) {
       return addFunction(getInitWithCopyStrongFunction(IGM));
@@ -1433,6 +1438,11 @@ getAddrOfKnownValueWitnessTable(IRGenModule &IGM, CanType type,
     if (auto enumDecl = dyn_cast<EnumDecl>(nom))
       if (!enumDecl->isObjC() && !type->isUninhabited())
         return {};
+
+    // The presence of a copy constructor makes this type's value witness table
+    // unique.
+    if (nom->getCopyConstructor())
+      return {};
   }
  
   auto &C = IGM.Context;

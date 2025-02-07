@@ -1171,9 +1171,9 @@ public:
 
     // If this is a nominal type that is move only, emit a deinit table for it.
     if (auto *nom = dyn_cast<NominalTypeDecl>(theType)) {
-      if (!nom->canBeCopyable()) {
+      // if (!nom->canBeCopyable()) {
         SGM.emitNonCopyableTypeDeinitTable(nom);
-      }
+      // }
     }
 
     // Build a default witness table if this is a protocol that needs one.
@@ -1236,9 +1236,9 @@ public:
     if (isa<ClassDecl>(theType))
       return SGM.emitDestructor(cast<ClassDecl>(theType), dd);
     if (auto *nom = dyn_cast<NominalTypeDecl>(theType)) {
-      if (!nom->canBeCopyable()) {
+      // if (!nom->canBeCopyable()) {
         return SGM.emitMoveOnlyDestructor(nom, dd);
-      }
+      // }
     }
     assert(isa<ClassDecl>(theType) &&
            "destructor in a non-class, non-moveonly type");

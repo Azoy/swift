@@ -1190,6 +1190,48 @@ namespace {
       SILValue loadValue =
           B.createLoad(loc, addr, LoadOwnershipQualifier::Unqualified);
 
+      // If we are performing a take, check to see if the underlying type has a
+      // move constructor. If it does, call that instead.
+      if (qual == LoadOwnershipQualifier::Take) {
+        if (auto structDecl = loadValue->getType().getStructOrBoundGenericStruct()) {
+          if (auto moveInit = structDecl->getMoveConstructor()) {
+            auto declRef = SILDeclRef(moveInit);
+            auto fn = B.getModule().lookUpFunction(declRef);
+            auto fnRef = B.createFunctionRef(loc, fn);
+            auto metatypeType =
+                MetatypeType::get(loadValue->getType().getASTType(),
+                                  MetatypeRepresentation::Thin)->getCanonicalType();
+            auto silMetatypeType = SILType::getPrimitiveObjectType(metatypeType);
+            auto metatype = B.createMetatype(loc, silMetatypeType);
+            auto subs = loadValue->getType().getASTType()->getContextSubstitutionMap();
+
+            auto apply = B.createApply(loc, fnRef, subs, {loadValue, metatype});
+            return apply;
+          }
+        }
+      }
+
+      // If we are performing a copy, check to see if the underlying type has a
+      // copy constructor. If it does, call that instead.
+      // if (qual == LoadOwnershipQualifier::Copy) {
+      //   if (auto structDecl = loadValue->getType().getStructOrBoundGenericStruct()) {
+      //     if (auto copyInit = structDecl->getCopyConstructor()) {
+      //       auto declRef = SILDeclRef(copyInit);
+      //       auto fn = B.getModule().lookUpFunction(declRef);
+      //       auto fnRef = B.createFunctionRef(loc, fn);
+      //       auto metatypeType =
+      //           MetatypeType::get(loadValue->getType().getASTType(),
+      //                             MetatypeRepresentation::Thin)->getCanonicalType();
+      //       auto silMetatypeType = SILType::getPrimitiveObjectType(metatypeType);
+      //       auto metatype = B.createMetatype(loc, silMetatypeType);
+      //       auto subs = loadValue->getType().getASTType()->getContextSubstitutionMap();
+
+      //       auto apply = B.createApply(loc, fnRef, subs, {loadValue, metatype});
+      //       return apply;
+      //     }
+      //   }
+      // }
+
       // If we do not have a copy, just return the value...
       if (qual != LoadOwnershipQualifier::Copy)
         return loadValue;
@@ -1392,6 +1434,18 @@ namespace {
       if (B.getFunction().hasOwnership()) {
         B.createDestroyValue(loc, aggValue);
         return;
+      }
+
+      if (auto structDecl = aggValue->getType().getStructOrBoundGenericStruct()) {
+        if (auto deinit = structDecl->getValueTypeDestructor()) {
+          auto declRef = SILDeclRef(deinit);
+          auto fn = B.getModule().lookUpFunction(declRef);
+          auto fnRef = B.createFunctionRef(loc, fn);
+          auto subs = aggValue->getType().getASTType()->getContextSubstitutionMap();
+
+          B.createApply(loc, fnRef, subs, aggValue);
+          return;
+        }
       }
 
       B.createReleaseValue(loc, aggValue, B.getDefaultAtomicity());
@@ -2555,6 +2609,19 @@ namespace {
       
       if (D->getAttrs().hasAttribute<AddressableForDependenciesAttr>()) {
         properties.setAddressableForDependencies();
+      }
+
+      // If the type has a custom copy constructor, it is no longer trivial or
+      // loadable.
+      if (D->getCopyConstructor()) {
+        properties.setNonTrivial();
+        properties.setAddressOnly();
+      }
+
+      // If the type has a custom deinit, it is no longer trivial.
+      if (D->getValueTypeDestructor()) {
+        properties.setNonTrivial();
+        properties.setLexical(IsLexical);
       }
 
       auto subMap = structType->getContextSubstitutionMap();

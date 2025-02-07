@@ -477,6 +477,10 @@ void CopyPropagation::propagateCopies(
         moveValues.push_back(move);
       } else if (canonicalizeAll) {
         if (auto *destroy = dyn_cast<DestroyValueInst>(&i)) {
+          // Do not copy propogate drop_deinit.
+          if (isa<DropDeinitInst>(destroy->getOperand()))
+            continue;
+
           defWorklist.updateForCopy(destroy->getOperand());
         }
       }

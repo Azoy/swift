@@ -1777,6 +1777,10 @@ namespace  {
     }
 
     void visitObjCAttr(ObjCAttr *attr) {}
+
+    void visitCopyAttr(CopyAttr *attr) {}
+
+    void visitMoveAttr(MoveAttr *attr) {}
   };
 } // end anonymous namespace
 

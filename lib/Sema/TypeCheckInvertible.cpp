@@ -219,12 +219,12 @@ static void checkInvertibleConformanceCommon(DeclContext *dc,
   bool canAddInverse = !hasExplicitInverse && !hasUnconditionalConformance;
 
   // A deinit prevents a struct or enum from conforming to Copyable.
-  if (ip == InvertibleProtocolKind::Copyable) {
-    if (auto *deinit = nominalDecl->getValueTypeDestructor()) {
-      deinit->diagnose(diag::copyable_illegal_deinit, nominalDecl);
-      emitAdviceToApplyInverseAfter(ip, canAddInverse, nominalDecl);
-    }
-  }
+  // if (ip == InvertibleProtocolKind::Copyable) {
+  //   if (auto *deinit = nominalDecl->getValueTypeDestructor()) {
+  //     deinit->diagnose(diag::copyable_illegal_deinit, nominalDecl);
+  //     emitAdviceToApplyInverseAfter(ip, canAddInverse, nominalDecl);
+  //   }
+  // }
 
   // Check storage for conformance to Copyable/Escapable.
 

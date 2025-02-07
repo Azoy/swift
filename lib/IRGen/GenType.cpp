@@ -3052,6 +3052,92 @@ bool irgen::tryEmitDestroyUsingDeinit(IRGenFunction &IGF, Address address,
     [&]{ /* nothing to do */ });
 }
 
+bool irgen::tryEmitCopyUsingCopyInit(IRGenFunction &IGF,
+                                     Address dest,
+                                     Address src,
+                                     SILType T) {
+  auto ty = T.getASTType();
+  auto nominal = ty->getAnyNominal();
+
+  if (!nominal) {
+    return false;
+  }
+
+  auto copyInit = nominal->getCopyConstructor();
+
+  if (!copyInit) {
+    return false;
+  }
+
+  auto declRef = SILDeclRef(copyInit);
+  auto silCopyInit = IGF.getSILModule().lookUpFunction(declRef);
+
+  // The deinit should take a single value parameter of the nominal type, either
+  // by @owned or indirect @in convention.
+  auto copyInitFn = IGF.IGM.getAddrOfSILFunction(silCopyInit, NotForDefinition);
+  auto copyInitTy = silCopyInit->getLoweredFunctionType();
+  auto copyInitFP = FunctionPointer::forDirect(IGF.IGM, copyInitFn,
+                                               nullptr, copyInitTy);
+
+  auto substitutions = ty->getContextSubstitutionMap();
+                                                     
+  CalleeInfo info(copyInitTy,
+                  copyInitTy->substGenericArgs(IGF.getSILModule(),
+                                     substitutions,
+                                     IGF.IGM.getMaximalTypeExpansionContext()),
+                  substitutions);
+                  
+  bool isIndirect;
+  Address indirectArg;
+  Explosion directArg;
+  switch (copyInitTy->getParameters()[0].getConvention()) {
+  case ParameterConvention::Direct_Guaranteed: {
+    isIndirect = false;
+    auto ti = cast<LoadableTypeInfo>(&IGF.getTypeInfo(T));
+    ti->loadAsCopy(IGF, src, directArg);
+    break;
+  }
+
+  case ParameterConvention::Indirect_In_Guaranteed: {
+    isIndirect = true;
+    indirectArg = src;
+    break;
+  }
+
+  default:
+    llvm_unreachable("move-only deinit should only have consuming parameter convention");
+  }
+
+  GenericContextScope scope(IGF.IGM,
+                        nominal->getGenericSignature().getCanonicalSignature());
+
+  Callee copyInitCallee(std::move(info), copyInitFP, nullptr);
+  auto callEmission = getCallEmission(IGF, nullptr, std::move(copyInitCallee));
+  callEmission->begin();
+
+  if (isIndirect) {
+    directArg.add(indirectArg.getAddress());
+  }
+
+  if (hasPolymorphicParameters(copyInitTy)) {
+    emitPolymorphicArguments(IGF, copyInitTy, substitutions, nullptr,
+                             directArg);
+  }
+
+  callEmission->setArgs(directArg, /*outlined*/ false, /*witness*/nullptr);
+  Explosion result;
+  callEmission->emitToExplosion(result, /*isOutlined*/ false);
+  callEmission->end();
+
+  if (!isIndirect) {
+    IGF.Builder.CreateStore(result.claimNext(), dest);
+  } else {
+    // HANDLE INDIRECT RETURN
+  }
+
+  return true;
+}
+
 IsABIAccessible_t irgen::isTypeABIAccessibleIfFixedSize(IRGenModule &IGM,
                                                         CanType ty) {
 

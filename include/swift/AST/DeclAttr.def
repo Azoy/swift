@@ -547,7 +547,15 @@ DECL_ATTR(execution, Execution,
   166)
 DECL_ATTR_FEATURE_REQUIREMENT(Execution, NonIsolatedAsyncInheritsIsolationFromContext)
 
-LAST_DECL_ATTR(Execution)
+CONTEXTUAL_SIMPLE_DECL_ATTR(copy, Copy,
+  OnConstructor | DeclModifier | ABIBreakingToAdd | ABIBreakingToRemove | APIStableToAdd | APIStableToRemove,
+  167)
+
+CONTEXTUAL_SIMPLE_DECL_ATTR(move, Move,
+  OnConstructor | DeclModifier | ABIBreakingToAdd | ABIBreakingToRemove | APIStableToAdd | APIStableToRemove,
+  168)
+
+LAST_DECL_ATTR(Move)
 
 #undef DECL_ATTR_ALIAS
 #undef CONTEXTUAL_DECL_ATTR_ALIAS

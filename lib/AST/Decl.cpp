@@ -5342,6 +5342,32 @@ DestructorDecl *NominalTypeDecl::getValueTypeDestructor() {
   return cast<DestructorDecl>(found[0]);
 }
 
+ConstructorDecl *NominalTypeDecl::getCopyConstructor() {
+  if (!isa<StructDecl>(this) && !isa<EnumDecl>(this))
+    return nullptr;
+
+  for (auto init : this->lookupDirect(DeclBaseName::createConstructor())) {
+    if (init->getAttrs().hasAttribute<CopyAttr>()) {
+      return cast<ConstructorDecl>(init);
+    }
+  }
+
+  return nullptr;
+}
+
+ConstructorDecl *NominalTypeDecl::getMoveConstructor() {
+  if (!isa<StructDecl>(this) && !isa<EnumDecl>(this))
+    return nullptr;
+
+  for (auto init : this->lookupDirect(DeclBaseName::createConstructor())) {
+    if (init->getAttrs().hasAttribute<MoveAttr>()) {
+      return cast<ConstructorDecl>(init);
+    }
+  }
+
+  return nullptr;
+}
+
 static bool isOriginallyDefinedIn(const Decl *D, const ModuleDecl* MD) {
   if (!MD)
     return false;

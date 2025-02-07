@@ -5286,6 +5286,12 @@ public:
     }
     printFoot();
   }
+  void visitCopyAttr(CopyAttr *Attr, Label label) {
+    printCommon(Attr, "copy", label);
+  }
+  void visitMoveAttr(MoveAttr *Attr, Label label) {
+    printCommon(Attr, "move", label);
+  }
 };
 
 } // end anonymous namespace

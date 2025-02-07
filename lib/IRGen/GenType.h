@@ -409,6 +409,11 @@ bool tryEmitConsumeUsingDeinit(IRGenFunction &IGF,
                                Explosion &explosion,
                                SILType T);
 
+bool tryEmitCopyUsingCopyInit(IRGenFunction &IGf,
+                              Address dest,
+                              Address src,
+                              SILType T);
+
 /// Most fixed size types currently are always ABI accessible (value operations
 /// can be done without metadata). One notable exception is non-copyable types
 /// with a deinit. Their type metadata is required to call destroy if the deinit

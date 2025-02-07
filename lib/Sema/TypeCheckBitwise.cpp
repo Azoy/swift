@@ -263,6 +263,14 @@ static bool checkBitwiseCopyableInstanceStorage(NominalTypeDecl *nominal,
     return true;
   }
 
+  if (nominal->getCopyConstructor()) {
+    return true;
+  }
+
+  if (nominal->getValueTypeDestructor()) {
+    return true;
+  }
+
   auto *ed = dyn_cast<EnumDecl>(nominal);
   if (ed && ed->isIndirect()) {
     if (!isImplicit(check)) {
