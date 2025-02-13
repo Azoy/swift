@@ -93,15 +93,19 @@ public:
                                   ArrayRef<ManagedValue> args,
                                   ParameterConvention calleeConvention,
                                   SILFunctionTypeIsolation resultIsolation =
-                                    SILFunctionTypeIsolation::Unknown);
+                                    SILFunctionTypeIsolation::Unknown,
+                                  PartialApplyInst::OnStackKind onStack =
+                                    PartialApplyInst::OnStackKind::NotOnStack);
   ManagedValue createPartialApply(SILLocation loc, ManagedValue fn,
                                   SubstitutionMap subs,
                                   ArrayRef<ManagedValue> args,
                                   ParameterConvention calleeConvention,
                                   SILFunctionTypeIsolation resultIsolation =
-                                    SILFunctionTypeIsolation::Unknown) {
+                                    SILFunctionTypeIsolation::Unknown,
+                                  PartialApplyInst::OnStackKind onStack =
+                                    PartialApplyInst::OnStackKind::NotOnStack) {
     return createPartialApply(loc, fn.getValue(), subs, args,
-                              calleeConvention, resultIsolation);
+                              calleeConvention, resultIsolation, onStack);
   }
 
   using SILBuilder::createStructExtract;

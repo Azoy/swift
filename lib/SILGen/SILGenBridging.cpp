@@ -1015,23 +1015,25 @@ SILGenFunction::emitBlockToFunc(SILLocation loc,
 
   // Create it in the current function.
   auto thunkValue = B.createFunctionRefFor(loc, thunk);
+
+  auto isOnStack = PartialApplyInst::OnStackKind::NotOnStack;
+
+  // Directly create the [on_stack] representation for the noescape closure.
+  if (loweredFuncTy->isNoEscape())
+    isOnStack = PartialApplyInst::OnStackKind::OnStack;
+
   ManagedValue thunkedFn = B.createPartialApply(
       loc, thunkValue, interfaceSubs, block,
-      loweredFuncTy->getCalleeConvention());
+      loweredFuncTy->getCalleeConvention(),
+      SILFunctionTypeIsolation::Unknown,
+      isOnStack);
 
   if (loweredFuncUnsubstTy != loweredFuncTyWithoutNoEscape) {
     thunkedFn = B.createConvertFunction(loc, thunkedFn,
                 SILType::getPrimitiveObjectType(loweredFuncTyWithoutNoEscape));
   }
   
-  if (!loweredFuncTy->isNoEscape()) {
-    return thunkedFn;
-  }
-
-  // Handle the escaping to noescape conversion.
-  assert(loweredFuncTy->isNoEscape());
-  return B.createConvertEscapeToNoEscape(
-      loc, thunkedFn, SILType::getPrimitiveObjectType(loweredFuncTy));
+  return thunkedFn;
 }
 
 static ManagedValue emitCBridgedToNativeValue(

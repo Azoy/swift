@@ -649,6 +649,7 @@ bool SILValueOwnershipChecker::checkValueWithoutLifetimeEndingUses(
       if (value->getOwnershipKind() == OwnershipKind::Owned) {
         llvm::errs() << "Error! Found a leaked owned value that was never "
                         "consumed.\n";
+        value->getFunction()->dump();
       } else {
         llvm::errs() << "Non trivial values, non address values, and non "
                         "guaranteed function args must have at least one "

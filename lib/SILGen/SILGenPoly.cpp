@@ -5580,11 +5580,17 @@ static ManagedValue createPartialApplyOfThunk(SILGenFunction &SGF,
     thunkArgs.push_back(ManagedValue::forObjectRValueWithoutOwnership(value));
   }
 
+  auto isOnStack = PartialApplyInst::OnStackKind::NotOnStack;
+
+  if (toType->isNoEscape())
+    isOnStack = PartialApplyInst::OnStackKind::OnStack;
+
   return
     SGF.B.createPartialApply(loc, thunkValue,
                              interfaceSubs, thunkArgs,
                              toType->getCalleeConvention(),
-                             toType->getIsolation());
+                             toType->getIsolation(),
+                             isOnStack);
 }
 
 static ManagedValue createDifferentiableFunctionThunk(
@@ -5655,10 +5661,8 @@ static ManagedValue createThunk(SILGenFunction &SGF,
   // Declare the thunk.
   SubstitutionMap interfaceSubs;
   GenericEnvironment *genericEnv = nullptr;
-  auto toType = expectedType->getWithExtInfo(
-      expectedType->getExtInfo().withNoEscape(false));
   CanType dynamicSelfType;
-  auto thunkType = SGF.buildThunkType(sourceType, toType,
+  auto thunkType = SGF.buildThunkType(sourceType, expectedType,
                                       inputSubstType,
                                       outputSubstType,
                                       genericEnv,
@@ -5675,7 +5679,7 @@ static ManagedValue createThunk(SILGenFunction &SGF,
   auto thunk = SGF.SGM.getOrCreateReabstractionThunk(
                                        thunkType,
                                        sourceType,
-                                       toType,
+                                       expectedType,
                                        dynamicSelfType,
                                        globalActorForThunk);
 
@@ -5700,32 +5704,28 @@ static ManagedValue createThunk(SILGenFunction &SGF,
   // we not use this path for function values where we've statically
   // erased the isolation.
   ManagedValue erasedIsolation;
-  if (toType->hasErasedIsolation()) {
+  if (expectedType->hasErasedIsolation()) {
     auto inputIsolation = inputSubstType->getIsolation();
     erasedIsolation = SGF.emitFunctionTypeIsolation(loc, inputIsolation, fn);
   }
 
+  if (expectedType->isNoEscape()) {
+    fn = fn.borrow(SGF, loc);
+  } else {
+    fn = fn.ensurePlusOne(SGF, loc);
+  }
+
   auto thunkedFn =
     createPartialApplyOfThunk(SGF, loc, thunk, interfaceSubs, dynamicSelfType,
-                              toType, fn.ensurePlusOne(SGF, loc),
-                              erasedIsolation);
+                              expectedType, fn, erasedIsolation);
 
   // Convert to the substituted result type.
   if (expectedType != substExpectedType) {
-    auto substEscapingExpectedType = substExpectedType
-      ->getWithExtInfo(substExpectedType->getExtInfo().withNoEscape(false));
     thunkedFn = SGF.B.createConvertFunction(loc, thunkedFn,
-                    SILType::getPrimitiveObjectType(substEscapingExpectedType));
-  }
-  
-  if (!substExpectedType->isNoEscape()) {
-    return thunkedFn;
+                    SILType::getPrimitiveObjectType(substExpectedType));
   }
 
-  // Handle the escaping to noescape conversion.
-  assert(substExpectedType->isNoEscape());
-  return SGF.B.createConvertEscapeToNoEscape(
-      loc, thunkedFn, SILType::getPrimitiveObjectType(substExpectedType));
+  return thunkedFn;
 }
 
 /// Create a reabstraction thunk for a @differentiable function.
@@ -6053,14 +6053,9 @@ ManagedValue SILGenFunction::getThunkedAutoDiffLinearMap(
       linearMap = B.createConvertFunction(loc, linearMap, unsubstType,
                                           /*withoutActuallyEscaping*/ false);
     }
-    auto thunkedFn = createPartialApplyOfThunk(
+    return createPartialApplyOfThunk(
         *this, loc, thunk, interfaceSubs, dynamicSelfType, toType, linearMap,
         ManagedValue());
-    if (!toType->isNoEscape())
-      return thunkedFn;
-    // Handle escaping to noescape conversion.
-    return B.createConvertEscapeToNoEscape(
-        loc, thunkedFn, SILType::getPrimitiveObjectType(toType));
   };
 
   if (!thunk->empty())
@@ -7441,12 +7436,6 @@ ManagedValue SILGenFunction::emitActorIsolationErasureThunk(
         loweredNonIsolatedType->getExtInfo().withNoEscape(false));
     thunkedFn = B.createConvertFunction(
         loc, thunkedFn, SILType::getPrimitiveObjectType(escapingExpectedType));
-  }
-
-  if (loweredIsolatedType->isNoEscape()) {
-    thunkedFn = B.createConvertEscapeToNoEscape(
-        loc, thunkedFn,
-        SILType::getPrimitiveObjectType(loweredNonIsolatedType));
   }
 
   return thunkedFn;

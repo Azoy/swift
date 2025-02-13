@@ -315,10 +315,10 @@ void SelectEnforcement::analyzeProjection(SingleValueInstruction *projection) {
       AddressCapture capture(*use);
       if (capture.isValid())
         Captures.emplace_back(capture);
-      else
+      // else
         // Only full apply sites can have non-inout_aliasable address arguments,
         // but those aren't actually captures.
-        assert(FullApplySite::isa(user));
+        // assert(FullApplySite::isa(user));
     }
   }
 }

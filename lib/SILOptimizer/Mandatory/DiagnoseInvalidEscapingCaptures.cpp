@@ -346,6 +346,12 @@ static void checkPartialApply(ASTContext &Context, DeclContext *DC,
   if (isPartialApplyOfReabstractionThunk(PAI))
     return;
 
+  // If the partial_apply is [on_stack], then it is a non-escaping closure. We
+  // only care about diagnosing nonescape captures to escaping closures.
+  if (PAI->isOnStack()) {
+    return;
+  }
+
   LLVM_DEBUG(llvm::dbgs() << "Checking Partial Apply: " << *PAI);
 
   ApplySite apply(PAI);
