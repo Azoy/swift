@@ -68,7 +68,8 @@ ManagedValue SILGenBuilder::createPartialApply(SILLocation loc, SILValue fn,
                                                SubstitutionMap subs,
                                                ArrayRef<ManagedValue> args,
                                                ParameterConvention calleeConvention,
-                                         SILFunctionTypeIsolation resultIsolation) {
+                                         SILFunctionTypeIsolation resultIsolation,
+                                        PartialApplyInst::OnStackKind onStack) {
   llvm::SmallVector<SILValue, 8> values;
   llvm::transform(args, std::back_inserter(values),
                   [&](ManagedValue mv) -> SILValue {
@@ -76,7 +77,7 @@ ManagedValue SILGenBuilder::createPartialApply(SILLocation loc, SILValue fn,
   });
   SILValue result =
       createPartialApply(loc, fn, subs, values, calleeConvention,
-                         resultIsolation);
+                         resultIsolation, onStack);
   // Partial apply instructions create a box, so we need to put on a cleanup.
   return getSILGenFunction().emitManagedRValueWithCleanup(result);
 }

@@ -766,6 +766,11 @@ void SILGenFunction::emitCaptures(SILLocation loc,
         return addr;
 
       } else {
+        // If our address is move only wrapped, unwrap it.
+        if (entryValue->getType().isMoveOnlyWrapped()) {
+          entryValue = B.createMoveOnlyWrapperToCopyableAddr(loc, entryValue);
+        }
+
         return entryValue;
       }
     };
@@ -818,6 +823,12 @@ void SILGenFunction::emitCaptures(SILLocation loc,
                     NoConsumeOrAssign);
           }
         }
+
+        if (canGuarantee) {
+          capturedArgs.push_back(emitManagedLoadBorrow(loc, val));
+          break;
+        }
+
         val = emitLoad(loc, val, tl, SGFContext(), IsNotTake).forward(*this);
       }
 
@@ -1055,10 +1066,40 @@ SILGenFunction::emitClosureValue(SILLocation loc, SILDeclRef constant,
     typeContext.ExpectedLoweredType->hasErasedIsolation();
 
   ManagedValue result;
-  if (loweredCaptureInfo.getCaptures().empty() && !subs &&
-      !hasErasedIsolation) {
+
+  // Very basic closures that require no captures, reabstractions, or isolation
+  // changes can just be applied as a direct reference to the closure function
+  // reference.
+  if (loweredCaptureInfo.getCaptures().empty() && !subs && !hasErasedIsolation) {
     result = ManagedValue::forObjectRValueWithoutOwnership(functionRef);
-  } else {
+  }
+
+  // Nonescaping closures do not take ownership of their captures. We can emit
+  // guaranteed values for the captures and directly emit the partial
+  // application as [on_stack] with a cleanup.
+  if (typeContext.ExpectedLoweredType->isNoEscape()) {
+    SmallVector<ManagedValue, 4> capturedArgs;
+    emitCaptures(loc, constant, CaptureEmission::ImmediateApplication,
+                 capturedArgs);
+
+    // Compute the erased isolation
+    ManagedValue isolation;
+    if (hasErasedIsolation) {
+      isolation = emitClosureIsolation(loc, constant, capturedArgs);
+    }
+
+    auto calleeConvention = ParameterConvention::Direct_Guaranteed;
+
+    auto resultIsolation =
+        (hasErasedIsolation ? SILFunctionTypeIsolation::Erased
+                            : SILFunctionTypeIsolation::Unknown);
+    result = B.createPartialApply(loc, functionRef, subs, capturedArgs,
+                                  calleeConvention, resultIsolation,
+                                  PartialApplyInst::OnStackKind::OnStack);
+  }
+
+  // Escaping closures on the other hand, take ownership of their captures.
+  if (!typeContext.ExpectedLoweredType->isNoEscape()) {
     SmallVector<ManagedValue, 4> capturedArgs;
     emitCaptures(loc, constant, CaptureEmission::PartialApplication,
                  capturedArgs);
