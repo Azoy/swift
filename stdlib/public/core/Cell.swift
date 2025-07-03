@@ -10,8 +10,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-import Builtin
-
 @available(SwiftStdlib 6.3, *)
 @frozen
 @unsafe
@@ -21,14 +19,14 @@ public struct _Cell<Value: ~Copyable>: ~Copyable {
   @_alwaysEmitIntoClient
   @_transparent
   public var address: UnsafeMutablePointer<Value> {
-    unsafe UnsafeMutablePointer<Value>(_rawAddress)
+    unsafe UnsafeMutablePointer<Value>(rawAddress)
   }
 
   @available(SwiftStdlib 6.3, *)
   @_alwaysEmitIntoClient
   @_transparent
   internal var rawAddress: Builtin.RawPointer {
-    Builtin.addressOfRawLayout(self)
+    unsafe Builtin.addressOfRawLayout(self)
   }
 
   @available(SwiftStdlib 6.3, *)
@@ -36,12 +34,12 @@ public struct _Cell<Value: ~Copyable>: ~Copyable {
   public var value: Value {
     @_transparent
     unsafeAddress {
-      UnsafePointer<Value>(address)
+      unsafe UnsafePointer<Value>(address)
     }
 
     @_transparent
     nonmutating unsafeMutableAddress {
-      address
+      unsafe address
     }
   }
 
@@ -49,13 +47,13 @@ public struct _Cell<Value: ~Copyable>: ~Copyable {
   @_alwaysEmitIntoClient
   @_transparent
   public init(_ initialValue: consuming Value) {
-    unsafe _address.initialize(to: initialValue)
+    unsafe address.initialize(to: initialValue)
   }
 
   @available(SwiftStdlib 6.3, *)
   @_alwaysEmitIntoClient
   @_transparent
   deinit {
-    unsafe _address.deinitialize(count: 1)
+    unsafe address.deinitialize(count: 1)
   }
 }

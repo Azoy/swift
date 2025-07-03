@@ -49,7 +49,7 @@ public struct _Borrow<Value: ~Copyable>: Copyable, ~Escapable {
 
   @available(SwiftStdlib 6.3, *)
   @_alwaysEmitIntoClient
-  public subscript() -> T {
+  public subscript() -> Value {
     @_transparent
     unsafeAddress {
       unsafe _pointer

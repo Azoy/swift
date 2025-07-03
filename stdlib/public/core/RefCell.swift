@@ -17,17 +17,17 @@ public struct _RefCell<Value: ~Copyable>: ~Copyable {
   // < 0 = Writing
   // 0 = Unused
   // > 0 = Borrows are outstanding
-  @_usableFromInline
-  let borrows = _Cell(0)
+  @usableFromInline
+  let borrows = unsafe _Cell(0)
 
-  @_usableFromInline
+  @usableFromInline
   let value: _Cell<Value>
 
   @available(SwiftStdlib 6.3, *)
   @_alwaysEmitIntoClient
   @_transparent
   public init(_ initialValue: consuming Value) {
-    value = _Cell(initialValue)
+    unsafe value = _Cell(initialValue)
   }
 }
 
@@ -37,22 +37,30 @@ extension _RefCell where Value: ~Copyable {
   @frozen
   @safe
   public struct Ref: ~Copyable, ~Escapable {
-    @_usableFromInline
-    let cell: _Borrow<RefCell<Value>>
+    @usableFromInline
+    let cell: _Borrow<_RefCell<Value>>
 
     @available(SwiftStdlib 6.3, *)
     @_alwaysEmitIntoClient
     public var value: Value {
       @_transparent
       unsafeAddress {
-        UnsafePointer(cell[].value.address)
+        unsafe UnsafePointer(cell[].value.address)
       }
+    }
+
+    @available(SwiftStdlib 6.3, *)
+    @lifetime(copy cell)
+    @_alwaysEmitIntoClient
+    @_transparent
+    internal init(cell: _Borrow<_RefCell<Value>>) {
+      self.cell = cell
     }
 
     @_alwaysEmitIntoClient
     @_transparent
     deinit {
-      cell[].borrows.value -= 1
+      unsafe cell[].borrows.value -= 1
     }
   }
 
@@ -61,7 +69,7 @@ extension _RefCell where Value: ~Copyable {
   @_alwaysEmitIntoClient
   @_transparent
   public func borrow() -> Ref {
-    guard borrows.value + 1 > 0 else {
+    guard borrows.value >= 0 else {
       _preconditionFailure("Exclusivity violation")
     }
 
@@ -76,21 +84,29 @@ extension _RefCell where Value: ~Copyable {
   @frozen
   @safe
   public struct MutRef: ~Copyable, ~Escapable {
-    @_usableFromInline
-    let cell: _Borrow<RefCell<Value>>
+    @usableFromInline
+    let cell: _Borrow<_RefCell<Value>>
 
     @available(SwiftStdlib 6.3, *)
     @_alwaysEmitIntoClient
     public var value: Value {
       @_transparent
       unsafeAddress {
-        UnsafePointer(cell[].value.address)
+        unsafe UnsafePointer(cell[].value.address)
       }
 
       @_transparent
       nonmutating unsafeMutableAddress {
-        cell[].value.address
+        unsafe cell[].value.address
       }
+    }
+
+    @available(SwiftStdlib 6.3, *)
+    @lifetime(copy cell)
+    @_alwaysEmitIntoClient
+    @_transparent
+    internal init(cell: _Borrow<_RefCell<Value>>) {
+      self.cell = cell
     }
 
     @_alwaysEmitIntoClient
