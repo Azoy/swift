@@ -294,6 +294,7 @@ static StringRef getDumpString(SILFunctionType::Representation value) {
   case SILFunctionType::Representation::Thick: return "thick";
   case SILFunctionType::Representation::Block: return "block";
   case SILFunctionType::Representation::CFunctionPointer: return "c";
+  case SILFunctionType::Representation::StdCall: return "stdcall";
   case SILFunctionType::Representation::CXXMethod:
     return "cxx_method";
   case SILFunctionType::Representation::Thin: return "thin";
@@ -570,6 +571,8 @@ static StringRef getDumpString(ExternKind kind) {
     return "C";
   case ExternKind::Wasm:
     return "Wasm";
+  case ExternKind::StdCall:
+    return "StdCall";
   }
   llvm_unreachable("unhandled ExternKind");
 }

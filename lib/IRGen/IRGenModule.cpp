@@ -566,6 +566,7 @@ IRGenModule::IRGenModule(IRGenerator &irgen,
   DereferenceableID = getLLVMContext().getMDKindID("dereferenceable");
   
   C_CC = getOptions().PlatformCCallingConvention;
+  StdCallCC = llvm::CallingConv::X86_StdCall;
   // TODO: use "tinycc" on platforms that support it
   DefaultCC = SWIFT_DEFAULT_LLVM_CC;
 

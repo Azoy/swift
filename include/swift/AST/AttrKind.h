@@ -115,6 +115,8 @@ enum class ENUM_EXTENSIBILITY_ATTR(closed) ExternKind : uint8_t {
   /// with other extern kinds together.
   /// Effectively, this is no-op on non-WebAssembly targets.
   Wasm SWIFT_NAME("wasm"),
+  /// Reference an externally defined __stdcall function.
+  StdCall SWIFT_NAME("stdcall"),
   Last_ExternKind = Wasm
 };
 

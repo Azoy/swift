@@ -1280,6 +1280,13 @@ bool Parser::parseExternAttribute(DeclAttributes &Attributes,
         DiscardAttribute = true;
       }
     }
+  } else if (kindTok.getText() == "stdcall") {
+    kind = ExternKind::StdCall;
+    if (Tok.is(tok::comma)) {
+      if (!(importName = parseStringLiteralArgument(std::nullopt))) {
+        DiscardAttribute = true;
+      }
+    }
   } else {
     diagnoseExpectLanguage();
     DiscardAttribute = true;

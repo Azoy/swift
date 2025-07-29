@@ -997,6 +997,9 @@ extension ASTGenVisitor {
 
         moduleName = _moduleName
         symbolName = _symbolName
+      case .stdcall:
+        moduleName = nil
+        symbolName = args.isEmpty ? nil : self.generateConsumingSimpleStringLiteralAttrOption(args: &args)
       }
 
       return .createParsed(

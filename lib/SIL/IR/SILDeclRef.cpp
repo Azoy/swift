@@ -1287,14 +1287,20 @@ std::string SILDeclRef::mangle(ManglingKind MKind) const {
     // As a special case, functions can have manually mangled names.
     // Use the SILGen name only for the original non-thunked, non-curried entry
     // point.
-    if (auto NameA = getDecl()->getAttrs().getAttribute<SILGenNameAttr>())
+    if (auto NameA = getDecl()->getAttrs().getAttribute<SILGenNameAttr>()) {
       if (!NameA->Name.empty() && !isThunk()) {
         return NameA->Name.str();
       }
+    }
 
     if (auto *ExternA = ExternAttr::find(getDecl()->getAttrs(), ExternKind::C)) {
       assert(isa<FuncDecl>(getDecl()) && "non-FuncDecl with @_extern should be rejected by typechecker");
       return ExternA->getCName(cast<FuncDecl>(getDecl())).str();
+    }
+
+    if (auto *stdcall = ExternAttr::find(getDecl()->getAttrs(), ExternKind::StdCall)) {
+      assert(isa<FuncDecl>(getDecl()) && "non-FuncDecl with @_extern should be rejected by typechecker");
+      return stdcall->getCName(cast<FuncDecl>(getDecl())).str();
     }
 
     // Use a given cdecl name for native-to-foreign thunks.

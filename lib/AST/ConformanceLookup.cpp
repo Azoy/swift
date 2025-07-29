@@ -308,6 +308,7 @@ static bool isSendableFunctionType(EitherFunctionType eitherFnTy) {
     return false;
 
   case FunctionTypeRepresentation::CFunctionPointer:
+  case FunctionTypeRepresentation::StdCall:
   case FunctionTypeRepresentation::Thin:
     return true;
   }
@@ -348,6 +349,7 @@ static bool isBitwiseCopyableFunctionType(EitherFunctionType eitherFnTy) {
   case SILFunctionTypeRepresentation::Thin:
   case SILFunctionTypeRepresentation::CXXMethod:
   case SILFunctionTypeRepresentation::CFunctionPointer:
+  case SILFunctionTypeRepresentation::StdCall:
   case SILFunctionTypeRepresentation::Method:
   case SILFunctionTypeRepresentation::ObjCMethod:
   case SILFunctionTypeRepresentation::WitnessMethod:

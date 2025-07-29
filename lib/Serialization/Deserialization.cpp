@@ -6516,6 +6516,12 @@ llvm::Error DeclDeserializer::deserializeDeclCommon() {
           blobData = blobData.substr(moduleNameSize);
           declName = blobData.substr(0, declNameSize);
           break;
+        case ExternKind::StdCall:
+          // Empty StdCall name is rejected by typecheck, so serialized zero-length
+          // name is treated as no decl name.
+          if (declNameSize > 0)
+            declName = blobData.substr(0, declNameSize);
+          break;
         }
         }
         Attr = new (ctx) ExternAttr(moduleName, declName, (ExternKind)rawKind, isImplicit);

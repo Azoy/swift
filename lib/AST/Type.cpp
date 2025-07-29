@@ -3053,6 +3053,7 @@ getForeignRepresentable(Type type, ForeignLanguage language,
       break;
 
     case AnyFunctionType::Representation::CFunctionPointer:
+    case AnyFunctionType::Representation::StdCall:
       break;
     }
 

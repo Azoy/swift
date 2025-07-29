@@ -2524,8 +2524,9 @@ void AttributeChecker::visitExternAttr(ExternAttr *attr) {
   }
 
 
-  // C name must not be empty.
-  if (attr->getExternKind() == ExternKind::C) {
+  // C or StdCall name must not be empty.
+  if (attr->getExternKind() == ExternKind::C ||
+      attr->getExternKind() == ExternKind::StdCall) {
     StringRef cName = attr->getCName(FD);
     if (cName.empty()) {
       diagnose(attr->getLocation(), diag::extern_empty_c_name);

@@ -1280,6 +1280,12 @@ bool DeclAttribute::printImpl(ASTPrinter &Printer, const PrintOptions &Options,
       Printer << ", module: \"" << *Attr->ModuleName << "\"";
       Printer << ", name: \"" << *Attr->Name << "\"";
       break;
+    case ExternKind::StdCall:
+      Printer << "stdcall";
+      // Symbol name can be omitted for C.
+      if (auto cName = Attr->Name)
+        Printer << ", \"" << *cName << "\"";
+      break;
     }
     Printer << ")";
     break;

@@ -2371,6 +2371,8 @@ void ASTMangler::appendImplFunctionType(SILFunctionType *fn,
       // KeyPath accessors are mangled separately based on their index types
       // by mangleKeyPathGetterThunkHelper, and so on.
       llvm_unreachable("key path accessors should not mangle its function type");
+    case SILFunctionTypeRepresentation::StdCall:
+      llvm_unreachable("fixme do we need to mangle this separately from c?");
   }
 
   // Coroutine kind.  This is mangled in all pointer auth modes.
@@ -3313,6 +3315,9 @@ void ASTMangler::appendFunctionType(AnyFunctionType *fn, GenericSignature sig,
       return appendClangType(fn);
     }
     return appendOperator("XC");
+
+  case AnyFunctionType::Representation::StdCall:
+    llvm_unreachable("fixme do we need to mangle stdcall separately from c?");
   }
 }
 

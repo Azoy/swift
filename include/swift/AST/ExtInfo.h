@@ -273,8 +273,12 @@ enum class FunctionTypeRepresentation : uint8_t {
   /// calling convention.
   CFunctionPointer,
 
+  /// A __stdcall function pointer (or reference), which is thin and also uses
+  /// the __stdcall calling convention.
+  StdCall,
+
   /// The value of the greatest AST function representation.
-  Last = CFunctionPointer,
+  Last = StdCall,
 };
 
 // MARK: - SILFunctionTypeRepresentation
@@ -302,8 +306,12 @@ enum class SILFunctionTypeRepresentation : uint8_t {
   /// convention.
   CFunctionPointer = uint8_t(FunctionTypeRepresentation::CFunctionPointer),
 
+  /// A __stdcall function pointer, which is thin and also uses the __stdcall
+  /// calling convention.
+  StdCall = uint8_t(FunctionTypeRepresentation::StdCall),
+
   /// The value of the greatest AST function representation.
-  LastAST = CFunctionPointer,
+  LastAST = StdCall,
 
   /// The value of the least SIL-only function representation.
   FirstSIL = 8,
@@ -344,6 +352,7 @@ isThinRepresentation(FunctionTypeRepresentation rep) {
       return false;
     case FunctionTypeRepresentation::Thin:
     case FunctionTypeRepresentation::CFunctionPointer:
+    case FunctionTypeRepresentation::StdCall:
       return true;
   }
   llvm_unreachable("Unhandled FunctionTypeRepresentation in switch.");
@@ -361,6 +370,7 @@ isThinRepresentation(SILFunctionTypeRepresentation rep) {
   case SILFunctionTypeRepresentation::ObjCMethod:
   case SILFunctionTypeRepresentation::WitnessMethod:
   case SILFunctionTypeRepresentation::CFunctionPointer:
+  case SILFunctionTypeRepresentation::StdCall:
   case SILFunctionTypeRepresentation::Closure:
   case SILFunctionTypeRepresentation::CXXMethod:
   case SILFunctionTypeRepresentation::KeyPathAccessorGetter:
@@ -396,6 +406,7 @@ isKeyPathAccessorRepresentation(SILFunctionTypeRepresentation rep) {
     case SILFunctionTypeRepresentation::ObjCMethod:
     case SILFunctionTypeRepresentation::WitnessMethod:
     case SILFunctionTypeRepresentation::CFunctionPointer:
+    case SILFunctionTypeRepresentation::StdCall:
     case SILFunctionTypeRepresentation::Closure:
     case SILFunctionTypeRepresentation::CXXMethod:
       return false;
@@ -415,6 +426,8 @@ convertRepresentation(FunctionTypeRepresentation rep) {
     return SILFunctionTypeRepresentation::Thin;
   case FunctionTypeRepresentation::CFunctionPointer:
     return SILFunctionTypeRepresentation::CFunctionPointer;
+  case FunctionTypeRepresentation::StdCall:
+    return SILFunctionTypeRepresentation::StdCall;
   }
   llvm_unreachable("Unhandled FunctionTypeRepresentation!");
 }
@@ -431,6 +444,8 @@ convertRepresentation(SILFunctionTypeRepresentation rep) {
   case SILFunctionTypeRepresentation::CXXMethod:
   case SILFunctionTypeRepresentation::CFunctionPointer:
     return {FunctionTypeRepresentation::CFunctionPointer};
+  case SILFunctionTypeRepresentation::StdCall:
+    return {FunctionTypeRepresentation::StdCall};
   case SILFunctionTypeRepresentation::Method:
   case SILFunctionTypeRepresentation::ObjCMethod:
   case SILFunctionTypeRepresentation::WitnessMethod:
@@ -451,6 +466,7 @@ constexpr bool canBeCalledIndirectly(SILFunctionTypeRepresentation rep) {
   case SILFunctionTypeRepresentation::Thick:
   case SILFunctionTypeRepresentation::Thin:
   case SILFunctionTypeRepresentation::CFunctionPointer:
+  case SILFunctionTypeRepresentation::StdCall:
   case SILFunctionTypeRepresentation::Block:
   case SILFunctionTypeRepresentation::Closure:
   case SILFunctionTypeRepresentation::CXXMethod:
@@ -474,6 +490,7 @@ template <typename Repr> constexpr bool shouldStoreClangType(Repr repr) {
                 "Expected a Representation type as the argument type.");
   switch (static_cast<SILFunctionTypeRepresentation>(repr)) {
   case SILFunctionTypeRepresentation::CFunctionPointer:
+  case SILFunctionTypeRepresentation::StdCall:
   case SILFunctionTypeRepresentation::Block:
   case SILFunctionTypeRepresentation::CXXMethod:
     return true;
@@ -646,6 +663,7 @@ public:
     case SILFunctionTypeRepresentation::Block:
     case SILFunctionTypeRepresentation::Thin:
     case SILFunctionTypeRepresentation::CFunctionPointer:
+    case SILFunctionTypeRepresentation::StdCall:
     case SILFunctionTypeRepresentation::Closure:
     case SILFunctionTypeRepresentation::KeyPathAccessorGetter:
     case SILFunctionTypeRepresentation::KeyPathAccessorSetter:
@@ -966,6 +984,7 @@ SILFunctionLanguage getSILFunctionLanguage(SILFunctionTypeRepresentation rep) {
   case SILFunctionTypeRepresentation::CFunctionPointer:
   case SILFunctionTypeRepresentation::Block:
   case SILFunctionTypeRepresentation::CXXMethod:
+  case SILFunctionTypeRepresentation::StdCall:
     return SILFunctionLanguage::C;
   case SILFunctionTypeRepresentation::Thick:
   case SILFunctionTypeRepresentation::Thin:
@@ -1134,6 +1153,7 @@ public:
     case Representation::Block:
     case Representation::Thin:
     case Representation::CFunctionPointer:
+    case Representation::StdCall:
     case Representation::Closure:
     case Representation::KeyPathAccessorGetter:
     case Representation::KeyPathAccessorSetter:
@@ -1157,6 +1177,7 @@ public:
       return true;
     case Representation::Thin:
     case Representation::CFunctionPointer:
+    case Representation::StdCall:
     case Representation::ObjCMethod:
     case Representation::Method:
     case Representation::WitnessMethod:

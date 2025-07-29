@@ -382,6 +382,9 @@ irgen::expandCallingConv(IRGenModule &IGM,
   case SILFunctionTypeRepresentation::Block:
     return IGM.getOptions().PlatformCCallingConvention;
 
+  case SILFunctionTypeRepresentation::StdCall:
+    return IGM.StdCall_CC;
+
   case SILFunctionTypeRepresentation::Method:
   case SILFunctionTypeRepresentation::WitnessMethod:
   case SILFunctionTypeRepresentation::Closure:

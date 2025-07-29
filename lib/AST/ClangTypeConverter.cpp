@@ -159,6 +159,7 @@ ClangTypeConverter::getFunctionType(ArrayRef<AnyFunctionType::Param> params,
 
   switch (repr) {
   case AnyFunctionType::Representation::CFunctionPointer:
+  case AnyFunctionType::Representation::StdCall:
     return ClangASTContext.getPointerType(fn).getTypePtr();
   case AnyFunctionType::Representation::Block:
     return ClangASTContext.getBlockPointerType(fn).getTypePtr();
@@ -215,6 +216,7 @@ ClangTypeConverter::getFunctionType(ArrayRef<SILParameterInfo> params,
   switch (repr) {
   case SILFunctionType::Representation::CXXMethod:
   case SILFunctionType::Representation::CFunctionPointer:
+  case SILFunctionType::Representation::StdCall:
     return ClangASTContext.getPointerType(fn).getTypePtr();
   case SILFunctionType::Representation::Block:
     return ClangASTContext.getBlockPointerType(fn).getTypePtr();

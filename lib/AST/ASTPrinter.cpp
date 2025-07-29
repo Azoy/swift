@@ -6626,6 +6626,11 @@ public:
         if (printClangType && fnType->hasNonDerivableClangType())
           printCType(ctx, Printer, info);
         break;
+      case SILFunctionType::Representation::StdCall:
+        Printer << "stdcall";
+        if (printClangType && fnType->hasNonDerivableClangType())
+          printCType(ctx, Printer, info);
+        break;
       case SILFunctionType::Representation::Method:
         Printer << "method";
         break;
@@ -6716,6 +6721,11 @@ public:
         break;
       case SILFunctionType::Representation::CFunctionPointer:
         Printer << "c";
+        if (printClangType && fnType->hasNonDerivableClangType())
+          printCType(Ctx, Printer, info);
+        break;
+      case SILFunctionType::Representation::StdCall:
+        Printer << "stdcall";
         if (printClangType && fnType->hasNonDerivableClangType())
           printCType(Ctx, Printer, info);
         break;
