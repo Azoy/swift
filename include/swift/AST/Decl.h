@@ -623,7 +623,10 @@ protected:
     ParamKind : 3,
 
     /// Whether this generic parameter represents an opaque type.
-    IsOpaqueType : 1
+    IsOpaqueType : 1,
+
+    /// Whether we have computed the default type.
+    IsDefaultTypeComputed : 1
   );
 
   SWIFT_INLINE_BITFIELD_FULL(AssociatedTypeDecl, TypeDecl, 1,
@@ -3873,6 +3876,10 @@ class GenericTypeParamDecl final
     : public TypeDecl,
       private llvm::TrailingObjects<GenericTypeParamDecl, TypeRepr *,
                                     SourceLoc> {
+  // The default type.
+  TypeLoc DefaultType;
+
+  friend class GenericTypeParamDeclDefaultTypeRequest;
   friend TrailingObjects;
 
   size_t numTrailingObjects(OverloadToken<TypeRepr *>) const {
@@ -3886,6 +3893,9 @@ class GenericTypeParamDecl final
 
     return 0;
   }
+
+  /// Set the computed default type.
+  void setDefaultType(Type ty);
 
   /// Construct a new generic type parameter.
   ///
@@ -3905,7 +3915,8 @@ class GenericTypeParamDecl final
   /// \param opaqueTypeRepr The TypeRepr of an opaque generic parameter.
   ///
   GenericTypeParamDecl(DeclContext *dc, Identifier name, SourceLoc nameLoc,
-                       SourceLoc specifierLoc, unsigned depth, unsigned index,
+                       SourceLoc specifierLoc, TypeLoc defaultType,
+                       unsigned depth, unsigned index,
                        GenericTypeParamKind paramKind, bool isOpaqueType,
                        TypeRepr *opaqueTypeRepr);
 
@@ -3928,6 +3939,7 @@ class GenericTypeParamDecl final
   ///
   static GenericTypeParamDecl *create(DeclContext *dc, Identifier name,
                                       SourceLoc nameLoc, SourceLoc specifierLoc,
+                                      TypeLoc defaultType,
                                       unsigned depth, unsigned index,
                                       GenericTypeParamKind paramKind,
                                       bool isOpaqueType,
@@ -3941,8 +3953,8 @@ public:
   GenericTypeParamDecl(DeclContext *dc, Identifier name, SourceLoc nameLoc,
                        SourceLoc specifierLoc, unsigned depth, unsigned index,
                        GenericTypeParamKind paramKind)
-      : GenericTypeParamDecl(dc, name, nameLoc, specifierLoc, depth, index,
-                             paramKind, false, nullptr) {
+      : GenericTypeParamDecl(dc, name, nameLoc, specifierLoc, TypeLoc(),
+                             depth, index, paramKind, false, nullptr) {
   }
 
   /// Construct a deserialized generic type parameter.
@@ -3979,6 +3991,7 @@ public:
   static GenericTypeParamDecl *createParsed(DeclContext *dc, Identifier name,
                                             SourceLoc nameLoc,
                                             SourceLoc specifierLoc,
+                                            TypeLoc defaultType,
                                             unsigned index,
                                             GenericTypeParamKind paramKind);
 
@@ -4076,6 +4089,26 @@ public:
 
     return *getTrailingObjects<TypeRepr *>();
   }
+
+  /// Check to see if we have a default type.
+  bool hasDefaultType() const {
+    // If we have a TypeRepr, return true immediately without kicking off
+    // a request.
+    return DefaultType.getTypeRepr() || getDefaultType();
+  }
+
+  /// Retrieve the default type as written in the source.
+  TypeRepr *getDefaultTypeRepr() const {
+    return DefaultType.getTypeRepr();
+  }
+
+  /// Retrieve the default type.
+  Type getDefaultType() const;
+
+  /// Retrieve the default type if computed, `None` otherwise.
+  ///
+  /// \Note Should only be used for dumping.
+  std::optional<Type> getCachedDefaultType() const;
 
   /// The index of this generic type parameter within its generic parameter
   /// list.

@@ -539,8 +539,12 @@ static void checkGenericParams(GenericContext *ownerCtx) {
   auto *decl = ownerCtx->getAsDecl();
   auto &ctx = ownerCtx->getASTContext();
   bool hasPack = false;
+  bool hasSeenNonDefault = false;
 
-  for (auto gp : *genericParams) {
+  for (auto i : indices(genericParams->getParams())) {
+    // Walk backwards which makes it easier to flag non-trailing default types.
+    auto gp = genericParams->getParams()[genericParams->size() - 1 - i];
+
     // Diagnose generic types with a parameter packs if VariadicGenerics
     // is not enabled.
     if (gp->isParameterPack()) {
@@ -577,6 +581,14 @@ static void checkGenericParams(GenericContext *ownerCtx) {
           diag::availability_value_generic_type_only_version_newer,
           ownerCtx);
       }
+    }
+
+    if (gp->hasDefaultType()) {
+      if (hasSeenNonDefault) {
+        gp->diagnose(diag::default_generic_not_trailing, gp, gp->getDefaultType());
+      }
+    } else {
+      hasSeenNonDefault = true;
     }
 
     TypeChecker::checkDeclAttributes(gp);

@@ -536,6 +536,9 @@ SUPPRESSIBLE_EXPERIMENTAL_FEATURE(Lifetimes, true)
 /// Allow macro based aliases to be imported into Swift
 EXPERIMENTAL_FEATURE(ImportMacroAliases, true)
 
+/// Allow generics to have a default type, e.g. `<T = Int>`.
+EXPERIMENTAL_FEATURE(DefaultGenerics, false)
+
 #undef EXPERIMENTAL_FEATURE_EXCLUDED_FROM_MODULE_INTERFACE
 #undef EXPERIMENTAL_FEATURE
 #undef UPCOMING_FEATURE

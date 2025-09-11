@@ -3609,6 +3609,11 @@ void PrintAST::visitGenericTypeParamDecl(GenericTypeParamDecl *decl) {
   });
 
   printInherited(decl);
+
+  if (decl->hasDefaultType()) {
+    Printer << " = ";
+    decl->getDefaultType().print(Printer, Options);
+  }
 }
 
 void PrintAST::visitAssociatedTypeDecl(AssociatedTypeDecl *decl) {
@@ -8241,17 +8246,7 @@ void GenericParamList::print(ASTPrinter &Printer,
   interleave(
       *this,
       [&](const GenericTypeParamDecl *P) {
-        Printer << P->getName();
-        if (!P->getInherited().empty()) {
-          Printer << " : ";
-
-          auto loc = P->getInherited().getEntry(0);
-          if (willUseTypeReprPrinting(loc, nullptr, PO)) {
-            loc.getTypeRepr()->print(Printer, PO);
-          } else {
-            loc.getType()->print(Printer, PO);
-          }
-        }
+        P->print(Printer, PO);
       },
       [&] { Printer << ", "; });
 

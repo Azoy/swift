@@ -2862,3 +2862,17 @@ void AvailabilityDomainForDeclRequest::cacheResult(
 
   decl->getASTContext().evaluator.cacheNonEmptyOutput(*this, std::move(domain));
 }
+
+//----------------------------------------------------------------------------//
+// GenericTypeParamDeclDefaultTypeRequest computation.
+//----------------------------------------------------------------------------//
+
+std::optional<Type> GenericTypeParamDeclDefaultTypeRequest::getCachedResult() const {
+  auto *decl = std::get<0>(getStorage());
+  return decl->getCachedDefaultType();
+}
+
+void GenericTypeParamDeclDefaultTypeRequest::cacheResult(Type value) const {
+  auto *decl = std::get<0>(getStorage());
+  decl->setDefaultType(value);
+}

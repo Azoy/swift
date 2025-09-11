@@ -48,7 +48,8 @@ BridgedGenericTypeParamDecl BridgedGenericTypeParamDecl_createParsed(
     BridgedNullableTypeRepr bridgedInheritedType, size_t index,
     swift::GenericTypeParamKind paramKind) {
   auto *decl = GenericTypeParamDecl::createParsed(
-      cDeclContext.unbridged(), name, nameLoc, specifierLoc, index, paramKind);
+      cDeclContext.unbridged(), name, nameLoc, specifierLoc, TypeLoc(),
+      index, paramKind);
 
   if (auto *inheritedType = bridgedInheritedType.unbridged()) {
     auto entry = InheritedEntry(inheritedType);
