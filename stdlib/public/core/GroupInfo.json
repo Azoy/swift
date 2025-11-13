@@ -209,9 +209,10 @@
     "OutputRawSpan.swift",
     "OutputSpan.swift",
     "RawSpan.swift",
-    "Span.swift"
+    "Span.swift",
+    "Span+Sequence.swift"
   ],
-  "UTF8Span": [ 
+  "UTF8Span": [
     "UTF8EncodingError.swift",
     "UTF8Span.swift",
     "UTF8SpanBits.swift",

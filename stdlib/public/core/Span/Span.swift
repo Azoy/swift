@@ -799,8 +799,8 @@ extension Span where Element: ~Copyable {
   @_alwaysEmitIntoClient
   @lifetime(copy self)
   public func extracting(first maxLength: Int) -> Self {
-    _precondition(maxLength >= 0, "Can't have a prefix of negative length")
-    let newCount = min(maxLength, count)
+    // _precondition(maxLength >= 0, "Can't have a prefix of negative length")
+    let newCount = Swift.min(maxLength, count)
     let newSpan = unsafe Self(_unchecked: _pointer, count: newCount)
     return unsafe _overrideLifetime(newSpan, copying: self)
   }
@@ -830,7 +830,7 @@ extension Span where Element: ~Copyable {
   @lifetime(copy self)
   public func extracting(droppingLast k: Int) -> Self {
     _precondition(k >= 0, "Can't drop a negative number of elements")
-    let droppedCount = min(k, count)
+    let droppedCount = Swift.min(k, count)
     let newSpan = unsafe Self(_unchecked: _pointer, count: count &- droppedCount)
     return unsafe _overrideLifetime(newSpan, copying: self)
   }
@@ -861,7 +861,7 @@ extension Span where Element: ~Copyable {
   @lifetime(copy self)
   public func extracting(last maxLength: Int) -> Self {
     _precondition(maxLength >= 0, "Can't have a suffix of negative length")
-    let newCount = min(maxLength, count)
+    let newCount = Swift.min(maxLength, count)
     let offset = (count &- newCount) * MemoryLayout<Element>.stride
     let newStart = unsafe _pointer?.advanced(by: offset)
     let newSpan = unsafe Span(_unchecked: newStart, count: newCount)
@@ -895,7 +895,7 @@ extension Span where Element: ~Copyable {
   @lifetime(copy self)
   public func extracting(droppingFirst k: Int) -> Self {
     _precondition(k >= 0, "Can't drop a negative number of elements")
-    let droppedCount = min(k, count)
+    let droppedCount = Swift.min(k, count)
     let offset = droppedCount &* MemoryLayout<Element>.stride
     let newStart = unsafe _pointer?.advanced(by: offset)
     let newCount = count &- droppedCount

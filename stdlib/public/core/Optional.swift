@@ -453,6 +453,18 @@ extension Optional where Wrapped: ~Copyable & ~Escapable {
   }
 }
 
+extension Optional where Wrapped: ~Copyable {
+  @available(SwiftStdlib 6.3, *)
+  @_alwaysEmitIntoClient
+  public var _span: Span<Wrapped> {
+    @_addressableSelf
+    @_lifetime(borrow self)
+    get {
+      Span()
+    }
+  }
+}
+
 @_unavailableInEmbedded
 extension Optional: CustomDebugStringConvertible {
   /// A textual representation of this instance, suitable for debugging.

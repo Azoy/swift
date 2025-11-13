@@ -299,6 +299,7 @@ extension ASTGenVisitor {
         .Sensitive,
         .SPIOnly,
         .ShowInInterface,
+        .SkipAvailabilityChecking,
         .SpecializeExtension,
         .StaticExclusiveOnly,
         .Testable,

@@ -163,6 +163,7 @@ split_embedded_sources(
   EMBEDDED Span/OutputSpan.swift
   EMBEDDED Span/RawSpan.swift
   EMBEDDED Span/Span.swift
+  EMBEDDED Span/Span+Sequence.swift
   EMBEDDED StaticString.swift
   EMBEDDED StaticPrint.swift
   EMBEDDED Stride.swift
@@ -275,7 +276,7 @@ if(SWIFT_STDLIB_ENABLE_VECTOR_TYPES)
   split_embedded_sources(
     OUT_LIST_EMBEDDED SWIFTLIB_EMBEDDED_VECTOR_GYB_SOURCES
     OUT_LIST_NORMAL SWIFTLIB_VECTOR_GYB_SOURCES
-    
+
     EMBEDDED SIMDIntegerConcreteOperations.swift.gyb
     EMBEDDED SIMDFloatConcreteOperations.swift.gyb
     EMBEDDED SIMDMaskConcreteOperations.swift.gyb
@@ -347,6 +348,7 @@ list(APPEND swift_stdlib_compile_flags "-enable-experimental-feature" "ValueGene
 list(APPEND swift_stdlib_compile_flags "-enable-experimental-feature" "AddressableParameters")
 list(APPEND swift_stdlib_compile_flags "-enable-experimental-feature" "AddressableTypes")
 list(APPEND swift_stdlib_compile_flags "-enable-experimental-feature" "AllowUnsafeAttribute")
+list(APPEND swift_stdlib_compile_flags "-enable-experimental-feature" "Lifetimes")
 list(APPEND swift_stdlib_compile_flags "-strict-memory-safety")
 
 if("${SWIFT_NATIVE_SWIFT_TOOLS_PATH}" STREQUAL "")
@@ -530,7 +532,7 @@ if(SWIFT_SHOULD_BUILD_EMBEDDED_STDLIB)
     list(GET list 0 arch)
     list(GET list 1 mod)
     list(GET list 2 triple)
-    
+
     set(SWIFT_SDK_embedded_ARCH_${arch}_MODULE "${mod}")
     set(SWIFT_SDK_embedded_LIB_SUBDIR "embedded")
     set(SWIFT_SDK_embedded_ARCH_${arch}_TRIPLE "${triple}")

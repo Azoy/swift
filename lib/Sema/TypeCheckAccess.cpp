@@ -2333,12 +2333,15 @@ public:
   }
 
   void visit(Decl *D) {
-    DeclVisitor<DeclAvailabilityChecker>::visit(D);
+    if (!D->getAttrs().hasAttribute<SkipAvailabilityCheckingAttr>()) {
+      DeclVisitor<DeclAvailabilityChecker>::visit(D);
+    }
+
     checkGlobalActor(D);
     checkAttachedMacros(D);
     checkAvailabilityDomains(D);
   }
-  
+
   // Force all kinds to be handled at a lower level.
   void visitDecl(Decl *D) = delete;
   void visitValueDecl(ValueDecl *D) = delete;
@@ -2379,6 +2382,10 @@ public:
                          const llvm::DenseSet<const VarDecl *> &seenVars) {
     const VarDecl *theVar = NP->getDecl();
 
+    if (theVar->getAttrs().hasAttribute<SkipAvailabilityCheckingAttr>()) {
+      return;
+    }
+
     // Only check the type of individual variables if we didn't check an
     // enclosing TypedPattern.
     if (seenVars.count(theVar))
@@ -2405,6 +2412,10 @@ public:
       seenVars.insert(V);
       anyVar = V;
     });
+
+    if (anyVar->getAttrs().hasAttribute<SkipAvailabilityCheckingAttr>()) {
+      return;
+    }
 
     checkType(TP->hasType() ? TP->getType() : Type(),
               TP->getTypeRepr(), anyVar ? (Decl *)anyVar : (Decl *)PBD,
@@ -2450,6 +2461,11 @@ public:
   }
 
   void visitAssociatedTypeDecl(AssociatedTypeDecl *assocType) {
+    if (assocType->getProtocol()->getAttrs()
+          .hasAttribute<SkipAvailabilityCheckingAttr>()) {
+      return;
+    }
+
     for (TypeLoc requirement : assocType->getInherited().getEntries()) {
       checkType(requirement.getType(), requirement.getTypeRepr(),
                 assocType);
