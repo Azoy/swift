@@ -207,6 +207,11 @@ public protocol IteratorProtocol<Element>: ~Copyable, ~Escapable {
   ///   exists; otherwise, `nil`.
   mutating func next() -> Element?
 
+  // FIXME: Replace with this
+  // @available(SwiftStdlib 6.3, *)
+  // @_lifetime(&self)
+  // mutating func nextBorrow() -> Borrow<Element>?
+  
   @available(SwiftStdlib 6.3, *)
   @_lifetime(&self)
   mutating func nextSpan(maximumCount: Int) -> Span<Element>

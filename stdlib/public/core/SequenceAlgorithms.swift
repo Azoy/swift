@@ -164,6 +164,99 @@ extension Sequence {
   }
 }
 
+extension Sequence where Self: ~Copyable & ~Escapable {
+  /// Returns the minimum element in the sequence, using the given predicate as
+  /// the comparison between elements.
+  ///
+  /// The predicate must be a *strict weak ordering* over the elements. That
+  /// is, for any elements `a`, `b`, and `c`, the following conditions must
+  /// hold:
+  ///
+  /// - `areInIncreasingOrder(a, a)` is always `false`. (Irreflexivity)
+  /// - If `areInIncreasingOrder(a, b)` and `areInIncreasingOrder(b, c)` are
+  ///   both `true`, then `areInIncreasingOrder(a, c)` is also
+  ///   `true`. (Transitive comparability)
+  /// - Two elements are *incomparable* if neither is ordered before the other
+  ///   according to the predicate. If `a` and `b` are incomparable, and `b`
+  ///   and `c` are incomparable, then `a` and `c` are also incomparable.
+  ///   (Transitive incomparability)
+  ///
+  /// This example shows how to use the `min(by:)` method on a
+  /// dictionary to find the key-value pair with the lowest value.
+  ///
+  ///     let hues = ["Heliotrope": 296, "Coral": 16, "Aquamarine": 156]
+  ///     let leastHue = hues.min { a, b in a.value < b.value }
+  ///     print(leastHue)
+  ///     // Prints "Optional((key: "Coral", value: 16))"
+  ///
+  /// - Parameter areInIncreasingOrder: A predicate that returns `true`
+  ///   if its first argument should be ordered before its second
+  ///   argument; otherwise, `false`.
+  /// - Returns: The sequence's minimum element, according to
+  ///   `areInIncreasingOrder`. If the sequence has no elements, returns
+  ///   `nil`.
+  ///
+  /// - Complexity: O(*n*), where *n* is the length of the sequence.
+  @available(SwiftStdlib 6.3, *)
+  @warn_unqualified_access
+  @_alwaysEmitIntoClient
+  public func min(
+    by areInIncreasingOrder: (Element, Element) throws -> Bool
+  ) rethrows -> Element? {
+    var it = makeNewIterator()
+    guard var result = it.next() else { return nil }
+    while let e = it.next() {
+      if try areInIncreasingOrder(e, result) { result = e }
+    }
+    return result
+  }
+
+  /// Returns the maximum element in the sequence, using the given predicate
+  /// as the comparison between elements.
+  ///
+  /// The predicate must be a *strict weak ordering* over the elements. That
+  /// is, for any elements `a`, `b`, and `c`, the following conditions must
+  /// hold:
+  ///
+  /// - `areInIncreasingOrder(a, a)` is always `false`. (Irreflexivity)
+  /// - If `areInIncreasingOrder(a, b)` and `areInIncreasingOrder(b, c)` are
+  ///   both `true`, then `areInIncreasingOrder(a, c)` is also
+  ///   `true`. (Transitive comparability)
+  /// - Two elements are *incomparable* if neither is ordered before the other
+  ///   according to the predicate. If `a` and `b` are incomparable, and `b`
+  ///   and `c` are incomparable, then `a` and `c` are also incomparable.
+  ///   (Transitive incomparability)
+  ///
+  /// This example shows how to use the `max(by:)` method on a
+  /// dictionary to find the key-value pair with the highest value.
+  ///
+  ///     let hues = ["Heliotrope": 296, "Coral": 16, "Aquamarine": 156]
+  ///     let greatestHue = hues.max { a, b in a.value < b.value }
+  ///     print(greatestHue)
+  ///     // Prints "Optional((key: "Heliotrope", value: 296))"
+  ///
+  /// - Parameter areInIncreasingOrder:  A predicate that returns `true` if its
+  ///   first argument should be ordered before its second argument;
+  ///   otherwise, `false`.
+  /// - Returns: The sequence's maximum element if the sequence is not empty;
+  ///   otherwise, `nil`.
+  ///
+  /// - Complexity: O(*n*), where *n* is the length of the sequence.
+  @available(SwiftStdlib 6.3, *)
+  @warn_unqualified_access
+  @_alwaysEmitIntoClient
+  public func max(
+    by areInIncreasingOrder: (Element, Element) throws -> Bool
+  ) rethrows -> Element? {
+    var it = makeNewIterator()
+    guard var result = it.next() else { return nil }
+    while let e = it.next() {
+      if try areInIncreasingOrder(result, e) { result = e }
+    }
+    return result
+  }
+}
+
 extension Sequence where Element: Comparable {
   /// Returns the minimum element in the sequence.
   ///
@@ -199,6 +292,48 @@ extension Sequence where Element: Comparable {
   /// - Complexity: O(*n*), where *n* is the length of the sequence.
   @inlinable
   @warn_unqualified_access
+  public func max() -> Element? {
+    return self.max(by: <)
+  }
+}
+
+extension Sequence where Element: Comparable, Self: ~Copyable & ~Escapable {
+  /// Returns the minimum element in the sequence.
+  ///
+  /// This example finds the smallest value in an array of height measurements.
+  ///
+  ///     let heights = [67.5, 65.7, 64.3, 61.1, 58.5, 60.3, 64.9]
+  ///     let lowestHeight = heights.min()
+  ///     print(lowestHeight)
+  ///     // Prints "Optional(58.5)"
+  ///
+  /// - Returns: The sequence's minimum element. If the sequence has no
+  ///   elements, returns `nil`.
+  ///
+  /// - Complexity: O(*n*), where *n* is the length of the sequence.
+  @available(SwiftStdlib 6.3, *)
+  @warn_unqualified_access
+  @_alwaysEmitIntoClient
+  public func min() -> Element? {
+    return self.min(by: <)
+  }
+
+  /// Returns the maximum element in the sequence.
+  ///
+  /// This example finds the largest value in an array of height measurements.
+  ///
+  ///     let heights = [67.5, 65.7, 64.3, 61.1, 58.5, 60.3, 64.9]
+  ///     let greatestHeight = heights.max()
+  ///     print(greatestHeight)
+  ///     // Prints "Optional(67.5)"
+  ///
+  /// - Returns: The sequence's maximum element. If the sequence has no
+  ///   elements, returns `nil`.
+  ///
+  /// - Complexity: O(*n*), where *n* is the length of the sequence.
+  @available(SwiftStdlib 6.3, *)
+  @warn_unqualified_access
+  @_alwaysEmitIntoClient
   public func max() -> Element? {
     return self.max(by: <)
   }
@@ -252,6 +387,52 @@ extension Sequence  {
   }
 }
 
+extension Sequence where Self: ~Copyable & ~Escapable {
+  /// Returns a Boolean value indicating whether the initial elements of the
+  /// sequence are equivalent to the elements in another sequence, using
+  /// the given predicate as the equivalence test.
+  ///
+  /// The predicate must be an *equivalence relation* over the elements. That
+  /// is, for any elements `a`, `b`, and `c`, the following conditions must
+  /// hold:
+  ///
+  /// - `areEquivalent(a, a)` is always `true`. (Reflexivity)
+  /// - `areEquivalent(a, b)` implies `areEquivalent(b, a)`. (Symmetry)
+  /// - If `areEquivalent(a, b)` and `areEquivalent(b, c)` are both `true`, then
+  ///   `areEquivalent(a, c)` is also `true`. (Transitivity)
+  ///
+  /// - Parameters:
+  ///   - possiblePrefix: A sequence to compare to this sequence.
+  ///   - areEquivalent: A predicate that returns `true` if its two arguments
+  ///     are equivalent; otherwise, `false`.
+  /// - Returns: `true` if the initial elements of the sequence are equivalent
+  ///   to the elements of `possiblePrefix`; otherwise, `false`. If
+  ///   `possiblePrefix` has no elements, the return value is `true`.
+  ///
+  /// - Complexity: O(*m*), where *m* is the lesser of the length of the
+  ///   sequence and the length of `possiblePrefix`.
+  @available(SwiftStdlib 6.3, *)
+  @_alwaysEmitIntoClient
+  public func starts<PossiblePrefix: Sequence & ~Copyable & ~Escapable>(
+    with possiblePrefix: borrowing PossiblePrefix,
+    by areEquivalent: (Element, PossiblePrefix.Element) throws -> Bool
+  ) rethrows -> Bool {
+    var selfIter = makeNewIterator()
+    var possiblePrefixIterator = possiblePrefix.makeNewIterator()
+    while let e0 = selfIter.next() {
+      if let e1 = possiblePrefixIterator.next() {
+        if try !areEquivalent(e0, e1) {
+          return false
+        }
+      }
+      else {
+        return true
+      }
+    }
+    return possiblePrefixIterator.next() == nil
+  }
+}
+
 extension Sequence where Element: Equatable {
   /// Returns a Boolean value indicating whether the initial elements of the
   /// sequence are the same as the elements in another sequence.
@@ -281,6 +462,41 @@ extension Sequence where Element: Equatable {
   @inlinable
   public func starts<PossiblePrefix: Sequence>(
     with possiblePrefix: PossiblePrefix
+  ) -> Bool where PossiblePrefix.Element == Element {
+    return self.starts(with: possiblePrefix, by: ==)
+  }
+}
+
+extension Sequence where Element: Equatable, Self: ~Copyable & ~Escapable {
+  /// Returns a Boolean value indicating whether the initial elements of the
+  /// sequence are the same as the elements in another sequence.
+  ///
+  /// This example tests whether one countable range begins with the elements
+  /// of another countable range.
+  ///
+  ///     let a = 1...3
+  ///     let b = 1...10
+  ///
+  ///     print(b.starts(with: a))
+  ///     // Prints "true"
+  ///
+  /// Passing a sequence with no elements or an empty collection as
+  /// `possiblePrefix` always results in `true`.
+  ///
+  ///     print(b.starts(with: []))
+  ///     // Prints "true"
+  ///
+  /// - Parameter possiblePrefix: A sequence to compare to this sequence.
+  /// - Returns: `true` if the initial elements of the sequence are the same as
+  ///   the elements of `possiblePrefix`; otherwise, `false`. If
+  ///   `possiblePrefix` has no elements, the return value is `true`.
+  ///
+  /// - Complexity: O(*m*), where *m* is the lesser of the length of the
+  ///   sequence and the length of `possiblePrefix`.
+  @available(SwiftStdlib 6.3, *)
+  @_alwaysEmitIntoClient
+  public func starts<PossiblePrefix: Sequence & ~Copyable & ~Escapable>(
+    with possiblePrefix: borrowing PossiblePrefix
   ) -> Bool where PossiblePrefix.Element == Element {
     return self.starts(with: possiblePrefix, by: ==)
   }
@@ -546,6 +762,86 @@ extension Sequence {
   }
 }
 
+extension Sequence where Self: ~Copyable & ~Escapable {
+  /// Returns a Boolean value indicating whether the sequence contains an
+  /// element that satisfies the given predicate.
+  ///
+  /// You can use the predicate to check for an element of a type that
+  /// doesn't conform to the `Equatable` protocol, such as the
+  /// `HTTPResponse` enumeration in this example.
+  ///
+  ///     enum HTTPResponse {
+  ///         case ok
+  ///         case error(Int)
+  ///     }
+  ///
+  ///     let lastThreeResponses: [HTTPResponse] = [.ok, .ok, .error(404)]
+  ///     let hadError = lastThreeResponses.contains { element in
+  ///         if case .error = element {
+  ///             return true
+  ///         } else {
+  ///             return false
+  ///         }
+  ///     }
+  ///     // 'hadError' == true
+  ///
+  /// Alternatively, a predicate can be satisfied by a range of `Equatable`
+  /// elements or a general condition. This example shows how you can check an
+  /// array for an expense greater than $100.
+  ///
+  ///     let expenses = [21.37, 55.21, 9.32, 10.18, 388.77, 11.41]
+  ///     let hasBigPurchase = expenses.contains { $0 > 100 }
+  ///     // 'hasBigPurchase' == true
+  ///
+  /// - Parameter predicate: A closure that takes an element of the sequence
+  ///   as its argument and returns a Boolean value that indicates whether
+  ///   the passed element represents a match.
+  /// - Returns: `true` if the sequence contains an element that satisfies
+  ///   `predicate`; otherwise, `false`.
+  ///
+  /// - Complexity: O(*n*), where *n* is the length of the sequence.
+  @available(SwiftStdlib 6.3, *)
+  @_alwaysEmitIntoClient
+  public func contains(
+    where predicate: (Element) throws -> Bool
+  ) rethrows -> Bool {
+    var iter = makeNewIterator()
+    while let e = iter.next() {
+      if try predicate(e) {
+        return true
+      }
+    }
+    return false
+  }
+
+  /// Returns a Boolean value indicating whether every element of a sequence
+  /// satisfies a given predicate.
+  ///
+  /// The following code uses this method to test whether all the names in an
+  /// array have at least five characters:
+  ///
+  ///     let names = ["Sofia", "Camilla", "Martina", "Mateo", "Nicolás"]
+  ///     let allHaveAtLeastFive = names.allSatisfy({ $0.count >= 5 })
+  ///     // allHaveAtLeastFive == true
+  ///
+  /// If the sequence is empty, this method returns `true`.
+  ///
+  /// - Parameter predicate: A closure that takes an element of the sequence
+  ///   as its argument and returns a Boolean value that indicates whether
+  ///   the passed element satisfies a condition.
+  /// - Returns: `true` if the sequence contains only elements that satisfy
+  ///   `predicate`; otherwise, `false`.
+  ///
+  /// - Complexity: O(*n*), where *n* is the length of the sequence.
+  @available(SwiftStdlib 6.3, *)
+  @_alwaysEmitIntoClient
+  public func allSatisfy(
+    _ predicate: (Element) throws -> Bool
+  ) rethrows -> Bool {
+    return try !contains { try !predicate($0) }
+  }
+}
+
 extension Sequence where Element: Equatable {
   /// Returns a Boolean value indicating whether the sequence contains the
   /// given element.
@@ -610,6 +906,46 @@ extension Sequence {
   ) throws(E) -> Int {
     var count = 0
     for e in self {
+      count += try predicate(e) ? 1 : 0
+    }
+    return count
+  }
+}
+
+extension Sequence where Self: ~Copyable & ~Escapable {
+  /// Returns the number of elements in the sequence that satisfy the given
+  /// predicate.
+  ///
+  /// You can use this method to count the number of elements that pass a test.
+  /// The following example finds the number of names that are fewer than
+  /// five characters long:
+  ///
+  ///     let names = ["Jacqueline", "Ian", "Amy", "Juan", "Soroush", "Tiffany"]
+  ///     let shortNameCount = names.count(where: { $0.count < 5 })
+  ///     // shortNameCount == 3
+  ///
+  /// To find the number of times a specific element appears in the sequence,
+  /// use the equal to operator (`==`) in the closure to test for a match.
+  ///
+  ///     let birds = ["duck", "duck", "duck", "duck", "goose"]
+  ///     let duckCount = birds.count(where: { $0 == "duck" })
+  ///     // duckCount == 4
+  ///
+  /// The sequence must be finite.
+  ///
+  /// - Parameter predicate: A closure that takes each element of the sequence
+  ///   as its argument and returns a Boolean value indicating whether
+  ///   the element should be included in the count.
+  /// - Returns: The number of elements in the sequence that satisfy the given
+  ///   predicate.
+  @available(SwiftStdlib 6.3, *)
+  @_alwaysEmitIntoClient
+  public func count<E>(
+    where predicate: (Element) throws(E) -> Bool
+  ) throws(E) -> Int {
+    var count = 0
+    var iter = makeNewIterator()
+    while let e = iter.next() {
       count += try predicate(e) ? 1 : 0
     }
     return count

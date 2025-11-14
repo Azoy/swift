@@ -10,12 +10,17 @@
 //
 //===----------------------------------------------------------------------===//
 
+//===----------------------------------------------------------------------===//
+// Span
+//===----------------------------------------------------------------------===//
+
 @available(SwiftStdlib 6.3, *)
 extension Span: IteratorProtocol {
   @available(SwiftStdlib 6.3, *)
   @_alwaysEmitIntoClient
   public mutating func next() -> Element? {
     let s = nextSpan(maximumCount: 1)
+    guard !s.isEmpty else { return nil }
     return s[0]
   }
 
@@ -30,20 +35,17 @@ extension Span: IteratorProtocol {
 }
 
 @available(SwiftStdlib 6.3, *)
-extension Span: Sequence {
-  @available(SwiftStdlib 6.3, *)
-  public typealias NewIterator = Self
-
+extension Sequence where NewIterator == Span<Element>, Self: ~Copyable & ~Escapable {
   @available(SwiftStdlib 6.3, *)
   @_alwaysEmitIntoClient
-  public func makeIterator() -> Iterator {
-    _preconditionFailure("Cannot use 'Iterator' on Span; must use 'NewIterator'")
+  public func makeIterator() -> Span<Element>.Iterator {
+    _preconditionFailure("Cannot use 'Iterator'; must use 'NewIterator'")
   }
 
   @available(SwiftStdlib 6.3, *)
   @_alwaysEmitIntoClient
   public var underestimatedCount: Int {
-    count
+    makeNewIterator().count
   }
 
   @available(SwiftStdlib 6.3, *)
@@ -57,7 +59,7 @@ extension Span: Sequence {
   @available(SwiftStdlib 6.3, *)
   @_alwaysEmitIntoClient
   public func _copyToContiguousArray() -> ContiguousArray<Element> {
-    unsafe withUnsafeBufferPointer {
+    unsafe makeNewIterator().withUnsafeBufferPointer {
       unsafe ContiguousArray($0)
     }
   }
@@ -76,8 +78,14 @@ extension Span: Sequence {
   public func withContiguousStorageIfAvailable<R>(
     _ body: (_ buffer: UnsafeBufferPointer<Element>) throws -> R
   ) rethrows -> R? {
-    try unsafe withUnsafeBufferPointer(body)
+    try unsafe makeNewIterator().withUnsafeBufferPointer(body)
   }
+}
+
+@available(SwiftStdlib 6.3, *)
+extension Span: Sequence {
+  @available(SwiftStdlib 6.3, *)
+  public typealias NewIterator = Self
 }
 
 extension Span {
@@ -99,5 +107,33 @@ extension Span.Iterator: IteratorProtocol {
   @_lifetime(&self)
   public mutating func nextSpan(maximumCount: Int) -> Span<Element> {
     _preconditionFailure("Cannot use 'Iterator' on Span; must use 'NewIterator'")
+  }
+}
+
+//===----------------------------------------------------------------------===//
+// MutableSpan
+//===----------------------------------------------------------------------===//
+
+@available(SwiftStdlib 6.3, *)
+extension MutableSpan: Sequence {
+  @available(SwiftStdlib 6.3, *)
+  @_alwaysEmitIntoClient
+  @_lifetime(borrow self)
+  public func makeNewIterator() -> Span<Element> {
+    span
+  }
+}
+
+//===----------------------------------------------------------------------===//
+// OutputSpan
+//===----------------------------------------------------------------------===//
+
+@available(SwiftStdlib 6.3, *)
+extension OutputSpan: Sequence {
+  @available(SwiftStdlib 6.3, *)
+  @_alwaysEmitIntoClient
+  @_lifetime(borrow self)
+  public func makeNewIterator() -> Span<Element> {
+    span
   }
 }

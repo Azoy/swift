@@ -1695,8 +1695,7 @@ fileprivate func _finishFormatting(
 
 // Table with ASCII strings for all 2-digit decimal numbers.
 // Stored as little-endian UInt16s for efficiency
-@_skipAvailabilityChecking
-fileprivate let asciiDigitTable: InlineArray<100, UInt16> = [
+fileprivate let asciiDigitTable: _InlineArray<100, UInt16> = [
   0x3030, 0x3130, 0x3230, 0x3330, 0x3430,
   0x3530, 0x3630, 0x3730, 0x3830, 0x3930,
   0x3031, 0x3131, 0x3231, 0x3331, 0x3431,

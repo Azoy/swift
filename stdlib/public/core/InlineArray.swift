@@ -614,3 +614,60 @@ extension InlineArray where Element: ~Copyable {
     }
   }
 }
+
+//===----------------------------------------------------------------------===//
+// MARK: - Sequence conformance
+//===----------------------------------------------------------------------===//
+
+@available(SwiftStdlib 6.3, *)
+extension InlineArray: Sequence {
+  @available(SwiftStdlib 6.3, *)
+  @_alwaysEmitIntoClient
+  @_lifetime(borrow self)
+  public func makeNewIterator() -> Span<Element> {
+    span
+  }
+
+  // Note: We need to manually define these requirements on 'InlineArray'
+  // because it is eligible for the Span defaults and the regular Sequence
+  // defaults. Go with the span based implementations.
+
+  @available(SwiftStdlib 6.3, *)
+  @_alwaysEmitIntoClient
+  public var underestimatedCount: Int {
+    makeNewIterator().count
+  }
+
+  @available(SwiftStdlib 6.3, *)
+  @_alwaysEmitIntoClient
+  public func _customContainsEquatableElement(
+    _ element: Element
+  ) -> Bool? {
+    nil
+  }
+
+  @available(SwiftStdlib 6.3, *)
+  @_alwaysEmitIntoClient
+  public func _copyToContiguousArray() -> ContiguousArray<Element> {
+    unsafe makeNewIterator().withUnsafeBufferPointer {
+      unsafe ContiguousArray($0)
+    }
+  }
+
+  @available(SwiftStdlib 6.3, *)
+  @_alwaysEmitIntoClient
+  public func _copyContents(
+    initializing ptr: UnsafeMutableBufferPointer<Element>
+  ) -> (Iterator,UnsafeMutableBufferPointer<Element>.Index) {
+    fatalError()
+  }
+
+  @available(SwiftStdlib 6.3, *)
+  @safe
+  @_alwaysEmitIntoClient
+  public func withContiguousStorageIfAvailable<R>(
+    _ body: (_ buffer: UnsafeBufferPointer<Element>) throws -> R
+  ) rethrows -> R? {
+    try unsafe makeNewIterator().withUnsafeBufferPointer(body)
+  }
+}

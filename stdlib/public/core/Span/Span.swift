@@ -799,7 +799,7 @@ extension Span where Element: ~Copyable {
   @_alwaysEmitIntoClient
   @lifetime(copy self)
   public func extracting(first maxLength: Int) -> Self {
-    // _precondition(maxLength >= 0, "Can't have a prefix of negative length")
+    _precondition(maxLength >= 0, "Can't have a prefix of negative length")
     let newCount = Swift.min(maxLength, count)
     let newSpan = unsafe Self(_unchecked: _pointer, count: newCount)
     return unsafe _overrideLifetime(newSpan, copying: self)

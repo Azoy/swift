@@ -659,7 +659,7 @@ extension MutableSpan where Element: ~Copyable {
   mutating public func _mutatingExtracting(first maxLength: Int) -> Self {
 #if compiler(>=5.3) && hasFeature(SendableCompletionHandlers)
     _precondition(maxLength >= 0, "Can't have a prefix of negative length")
-    let newCount = min(maxLength, count)
+    let newCount = Swift.min(maxLength, count)
     let newSpan = unsafe Self(_unchecked: _pointer, count: newCount)
     return unsafe _overrideLifetime(newSpan, mutating: &self)
 #else
@@ -679,7 +679,7 @@ extension MutableSpan where Element: ~Copyable {
   consuming public func _consumingExtracting(first maxLength: Int) -> Self {
 #if compiler(>=5.3) && hasFeature(SendableCompletionHandlers)
     _precondition(maxLength >= 0, "Can't have a prefix of negative length")
-    let newCount = min(maxLength, count)
+    let newCount = Swift.min(maxLength, count)
     let newSpan = unsafe Self(_unchecked: _pointer, count: newCount)
     return unsafe _overrideLifetime(newSpan, copying: self)
 #else
@@ -706,7 +706,7 @@ extension MutableSpan where Element: ~Copyable {
   mutating public func _mutatingExtracting(droppingLast k: Int) -> Self {
 #if compiler(>=5.3) && hasFeature(SendableCompletionHandlers)
     _precondition(k >= 0, "Can't drop a negative number of elements")
-    let droppedCount = min(k, count)
+    let droppedCount = Swift.min(k, count)
     let newCount = count &- droppedCount
     let newSpan = unsafe Self(_unchecked: _pointer, count: newCount)
     return unsafe _overrideLifetime(newSpan, mutating: &self)
@@ -727,7 +727,7 @@ extension MutableSpan where Element: ~Copyable {
   consuming public func _consumingExtracting(droppingLast k: Int) -> Self {
 #if compiler(>=5.3) && hasFeature(SendableCompletionHandlers)
     _precondition(k >= 0, "Can't drop a negative number of elements")
-    let droppedCount = min(k, count)
+    let droppedCount = Swift.min(k, count)
     let newCount = count &- droppedCount
     let newSpan = unsafe Self(_unchecked: _pointer, count: newCount)
     return unsafe _overrideLifetime(newSpan, copying: self)
@@ -756,7 +756,7 @@ extension MutableSpan where Element: ~Copyable {
   mutating public func _mutatingExtracting(last maxLength: Int) -> Self {
 #if compiler(>=5.3) && hasFeature(SendableCompletionHandlers)
     _precondition(maxLength >= 0, "Can't have a suffix of negative length")
-    let newCount = min(maxLength, count)
+    let newCount = Swift.min(maxLength, count)
     let offset = (count &- newCount) * MemoryLayout<Element>.stride
     let newStart = unsafe _pointer?.advanced(by: offset)
     let newSpan = unsafe Self(_unchecked: newStart, count: newCount)
@@ -778,7 +778,7 @@ extension MutableSpan where Element: ~Copyable {
   consuming public func _consumingExtracting(last maxLength: Int) -> Self {
 #if compiler(>=5.3) && hasFeature(SendableCompletionHandlers)
     _precondition(maxLength >= 0, "Can't have a suffix of negative length")
-    let newCount = min(maxLength, count)
+    let newCount = Swift.min(maxLength, count)
     let offset = (count &- newCount) * MemoryLayout<Element>.stride
     let newStart = unsafe _pointer?.advanced(by: offset)
     let newSpan = unsafe Self(_unchecked: newStart, count: newCount)
@@ -807,7 +807,7 @@ extension MutableSpan where Element: ~Copyable {
   mutating public func _mutatingExtracting(droppingFirst k: Int) -> Self {
 #if compiler(>=5.3) && hasFeature(SendableCompletionHandlers)
     _precondition(k >= 0, "Can't drop a negative number of elements")
-    let droppedCount = min(k, count)
+    let droppedCount = Swift.min(k, count)
     let offset = droppedCount * MemoryLayout<Element>.stride
     let newStart = unsafe _pointer?.advanced(by: offset)
     let newCount = count &- droppedCount
@@ -830,7 +830,7 @@ extension MutableSpan where Element: ~Copyable {
   consuming public func _consumingExtracting(droppingFirst k: Int) -> Self {
 #if compiler(>=5.3) && hasFeature(SendableCompletionHandlers)
     _precondition(k >= 0, "Can't drop a negative number of elements")
-    let droppedCount = min(k, count)
+    let droppedCount = Swift.min(k, count)
     let offset = droppedCount * MemoryLayout<Element>.stride
     let newStart = unsafe _pointer?.advanced(by: offset)
     let newCount = count &- droppedCount
