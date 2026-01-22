@@ -277,7 +277,8 @@
     "EmbeddedStubs.swift",
     "EmbeddedPrint.swift",
     "InlineArray.swift",
-    "_InlineArray.swift"
+    "_InlineArray.swift",
+    "Shared.swift"
   ],
   "Result": [
     "Result.swift"

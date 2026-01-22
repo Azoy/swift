@@ -159,6 +159,7 @@ split_embedded_sources(
   EMBEDDED SetStorage.swift
   EMBEDDED SetVariant.swift
   EMBEDDED ShadowProtocols.swift
+  EMBEDDED Shared.swift
     NORMAL Shims.swift
   EMBEDDED SipHash.swift
   EMBEDDED Slice.swift
