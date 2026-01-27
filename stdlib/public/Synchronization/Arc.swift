@@ -93,8 +93,8 @@ extension Arc where Value: ~Copyable {
   }
 
   @available(SwiftStdlib 6.4, *)
-  // @_alwaysEmitIntoClient
-  // @_transparent
+  @_alwaysEmitIntoClient
+  @_transparent
   public func clone() -> Arc<Value> {
     let (_, nv) = unsafe pointer.pointee.strong.wrappingAdd(1, ordering: .relaxed)
 
@@ -104,9 +104,4 @@ extension Arc where Value: ~Copyable {
 
     return unsafe Arc(self)
   }
-}
-
-@available(SwiftStdlib 6.4, *)
-public func dumb(_ arc: borrowing Arc<Int>) -> Arc<Int> {
-  arc.clone()
 }
