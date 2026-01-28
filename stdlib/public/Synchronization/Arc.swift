@@ -92,11 +92,18 @@ extension Arc where Value: ~Copyable {
     }
   }
 
+  // Note: This is safe because
+  @_alwaysEmitIntoClient
+  @_transparent
+  internal var storage: Borrow<_Storage> {
+    unsafe Borrow(pointer.pointee)
+  }
+
   @available(SwiftStdlib 6.4, *)
   @_alwaysEmitIntoClient
   @_transparent
   public func clone() -> Arc<Value> {
-    let (_, nv) = unsafe pointer.pointee.strong.wrappingAdd(1, ordering: .relaxed)
+    let (_, nv) = storage.value.strong.wrappingAdd(1, ordering: .relaxed)
 
     if nv == 0 {
       Builtin.int_trap()

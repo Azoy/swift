@@ -217,11 +217,11 @@ parseSDKSettings(llvm::vfs::FileSystem &VFS, const LangOptions &LangOpts,
 static void appendPlatformIncludePrefix(
     SmallString<128> &Path, const llvm::Triple &Triple,
     const std::optional<clang::DarwinSDKInfo> &SDKInfo) {
-  if (SDKInfo) {
-    const StringRef PlatformIncludePrefix = SDKInfo->getPlatformPrefix(Triple);
-    if (!PlatformIncludePrefix.empty())
-      llvm::sys::path::append(Path, PlatformIncludePrefix);
-  }
+  // if (SDKInfo) {
+  //   const StringRef PlatformIncludePrefix = SDKInfo->getPlatformPrefix(Triple);
+  //   if (!PlatformIncludePrefix.empty())
+  //     llvm::sys::path::append(Path, PlatformIncludePrefix);
+  // }
 }
 
 static void

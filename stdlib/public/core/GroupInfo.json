@@ -279,7 +279,8 @@
     "InlineArray.swift",
     "_InlineArray.swift",
     "Exclusivity.swift",
-    "Shared.swift"
+    "Shared.swift",
+    "Borrow.swift"
   ],
   "Result": [
     "Result.swift"
