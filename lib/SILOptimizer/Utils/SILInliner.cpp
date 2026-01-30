@@ -617,9 +617,17 @@ void SILInlineCloner::cloneInline(ArrayRef<SILValue> AppliedArgs) {
         callerBlock->split(std::next(Apply.getInstruction()->getIterator()));
     endBorrowInsertPts.push_back(&*ReturnToBB->begin());
 
+    auto ownership = OwnershipKind::Owned;
+
+    if (AI->hasGuaranteedResult()) {
+      ownership = OwnershipKind::Guaranteed;
+    } else if (AI->hasAddressResult()) {
+      ownership = OwnershipKind::None;
+    }
+
     // Create an argument on the return-to BB representing the returned value.
     auto *retArg =
-        ReturnToBB->createPhiArgument(AI->getType(), OwnershipKind::Owned);
+        ReturnToBB->createPhiArgument(AI->getType(), ownership);
     // Replace all uses of the ApplyInst with the new argument.
     AI->replaceAllUsesWith(retArg);
     break;

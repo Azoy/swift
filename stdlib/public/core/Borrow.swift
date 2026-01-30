@@ -23,6 +23,17 @@ public struct Borrow<Value: ~Copyable>: Copyable, ~Escapable {
   public init(_ value: borrowing Value) {
     builtin = Builtin.makeBorrow(value)
   }
+
+  @available(SwiftStdlib 6.4, *)
+  @lifetime(borrow owner)
+  @_alwaysEmitIntoClient
+  @_transparent
+  public init<Owner: ~Copyable & ~Escapable>(
+    unsafeAddress: UnsafePointer<Value>,
+    borrowing owner: borrowing Owner
+  ) {
+    builtin = unsafe Builtin.makeBorrow(unsafeAddress.pointee)
+  }
 }
 
 @available(SwiftStdlib 6.4, *)

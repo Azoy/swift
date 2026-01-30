@@ -27,6 +27,7 @@ set(SWIFT_SYNCHRONIZATION_SOURCES
 
   Arc.swift
   Cell.swift
+  Weak.swift
 )
 
 set(SWIFT_SYNCHRONIZATION_GYB_SOURCES
