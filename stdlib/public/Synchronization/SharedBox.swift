@@ -187,7 +187,19 @@ extension SharedBox where Value: ~Copyable {
   @_alwaysEmitIntoClient
   @_transparent
   internal var storage: Borrow<_Storage> {
-    unsafe Borrow(unsafeAddress: pointer, borrowing: self)
+    @_lifetime(borrow self)
+    borrowing get {
+      unsafe Borrow(unsafeAddress: pointer, borrowing: self)
+    }
+  }
+
+  @_alwaysEmitIntoClient
+  @_transparent
+  internal var valuePtr: UnsafeMutablePointer<Value> {
+    // _Storage's first word is both the strong and weak ref count, so offset by
+    // a word to get the pointer to the value.
+    let offsetPtr = unsafe UnsafeRawPointer(pointer) + MemoryLayout<Int>.size
+    return unsafe UnsafeMutablePointer<Value>(offsetPtr._rawValue)
   }
 }
 
@@ -232,11 +244,7 @@ extension SharedBox where Value: ~Copyable {
   @_alwaysEmitIntoClient
   @_transparent
   public func borrow() -> Borrow<Value> {
-    // _Storage's first word is both the strong and weak ref count, so offset by
-    // a word to get the pointer to the value.
-    let offsetPtr = unsafe UnsafeRawPointer(pointer) + MemoryLayout<Int>.size
-    let valuePtr = unsafe UnsafePointer<Value>(offsetPtr._rawValue)
-    return unsafe Borrow(unsafeAddress: valuePtr, borrowing: self)
+    unsafe Borrow(unsafeAddress: UnsafePointer(valuePtr), borrowing: self)
   }
 
   @available(SwiftStdlib 6.4, *)
@@ -251,6 +259,32 @@ extension SharedBox where Value: ~Copyable {
   public func demote() -> WeakBox<Value> {
     storage.value.incrementWeak()
     return unsafe WeakBox(pointer)
+  }
+
+  @_alwaysEmitIntoClient
+  public consuming func consume() -> Value? {
+    // Make sure not to run our deinit regardless of if we're the last user or
+    // not.
+    discard self
+
+    // Decrease the strong count. If the old value was not 1, then there are
+    // other strong users.
+    let (ov, _) = storage.value.decrementStrong()
+
+    if ov & SHARED_STRONG_MASK != SHARED_STRONG_INIT {
+      return nil
+    }
+
+    // Otherwise, we were the last strong reference and can return the value out.
+    atomicMemoryFence(ordering: .acquiring)
+
+    let value = valuePtr.move()
+
+    // We let our implicit weak reference deallocate the storage if we're the
+    // last weak owner. Otherwise, some other weak instance will get rid of it.
+    let _ = unsafe WeakBox(pointer)
+
+    return value
   }
 
   @available(SwiftStdlib 6.4, *)
