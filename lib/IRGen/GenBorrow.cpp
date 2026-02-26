@@ -403,7 +403,14 @@ TypeConverter::convertBuiltinBorrowType(BuiltinBorrowType *T) {
   // SIL type.
   auto referentTy = SILType::getPrimitiveObjectType(T->getReferentType());
   auto &referentTI = IGM.getTypeInfo(referentTy);
-  
+
+  // If the referent is always known to be or contain a raw layout type, then
+  // its borrow representation will always be by pointer regardless of if the
+  // type itself is fixed or not.
+  if (IGM.getTypeProperties(referentTy).isOrContainsRawLayout()) {
+    return new BorrowByPointerTypeInfo(IGM);
+  }
+
   // If the referent doesn't have fixed layout here, then the borrow layout
   // is also dependent.
   auto *fixedReferent = dyn_cast<FixedTypeInfo>(&referentTI);

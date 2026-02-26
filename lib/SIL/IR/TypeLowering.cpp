@@ -428,11 +428,13 @@ namespace {
       // pointer to the value in memory), BitwiseCopyable, and non-Escapable.
       // However, if the layout of the referent is unknown or abstracted, then
       // we don't necessarily know which layout `Borrow` uses, so treat `Borrow`
-      // as address-only.
+      // as address-only. Raw layout types are always known to be passed
+      // indirectly though, so for those we can treat it as the trivial pointer
+      // representation.
       auto referentProps = classifyType(origReferent, referentType, TC,
                                         Expansion);
 
-      if (referentProps.isFixedABI()) {
+      if (referentProps.isFixedABI() || referentProps.isOrContainsRawLayout()) {
         return SILTypeProperties::forTrivial();
       } else {
         return SILTypeProperties::forTrivialOpaque();
@@ -2515,11 +2517,13 @@ namespace {
       // pointer to the value in memory), BitwiseCopyable, and non-Escapable.
       // However, if the layout of the referent is unknown or abstracted, then
       // we don't necessarily know which layout `Borrow` uses, so treat `Borrow`
-      // as address-only.
+      // as address-only. Raw layout types are always known to be passed
+      // indirectly though, so for those we can treat it as the trivial pointer
+      // representation.
       auto referentProps = classifyType(origReferent, referentType, TC,
                                         Expansion);
 
-      if (referentProps.isFixedABI()) {
+      if (referentProps.isFixedABI() || referentProps.isOrContainsRawLayout()) {
         return handleTrivial(borrowType);
       } else {
         return handleAddressOnly(borrowType,
@@ -2624,12 +2628,28 @@ namespace {
       }
 
       // If the type has raw storage, it is move-only and address-only.
-      if (D->getAttrs().hasAttribute<RawLayoutAttr>()) {
+      if (auto rawLayout = D->getAttrs().getAttribute<RawLayoutAttr>()) {
         properties.setHasRawLayout();
         properties.setAddressOnly();
         properties.setAddressableForDependencies();
         properties.setNonTrivial();
         properties.setLexical(IsLexical);
+
+        // If the raw layout does _not_ specify a manual layout, then it defines
+        // either a scalar like type or an array like type. If the like type is
+        // non-fixed abi, then this type is also non-fixed abi.
+        if (!rawLayout->getSizeAndAlignment()) {
+          auto likeType = rawLayout->getResolvedLikeType(D)->getCanonicalType();
+          auto origLikeType = AbstractionPattern(
+              D->getGenericSignature().getCanonicalSignature(), likeType);
+          auto likeTypeProps = classifyType(origLikeType, likeType, TC,
+                                            Expansion);
+
+          if (!likeTypeProps.isFixedABI()) {
+            properties.setNonFixedABI();
+          }
+        }
+
         return handleMoveOnlyAddressOnly(structType, properties);
       }
 
