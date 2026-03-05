@@ -48,6 +48,18 @@ public struct Inout<Value: ~Copyable>: ~Copyable, ~Escapable {
   ) {
     unsafe self.pointer = pointer
   }
+
+  @available(SwiftStdlib 6.4, *)
+  @unsafe
+  @_alwaysEmitIntoClient
+  @_lifetime(copy owner)
+  @_transparent
+  public init<Owner: ~Copyable & ~Escapable>(
+    unsafeAddress pointer: UnsafeMutablePointer<Value>,
+    copying owner: inout Owner
+  ) {
+    unsafe self.pointer = pointer
+  }
 }
 
 @available(SwiftStdlib 6.4, *)

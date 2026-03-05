@@ -361,3 +361,19 @@ extension RigidArray where Element: ~Copyable {
     return unsafe _storage.extracting(gapRange)
   }
 }
+
+@available(SwiftStdlib 6.4, *)
+extension Inout where Value: ~Copyable {
+  @available(SwiftStdlib 6.4, *)
+  @_alwaysEmitIntoClient
+  @_lifetime(copy self)
+  @_transparent
+  public mutating func _mutateElement<Element: ~Copyable>(
+    at i: Int
+  ) -> Inout<Element> where Value == RigidArray<Element> {
+    unsafe Inout<Element>(
+      unsafeAddress: value._mutablePtr(to: i),
+      copying: &self
+    )
+  }
+}

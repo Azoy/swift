@@ -174,9 +174,9 @@
 ///     // Prints "3..."
 ///     // Prints "2..."
 ///     // Prints "1..."
-public protocol IteratorProtocol<Element> {
+public protocol IteratorProtocol<Element>: ~Copyable & ~Escapable {
   /// The type of element traversed by the iterator.
-  associatedtype Element
+  associatedtype Element: ~Copyable & ~Escapable
 
   /// Advances to the next element and returns it, or `nil` if no next element
   /// exists.
@@ -205,6 +205,7 @@ public protocol IteratorProtocol<Element> {
   ///
   /// - Returns: The next element in the underlying sequence, if a next element
   ///   exists; otherwise, `nil`.
+  @_lifetime(copy self)
   mutating func next() -> Element?
 }
 

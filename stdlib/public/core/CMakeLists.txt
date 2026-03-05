@@ -160,6 +160,7 @@ split_embedded_sources(
   EMBEDDED RigidArray/RigidArray+Insertions.swift
   EMBEDDED RigidArray/RigidArray+Removals.swift
   EMBEDDED RigidArray/RigidArray+Replacements.swift
+  EMBEDDED RigidArray/RigidArray+Sequences.swift
 
   EMBEDDED Runtime.swift
     NORMAL RuntimeFunctionCounters.swift
@@ -240,6 +241,7 @@ split_embedded_sources(
   EMBEDDED UniqueArray/UniqueArray+Insertions.swift
   EMBEDDED UniqueArray/UniqueArray+Removals.swift
   EMBEDDED UniqueArray/UniqueArray+Replacements.swift
+  EMBEDDED UniqueArray/UniqueArray+Sequences.swift
 
   EMBEDDED UTF16.swift
   EMBEDDED UTF32.swift

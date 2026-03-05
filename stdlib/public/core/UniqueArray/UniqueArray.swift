@@ -225,3 +225,19 @@ extension UniqueArray {
     UniqueArray(consuming: _storage.clone(capacity: capacity))
   }
 }
+
+@available(SwiftStdlib 6.4, *)
+extension Inout where Value: ~Copyable {
+  @available(SwiftStdlib 6.4, *)
+  @_alwaysEmitIntoClient
+  @_lifetime(copy self)
+  @_transparent
+  public mutating func _mutateElement<Element: ~Copyable>(
+    at i: Int
+  ) -> Inout<Element> where Value == UniqueArray<Element> {
+    unsafe Inout<Element>(
+      unsafeAddress: value._storage._mutablePtr(to: i),
+      copying: &self
+    )
+  }
+}

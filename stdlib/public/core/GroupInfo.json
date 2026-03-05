@@ -296,7 +296,8 @@
     "RigidArray+Initializers.swift",
     "RigidArray+Insertions.swift",
     "RigidArray+Removals.swift",
-    "RigidArray+Replacements.swift"
+    "RigidArray+Replacements.swift",
+    "RigidArray+Sequences.swift"
   ],
   "UniqueArray": [
     "UniqueArray.swift",
@@ -308,6 +309,7 @@
     "UniqueArray+Initializers.swift",
     "UniqueArray+Insertions.swift",
     "UniqueArray+Removals.swift",
-    "UniqueArray+Replacements.swift"
+    "UniqueArray+Replacements.swift",
+    "UniqueArray+Sequences.swift"
   ]
 }
