@@ -88,7 +88,7 @@ extension IteratorProtocol where Self: ~Copyable & ~Escapable, Element: ~Copyabl
   @_alwaysEmitIntoClient
   @_lifetime(copy self)
   @_transparent
-  public consuming func newMap<NewElement: ~Copyable>(
+  public consuming func map<NewElement: ~Copyable>(
     _ fn: @escaping (consuming Element) -> NewElement
   ) -> LazyMapIter<Self, NewElement> {
     LazyMapIter(self, fn)
