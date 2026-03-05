@@ -42,3 +42,55 @@ extension Span: IteratorProtocol where Element: ~Copyable {
     return b
   }
 }
+
+@available(SwiftStdlib 6.4, *)
+@frozen
+public struct LazyMapIter<
+  Iter: IteratorProtocol & ~Copyable & ~Escapable,
+  Element: ~Copyable & ~Escapable
+>: ~Copyable, ~Escapable {
+  @usableFromInline
+  var iter: Iter
+
+  @usableFromInline
+  let fn: (consuming Iter.Element) -> Element
+
+  @available(SwiftStdlib 6.4, *)
+  @_alwaysEmitIntoClient
+  @_lifetime(copy iter)
+  @_transparent
+  init(_ iter: consuming Iter, _ fn: @escaping (consuming Iter.Element) -> Element) {
+    self.iter = iter
+    self.fn = fn
+  }
+}
+
+@available(SwiftStdlib 6.4, *)
+extension LazyMapIter: Copyable where Iter: Copyable & ~Escapable, Element: ~Copyable & ~Escapable {}
+
+@available(SwiftStdlib 6.4, *)
+extension LazyMapIter: Escapable where Iter: Escapable & ~Copyable, Element: ~Copyable & ~Escapable {}
+
+// FIXME: Remove element escapable conformance
+@available(SwiftStdlib 6.4, *)
+extension LazyMapIter: IteratorProtocol where Iter: ~Copyable & ~Escapable, Iter.Element: Escapable {
+  @available(SwiftStdlib 6.4, *)
+  @_alwaysEmitIntoClient
+  public mutating func next() -> Element? {
+    // FIXME: '_consumingMap' requires escapable result
+    iter.next()._consumingMap(fn)
+  }
+}
+
+@available(SwiftStdlib 6.4, *)
+extension IteratorProtocol where Self: ~Copyable & ~Escapable, Element: ~Copyable & ~Escapable {
+  @available(SwiftStdlib 6.4, *)
+  @_alwaysEmitIntoClient
+  @_lifetime(copy self)
+  @_transparent
+  public consuming func newMap<NewElement: ~Copyable>(
+    _ fn: @escaping (consuming Element) -> NewElement
+  ) -> LazyMapIter<Self, NewElement> {
+    LazyMapIter(self, fn)
+  }
+}
