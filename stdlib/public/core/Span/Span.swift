@@ -961,17 +961,3 @@ extension Span where Element: Hashable & ~Copyable {
     }
   }
 }
-
-@available(SwiftCompatibilitySpan 5.0, *)
-@_originallyDefinedIn(module: "Swift;CompatibilitySpan", SwiftCompatibilitySpan 6.2)
-extension Span where Element: ~Copyable {
-  @available(SwiftStdlib 6.4, *)
-  @_alwaysEmitIntoClient
-  @_lifetime(copy self)
-  public func _borrowElement(at i: Int) -> Borrow<Element> {
-    unsafe Borrow(
-      unsafeAddress: _unsafeAddressOfElement(unchecked: i),
-      copying: self
-    )
-  }
-}

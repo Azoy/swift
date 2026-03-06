@@ -235,7 +235,7 @@ extension Optional {
   }
 }
 
-extension Optional where Wrapped: ~Copyable {
+extension Optional where Wrapped: ~Copyable & ~Escapable {
   // FIXME(NCG): Make this public.
   @_alwaysEmitIntoClient
   public consuming func _consumingMap<U: ~Copyable, E: Error>(
