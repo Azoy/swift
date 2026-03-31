@@ -1744,7 +1744,8 @@ NodePointer Demangler::popFunctionParamLabels(NodePointer Type) {
     FuncType = FuncType->getChild(1)->getFirstChild();
 
   if (FuncType->getKind() != Node::Kind::FunctionType &&
-      FuncType->getKind() != Node::Kind::NoEscapeFunctionType)
+      FuncType->getKind() != Node::Kind::NoEscapeFunctionType &&
+      FuncType->getKind() != Node::Kind::OnceFunctionType)
     return nullptr;
 
   unsigned FirstChildIdx = 0;
@@ -3934,6 +3935,8 @@ NodePointer Demangler::demangleSpecialType() {
       return popFunctionType(Node::Kind::ObjCBlock);
     case 'C':
       return popFunctionType(Node::Kind::CFunctionPointer);
+    case 'O':
+      return popFunctionType(Node::Kind::OnceFunctionType);
     case 'g':
     case 'G':
       return demangleExtendedExistentialShape(specialChar);

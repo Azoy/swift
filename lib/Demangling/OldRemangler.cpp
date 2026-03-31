@@ -3176,3 +3176,7 @@ ManglingError Remangler::mangleMutateAccessor(Node *node, EntityContext &ctx,
                                               unsigned depth) {
   return MANGLING_ERROR(ManglingError::UnsupportedNodeKind, node);
 }
+
+ManglingError Remangler::mangleOnceFunctionType(Node *node, unsigned depth) {
+  return MANGLING_ERROR(ManglingError::UnsupportedNodeKind, node);
+}

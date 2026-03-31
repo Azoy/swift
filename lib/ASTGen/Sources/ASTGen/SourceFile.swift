@@ -93,7 +93,7 @@ extension Parser.ExperimentalFeatures {
     mapFeature(.KeyPathWithMethodMembers, to: .keypathWithMethodMembers)
     mapFeature(.DefaultIsolationPerFile, to: .defaultIsolationPerFile)
     mapFeature(.BorrowAndMutateAccessors, to: .borrowAndMutateAccessors)
-    mapFeature(.LiteralExpressions, to: .literalExpressions)
+    // mapFeature(.LiteralExpressions, to: .literalExpressions)
   }
 }
 

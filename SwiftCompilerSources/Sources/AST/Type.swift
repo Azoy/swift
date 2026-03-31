@@ -235,6 +235,7 @@ extension TypeProperties {
   public var isCalleeConsumedFunction: Bool { rawType.bridged.isCalleeConsumedFunction() }
   public var isThickFunction: Bool { rawType.bridged.isThickFunction() }
   public var isAsyncFunction: Bool { rawType.bridged.isAsyncFunction() }
+  public var isOnceFunction: Bool { rawType.bridged.isOnceFunction() }
 
   public var invocationGenericSignatureOfFunction: GenericSignature {
     GenericSignature(bridged: rawType.bridged.getInvocationGenericSignatureOfFunctionType())

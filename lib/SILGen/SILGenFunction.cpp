@@ -577,12 +577,26 @@ void SILGenFunction::emitCaptures(SILLocation loc,
   bool captureCanEscape = true;
   switch (purpose) {
   case CaptureEmission::PartialApplication:
-    canGuarantee = false;
+    // closure.getAbstractClosureExpr()->dump();x
+    // if (closure.getAbstractClosureExpr()
+    //            ->getType()
+    //            ->castTo<AnyFunctionType>()
+    //            ->getExtInfo()
+    //            .isOnce()) {
+    //   llvm::errs() << "ONCE!\n";
+    //   canGuarantee = true;
+    // } else {
+      canGuarantee = false;
+    // }
+
+    // llvm::errs() << "PARTIAL APPLICATION!\n";
     break;
   case CaptureEmission::ImmediateApplication:
+    // llvm::errs() << "IMMEDIATE APPLICATION\n";
     canGuarantee = true;
     break;
   case CaptureEmission::AssignByWrapper:
+    // llvm::errs() << "ASSIGN BY WRAPPER\n";
     canGuarantee = false;
     captureCanEscape = false;
     break;
@@ -775,6 +789,7 @@ void SILGenFunction::emitCaptures(SILLocation loc,
 
     switch (SGM.Types.getDeclCaptureKind(capture, expansion)) {
     case CaptureKind::Constant: {
+      // llvm::errs() << "CONSTANT!\n";
       assert(!isPack);
 
       // let declarations.
@@ -831,6 +846,7 @@ void SILGenFunction::emitCaptures(SILLocation loc,
       break;
     }
     case CaptureKind::Immutable: {
+      // llvm::errs() << "IMMUTABLE!\n";
       if (canGuarantee) {
         // No-escaping stored declarations are captured as the
         // address of the value.
@@ -863,6 +879,7 @@ void SILGenFunction::emitCaptures(SILLocation loc,
       break;
     }
     case CaptureKind::StorageAddress: {
+      // llvm::errs() << "STORAGE ADDRESS!\n";
       assert(!isPack);
 
       auto addr = getAddressValue(val, /*forceCopy=*/false, /*forLValue=*/true);
@@ -880,6 +897,7 @@ void SILGenFunction::emitCaptures(SILLocation loc,
     }
 
     case CaptureKind::Box: {
+      // llvm::errs() << "BOX!\n";
       assert(!isPack);
 
       assert(val->getType().isAddress() &&
@@ -944,6 +962,7 @@ void SILGenFunction::emitCaptures(SILLocation loc,
       break;
     }
     case CaptureKind::ImmutableBox: {
+      // llvm::errs() << "IMMUTABLE BOX!\n";
       assert(!isPack);
 
       assert(val->getType().isAddress() &&

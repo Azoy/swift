@@ -3523,6 +3523,7 @@ static bool isFunctionAttribute(TypeAttrKind attrKind) {
       TypeAttrKind::YieldOnce2,
       TypeAttrKind::YieldMany,
       TypeAttrKind::Async,
+      TypeAttrKind::Once,
   };
   return llvm::any_of(FunctionAttrs, [attrKind](TypeAttrKind functionAttr) {
                         return functionAttr == attrKind;
@@ -3637,6 +3638,11 @@ TypeResolver::resolveAttributedType(TypeRepr *repr, TypeResolutionOptions option
   // because we want to diagnose it later if we didn't build a function type.
   if (getWithoutClaiming<EscapingTypeAttr>(attrs))
     options |= TypeResolutionFlags::DirectEscaping;
+
+  // Adjust the context for the @once attribute. We don't claim here because
+  // we want to diagnose it later if we didn't build a function type.
+  if (getWithoutClaiming<OnceTypeAttr>(attrs))
+    options |= TypeResolutionFlags::DirectOnce;
 
   // There are basically three kinds of type attributes:
   //
@@ -3793,6 +3799,26 @@ TypeResolver::resolveAttributedType(TypeRepr *repr, TypeResolutionOptions option
   if (ty->is<DependentMemberType>() &&
       resolution.getStage() == TypeResolutionStage::Structural) {
     return ty;
+  }
+
+  if (options.contains(TypeResolutionFlags::DirectOnce) &&
+      ty->is<FunctionType>()) {
+    if (auto onceAttr = claim<OnceTypeAttr>(attrs)) {
+      if (getWithoutClaiming<EscapingTypeAttr>(attrs)) {
+        diagnoseInvalid(repr, repr->getLoc(), diag::escaping_optional_type_argument);
+        ty = ErrorType::get(getASTContext());
+      }
+
+      if (getWithoutClaiming<AutoclosureTypeAttr>(attrs)) {
+        diagnoseInvalid(repr, repr->getLoc(), diag::escaping_inout_parameter);
+        ty = ErrorType::get(getASTContext());
+      }
+
+      if (!options.is(TypeResolverContext::FunctionInput)) {
+        diagnoseInvalid(repr, repr->getLoc(), diag::escaping_non_function_parameter)
+            .fixItRemove(onceAttr->getSourceRange());
+      }
+    }
   }
 
   // Consume @escaping if we did ultimately produce a function type.
@@ -4645,10 +4671,12 @@ NeverNullType TypeResolver::resolveASTFunctionType(
   // TODO: maybe make this the place that claims @escaping.
   bool noescape = isDefaultNoEscapeContext(parentOptions);
 
+  bool once = parentOptions.contains(TypeResolutionFlags::DirectOnce);
+
   FunctionType::ExtInfoBuilder extInfoBuilder(
       FunctionTypeRepresentation::Swift, noescape, repr->isThrowing(), thrownTy,
       diffKind, /*clangFunctionType*/ nullptr, isolation,
-      /*LifetimeDependenceInfo*/ {}, hasSendingResult);
+      /*LifetimeDependenceInfo*/ {}, hasSendingResult, once);
 
   const clang::Type *clangFnType = parsedClangFunctionType;
   if (shouldStoreClangType(representation) && !clangFnType)
@@ -4878,6 +4906,7 @@ NeverNullType TypeResolver::resolveSILFunctionType(FunctionTypeRepr *repr,
   bool async = claim<AsyncTypeAttr>(attrs);
   bool unimplementable = claim<UnimplementableTypeAttr>(attrs);
   auto isolation = SILFunctionTypeIsolation::forUnknown();
+  bool once = claim<OnceTypeAttr>(attrs);
 
   if (auto isolatedAttr = claim<IsolatedTypeAttr>(attrs)) {
     switch (isolatedAttr->getIsolationKind()) {
@@ -4897,8 +4926,7 @@ NeverNullType TypeResolver::resolveSILFunctionType(FunctionTypeRepr *repr,
 
   auto extInfoBuilder = SILFunctionType::ExtInfoBuilder(
       representation, pseudogeneric, noescape, sendable, async, unimplementable,
-      isolation, diffKind, clangFnType,
-      /*LifetimeDependenceInfo*/ {});
+      once, isolation, diffKind, clangFnType, /*LifetimeDependenceInfo*/ {});
 
   // Resolve parameter and result types using the function's generic
   // environment.

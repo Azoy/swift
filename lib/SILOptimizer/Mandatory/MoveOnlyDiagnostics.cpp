@@ -281,6 +281,7 @@ void DiagnosticEmitter::emitObjectGuaranteedDiagnostic(
   if (auto *fArg = dyn_cast<SILFunctionArgument>(
           lookThroughCopyValueInsts(markedValue->getOperand()))) {
     if (fArg->isClosureCapture()) {
+      llvm::errs() << "HELLOO\n";
       diagnose(astContext, markedValue,
                diag::sil_movechecking_capture_consumed,
                varName);

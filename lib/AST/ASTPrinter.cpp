@@ -4238,11 +4238,20 @@ static bool isEscaping(Type type) {
   return false;
 }
 
+static bool isOnce(Type type) {
+  if (auto *funcType = type->getAs<AnyFunctionType>()) {
+    return funcType->getExtInfo().isOnce();
+  }
+
+  return false;
+}
+
 static void printParameterFlags(ASTPrinter &printer,
                                 const PrintOptions &options,
                                 const ParamDecl *param,
                                 ParameterTypeFlags flags,
                                 bool escaping,
+                                bool once,
                                 bool isIsolatedToCaller = false) {
   // Always print `nonisolated(nonsending)` specifier on a parameter
   // first, to avoid any issues with ordering.
@@ -4300,6 +4309,9 @@ static void printParameterFlags(ASTPrinter &printer,
     if (!options.excludeAttrKind(TypeAttrKind::Escaping) && escaping)
       printer.printAttrName("@escaping ");
   }
+
+  if (!options.excludeAttrKind(TypeAttrKind::Once) && once)
+    printer.printAttrName("@once ");
 
   if (flags.isConstValue())
     printer.printAttrName("@const ");
@@ -4443,7 +4455,8 @@ void PrintAST::printOneParameter(const ParamDecl *param,
       // We suppress `@escaping` on enum element parameters because it cannot
       // be written explicitly in this position.
       printParameterFlags(Printer, Options, param, paramFlags,
-                          isEscaping(type) && !isEnumElement, isCallerIsolated);
+                          isEscaping(type) && !isEnumElement, isOnce(type),
+                          isCallerIsolated);
     }
 
     printTypeLoc(TheTypeLoc, getNonRecursiveOptions(param));
@@ -7278,6 +7291,9 @@ public:
     if (info.isAsync()) {
       Printer.printSimpleAttr("@async") << " ";
     }
+    if (info.isOnce()) {
+      Printer.printSimpleAttr("@once") << " ";
+    }
   }
 
   /// Print a function type's parameter list.
@@ -7341,7 +7357,7 @@ public:
         Printer << "...";
       } else {
         printParameterFlags(Printer, Options, nullptr, Param.getParameterFlags(),
-                            isEscaping(type));
+                            isEscaping(type), isOnce(type));
         visit(type);
       }
     }

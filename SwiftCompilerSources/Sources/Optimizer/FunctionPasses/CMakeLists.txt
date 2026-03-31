@@ -23,6 +23,7 @@ swift_compiler_sources(Optimizer
   DeinitDevirtualizer.swift
   DestroyHoisting.swift
   DiagnoseInfiniteRecursion.swift
+  DiagnoseOnceClosureApplies.swift
   EmbeddedWitnessCallSpecialization.swift
   InitializeStaticGlobals.swift
   LetPropertyLowering.swift

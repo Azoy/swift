@@ -161,6 +161,8 @@ static void addMandatoryDiagnosticOptPipeline(SILPassPipelinePlan &P) {
   const auto &Options = P.getOptions();
   P.addClosureLifetimeFixup();
 
+  P.addDiagnoseOnceClosureApplies();
+
   //===---
   // Begin Ownership Optimizations
   //
