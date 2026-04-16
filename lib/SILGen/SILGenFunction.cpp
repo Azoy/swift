@@ -583,9 +583,20 @@ void SILGenFunction::emitCaptures(SILLocation loc,
   // need to pass ownership rather than merely guaranteeing parameters.
   bool canGuarantee;
   bool captureCanEscape = true;
+  bool canConsume = false;
   switch (purpose) {
   case CaptureEmission::PartialApplication:
-    canGuarantee = false;
+    if (closure.getAbstractClosureExpr()
+               ->getType()
+               ->castTo<AnyFunctionType>()
+               ->getExtInfo()
+               .isOnce()) {
+      canGuarantee = true;
+      canConsume = true;
+    } else {
+      canGuarantee = false;
+    }
+
     break;
   case CaptureEmission::ImmediateApplication:
     canGuarantee = true;
@@ -783,7 +794,10 @@ void SILGenFunction::emitCaptures(SILLocation loc,
 
     switch (SGM.Types.getDeclCaptureKind(capture, expansion)) {
     case CaptureKind::Constant: {
+      llvm::errs() << "CONSTANT!\n";
       assert(!isPack);
+
+      val.dump();
 
       // let declarations.
       auto &tl = getTypeLowering(valueType);
@@ -812,21 +826,30 @@ void SILGenFunction::emitCaptures(SILLocation loc,
         if (eliminateMoveOnlyWrapper)
           val = B.createOwnedMoveOnlyWrapperToCopyableValue(loc, val);
       } else {
+        auto checkKind = MarkUnresolvedNonCopyableValueInst::CheckKind::
+            NoConsumeOrAssign;
+
+        if (canConsume) {
+          checkKind = MarkUnresolvedNonCopyableValueInst::CheckKind::
+            ConsumableAndAssignable;
+        }
+
         // If we have a mutable binding for a 'let', such as 'self' in an
         // 'init' method, load it.
         if (val->getType().isMoveOnly()) {
           auto *moveOnlyIntroducer =
               dyn_cast_or_null<MarkUnresolvedNonCopyableValueInst>(val);
-          if (!moveOnlyIntroducer || moveOnlyIntroducer->getCheckKind() !=
-                                         MarkUnresolvedNonCopyableValueInst::
-                                             CheckKind::NoConsumeOrAssign) {
-            val = B.createMarkUnresolvedNonCopyableValueInst(
-                loc, val,
-                MarkUnresolvedNonCopyableValueInst::CheckKind::
-                    NoConsumeOrAssign);
+          if (!moveOnlyIntroducer ||
+              moveOnlyIntroducer->getCheckKind() != checkKind) {
+            val = B.createMarkUnresolvedNonCopyableValueInst(loc, val, checkKind);
           }
         }
-        val = emitLoad(loc, val, tl, SGFContext(), IsNotTake).forward(*this);
+
+        if (canConsume) {
+          val = emitLoad(loc, val, tl, SGFContext(), IsTake).forward(*this);
+        } else {
+          val = emitLoad(loc, val, tl, SGFContext(), IsNotTake).forward(*this);
+        }
       }
 
       // If we're capturing an unowned pointer by value, we will have just
@@ -839,6 +862,7 @@ void SILGenFunction::emitCaptures(SILLocation loc,
       break;
     }
     case CaptureKind::Immutable: {
+      llvm::errs() << "IMMUTABLE!\n";
       if (canGuarantee) {
         // No-escaping stored declarations are captured as the
         // address of the value.
@@ -871,6 +895,7 @@ void SILGenFunction::emitCaptures(SILLocation loc,
       break;
     }
     case CaptureKind::StorageAddress: {
+      llvm::errs() << "STORAGE ADDRESS!\n";
       assert(!isPack);
 
       auto addr = getAddressValue(val, /*forceCopy=*/false, /*forLValue=*/true);
@@ -888,6 +913,7 @@ void SILGenFunction::emitCaptures(SILLocation loc,
     }
 
     case CaptureKind::Box: {
+      llvm::errs() << "BOX!\n";
       assert(!isPack);
 
       assert(val->getType().isAddress() &&
@@ -952,6 +978,7 @@ void SILGenFunction::emitCaptures(SILLocation loc,
       break;
     }
     case CaptureKind::ImmutableBox: {
+      llvm::errs() << "IMMUTABLE BOX!\n";
       assert(!isPack);
 
       assert(val->getType().isAddress() &&
@@ -1085,6 +1112,14 @@ SILGenFunction::emitClosureValue(SILLocation loc, SILDeclRef constant,
       forwardedArgs.push_back(capture.forward(*this));
 
     auto calleeConvention = ParameterConvention::Direct_Guaranteed;
+
+    if (constant.getAbstractClosureExpr()
+                ->getType()
+                ->castTo<AnyFunctionType>()
+                ->getExtInfo()
+                .isOnce()) {
+      calleeConvention = ParameterConvention::Direct_Owned;
+    }
 
     auto resultIsolation =
         (hasErasedIsolation ? SILFunctionTypeIsolation::forErased()

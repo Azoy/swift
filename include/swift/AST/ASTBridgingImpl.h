@@ -644,6 +644,13 @@ bool BridgedASTType::isAsyncFunction() const {
   return false;
 }
 
+bool BridgedASTType::isOnceFunction() const {
+  if (auto *fTy = unbridged()->getAs<swift::SILFunctionType>()) {
+    return fTy->isOnce();
+  }
+  return false;
+}
+
 bool BridgedASTType::isCalleeConsumedFunction() const {
   auto *funcTy = unbridged()->castTo<swift::SILFunctionType>();
   return funcTy->isCalleeConsumed() && !funcTy->isNoEscape();

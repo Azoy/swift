@@ -75,7 +75,8 @@ extension ASTGenVisitor {
         .YieldOnce2,
         .Thin,
         .Thick,
-        .Unimplementable:
+        .Unimplementable,
+        .Once:
         return self.generateSimpleTypeAttr(attribute: node, kind: attrKind!)
           .map(BridgedTypeOrCustomAttr.typeAttr(_:))
 

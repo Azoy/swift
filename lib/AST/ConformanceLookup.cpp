@@ -334,6 +334,15 @@ static bool isEscapableFunctionType(EitherFunctionType eitherFnTy) {
   return true;
 }
 
+static bool isCopyableFunctionType(EitherFunctionType eitherFnTy) {
+  if (auto silFnTy = eitherFnTy.dyn_cast<const SILFunctionType *>()) {
+    return !silFnTy->isOnce();
+  }
+
+  auto functionType = cast<const AnyFunctionType *>(eitherFnTy);
+  return !functionType->isOnce();
+}
+
 static bool isBitwiseCopyableFunctionType(EitherFunctionType eitherFnTy) {
   SILFunctionTypeRepresentation representation;
   if (auto silFnTy = eitherFnTy.dyn_cast<const SILFunctionType *>()) {
@@ -386,9 +395,12 @@ static ProtocolConformanceRef getBuiltinFunctionTypeConformance(
         return synthesizeConformance();
       break;
     case KnownProtocolKind::Copyable:
-      // Functions cannot permanently destroy a move-only var/let
-      // that they capture, so it's safe to copy functions, like classes.
-      return synthesizeConformance();
+      // @once functions are ~Copyable and can consume captures. Otherwise,
+      // functions cannot permanently destroy a move-only var/let that they
+      // capture, so it's safe to copy functions, like classes.
+      if (isCopyableFunctionType(functionType))
+        return synthesizeConformance();
+      break;
     case KnownProtocolKind::BitwiseCopyable:
       if (isBitwiseCopyableFunctionType(functionType))
         return synthesizeConformance();

@@ -142,6 +142,8 @@ PASS(LoopInvariantCodeMotion, "loop-invariant-code-motion",
      "New Loop Invariant Code Motion")
 PASS(PackSpecialization, "pack-specialization",
      "Specialize uses of parameter packs")
+PASS(DiagnoseOnceClosureApplies, "diagnose-once-closure-applies",
+     "Diagnose multiple applies of @once closures")
 
 PASS(ClosureSpecialization, "closure-specialization",
      "Specialize functions with closure arguments")

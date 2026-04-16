@@ -626,6 +626,7 @@ bool NodePrinter::isSimpleType(NodePointer Node) {
     case Node::Kind::DefaultOverride:
     case Node::Kind::BorrowAccessor:
     case Node::Kind::MutateAccessor:
+    case Node::Kind::OnceFunctionType:
       return false;
     }
     printer_unreachable("bad node kind");
@@ -854,6 +855,9 @@ void NodePrinter::printFunctionType(NodePointer LabelList, NodePointer node,
     LLVM_FALLTHROUGH;
   case Node::Kind::ObjCBlock:
     printConventionWithMangledCType("block");
+    break;
+  case Node::Kind::OnceFunctionType:
+    Printer << "@once ";
     break;
   default:
     assert(false && "Unhandled function type in printFunctionType!");
@@ -1391,6 +1395,7 @@ static bool needSpaceBeforeType(NodePointer Type) {
     case Node::Kind::NoEscapeFunctionType:
     case Node::Kind::UncurriedFunctionType:
     case Node::Kind::DependentGenericType:
+    case Node::Kind::OnceFunctionType:
       return false;
     default:
       return true;
@@ -1735,6 +1740,7 @@ NodePointer NodePrinter::print(NodePointer Node, unsigned depth,
   case Node::Kind::CFunctionPointer:
   case Node::Kind::ObjCBlock:
   case Node::Kind::EscapingObjCBlock:
+  case Node::Kind::OnceFunctionType:
     printFunctionType(nullptr, Node, depth);
     return nullptr;
   case Node::Kind::ClangType:
@@ -3624,7 +3630,8 @@ NodePointer NodePrinter::printEntity(NodePointer Entity, unsigned depth,
           t->getKind() != Node::Kind::NoEscapeFunctionType &&
           t->getKind() != Node::Kind::UncurriedFunctionType &&
           t->getKind() != Node::Kind::CFunctionPointer &&
-          t->getKind() != Node::Kind::ThinFunctionType) {
+          t->getKind() != Node::Kind::ThinFunctionType &&
+          t->getKind() != Node::Kind::OnceFunctionType) {
         TypePr = TypePrinting::WithColon;
       }
     }

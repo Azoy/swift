@@ -2875,8 +2875,11 @@ bool swift::diagnoseMissingOwnership(ParamSpecifier ownership,
              resolution.getGenericSignature().getGenericEnvironment(),
              ty);
 
-  if (ty->hasError() || ty->isCopyable())
-    return false; // copyable types do not need ownership
+  // Some types are known to always have a default ownership. Copyable types do
+  // not need ownership for example. @once functions are always assumed to be
+  // passed as 'consuming'.
+  if (ty->hasError() || ty->hasDefaultOwnership())
+    return false;
 
   if (ownership != ParamSpecifier::Default)
     return false; // it has ownership
@@ -3538,6 +3541,7 @@ static bool isFunctionAttribute(const TypeAttribute *attr) {
       TypeAttrKind::YieldMany,
       TypeAttrKind::Async,
       TypeAttrKind::Isolated,
+      TypeAttrKind::Once,
   };
   return llvm::any_of(FunctionAttrs,
                       [attrKind = attr->getKind()](TypeAttrKind functionAttr) {
@@ -3727,6 +3731,11 @@ TypeResolver::resolveAttributedType(TypeRepr *repr, TypeResolutionOptions option
   if (getWithoutClaiming<EscapingTypeAttr>(attrs))
     options |= TypeResolutionFlags::DirectEscaping;
 
+  // Adjust the context for the @once attribute. We don't claim here because
+  // we want to diagnose it later if we didn't build a function type.
+  if (getWithoutClaiming<OnceTypeAttr>(attrs))
+    options |= TypeResolutionFlags::DirectOnce;
+
   // There are basically three kinds of type attributes:
   //
   // - Some attributes are basically totally new type structure, like
@@ -3882,6 +3891,26 @@ TypeResolver::resolveAttributedType(TypeRepr *repr, TypeResolutionOptions option
   if (ty->is<DependentMemberType>() &&
       resolution.getStage() == TypeResolutionStage::Structural) {
     return ty;
+  }
+
+  if (options.contains(TypeResolutionFlags::DirectOnce) &&
+      ty->is<FunctionType>()) {
+    if (auto onceAttr = claim<OnceTypeAttr>(attrs)) {
+      if (getWithoutClaiming<EscapingTypeAttr>(attrs)) {
+        diagnoseInvalid(repr, repr->getLoc(), diag::escaping_optional_type_argument);
+        ty = ErrorType::get(getASTContext());
+      }
+
+      if (getWithoutClaiming<AutoclosureTypeAttr>(attrs)) {
+        diagnoseInvalid(repr, repr->getLoc(), diag::escaping_inout_parameter);
+        ty = ErrorType::get(getASTContext());
+      }
+
+      if (!options.is(TypeResolverContext::FunctionInput)) {
+        diagnoseInvalid(repr, repr->getLoc(), diag::escaping_non_function_parameter)
+            .fixItRemove(onceAttr->getSourceRange());
+      }
+    }
   }
 
   // Consume @escaping if we did ultimately produce a function type.
@@ -4741,10 +4770,12 @@ NeverNullType TypeResolver::resolveASTFunctionType(
   // TODO: maybe make this the place that claims @escaping.
   bool noescape = isDefaultNoEscapeContext(parentOptions);
 
+  bool once = parentOptions.contains(TypeResolutionFlags::DirectOnce);
+
   FunctionType::ExtInfoBuilder extInfoBuilder(
       FunctionTypeRepresentation::Swift, noescape, repr->isThrowing(), thrownTy,
       diffKind, /*clangFunctionType*/ nullptr, isolation,
-      /*LifetimeDependenceInfo*/ {}, hasSendingResult);
+      /*LifetimeDependenceInfo*/ {}, hasSendingResult, once);
 
   const clang::Type *clangFnType = parsedClangFunctionType;
   if (shouldStoreClangType(representation) && !clangFnType)
@@ -4974,6 +5005,7 @@ NeverNullType TypeResolver::resolveSILFunctionType(FunctionTypeRepr *repr,
   bool async = claim<AsyncTypeAttr>(attrs);
   bool unimplementable = claim<UnimplementableTypeAttr>(attrs);
   auto isolation = SILFunctionTypeIsolation::forUnknown();
+  bool once = claim<OnceTypeAttr>(attrs);
 
   if (auto isolatedAttr = claim<IsolatedTypeAttr>(attrs)) {
     switch (isolatedAttr->getIsolationKind()) {
@@ -4993,8 +5025,7 @@ NeverNullType TypeResolver::resolveSILFunctionType(FunctionTypeRepr *repr,
 
   auto extInfoBuilder = SILFunctionType::ExtInfoBuilder(
       representation, pseudogeneric, noescape, sendable, async, unimplementable,
-      isolation, diffKind, clangFnType,
-      /*LifetimeDependenceInfo*/ {});
+      once, isolation, diffKind, clangFnType, /*LifetimeDependenceInfo*/ {});
 
   // Resolve parameter and result types using the function's generic
   // environment.

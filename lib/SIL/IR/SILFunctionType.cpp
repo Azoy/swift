@@ -2072,8 +2072,14 @@ private:
     // FIXME: we should really be using the flags from the original
     // parameter here, right?
     auto flags = substParam.getParameterFlags();
-
     auto substType = substParam.getParameterType()->getCanonicalType();
+    auto valueOwnership = flags.getValueOwnership();
+
+    // Some types "Default" ownership gets mapped to a different ownership kind.
+    // Specifically @once functions are assumed to always be passed as "Owned".
+    if (valueOwnership == ValueOwnership::Default) {
+      valueOwnership = substType->getDefaultOwnership();
+    }
 
     // If we see a pack expansion here, that should only happen because
     // we're lowering a function type with a parameter expansion in an
@@ -2084,12 +2090,10 @@ private:
       bool indirect = true;
       SILPackType::ExtInfo extInfo(/*address*/ indirect);
       auto packTy = SILPackType::get(TC.Context, extInfo, {substType});
-      return addPackParameter(formalParamIndex,
-                              packTy, flags.getValueOwnership(), flags);
+      return addPackParameter(formalParamIndex, packTy, valueOwnership, flags);
     }
 
-    visit(flags.getValueOwnership(), formalParamIndex,
-          forSelf, hasScopedDependency,
+    visit(valueOwnership, formalParamIndex, forSelf, hasScopedDependency,
           origType, substType, flags);
   }
 

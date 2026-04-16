@@ -1296,7 +1296,9 @@ class TargetExtendedFunctionTypeFlags {
     NonIsolatedNonsending  = 0x00000004U,
 
     // Values if we have a sending result.
-    HasSendingResult  = 0x00000010U,
+    HasSendingResult       = 0x00000010U,
+
+    IsOnceMask             = 0x00000020U,
 
     /// A InvertibleProtocolSet in the high bits.
     InvertedProtocolshift = 16,
@@ -1339,6 +1341,12 @@ public:
   }
 
   const TargetExtendedFunctionTypeFlags<int_type>
+  withOnce(bool isOnce = true) const {
+    return TargetExtendedFunctionTypeFlags<int_type>(
+        (Data & ~IsOnceMask) | (isOnce ? IsOnceMask : 0));
+  }
+
+  const TargetExtendedFunctionTypeFlags<int_type>
   withInvertedProtocols(InvertibleProtocolSet inverted) const {
     return TargetExtendedFunctionTypeFlags<int_type>(
         (Data & ~InvertedProtocolMask) |
@@ -1357,6 +1365,10 @@ public:
 
   bool hasSendingResult() const {
     return bool(Data & HasSendingResult);
+  }
+
+  bool isOnce() const {
+    return bool(Data & IsOnceMask);
   }
 
   int_type getIntValue() const {

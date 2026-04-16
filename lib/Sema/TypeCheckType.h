@@ -33,7 +33,7 @@ class SILTypeResolutionContext;
 
 /// Flags that describe the context of type checking a pattern or
 /// type.
-enum class TypeResolutionFlags : uint16_t {
+enum class TypeResolutionFlags : uint32_t {
   /// Whether to allow unspecified types within a pattern.
   AllowUnspecifiedTypes = 1 << 0,
 
@@ -90,6 +90,9 @@ enum class TypeResolutionFlags : uint16_t {
 
   /// Whether the name being resolved has a module selector or not.
   HasModuleSelector = 1 << 15,
+
+  /// Whether the immediate context has a @once attribute.
+  DirectOnce = 1 << 16,
 };
 
 /// Type resolution contexts that require special handling.
@@ -227,7 +230,7 @@ class TypeResolutionOptions {
   // The current type resolution context.
   Context context = Context::None;
   // TypeResolutionFlags
-  uint16_t flags = 0;
+  uint32_t flags = 0;
   static_assert(sizeof(TypeResolutionOptions::flags) ==
                     sizeof(TypeResolutionFlags),
                 "Flags size error");

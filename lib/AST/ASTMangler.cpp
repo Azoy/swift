@@ -3337,6 +3337,8 @@ void ASTMangler::appendFunctionType(AnyFunctionType *fn, GenericSignature sig,
         return appendOperator("XK");
       else
         return appendOperator("XA");
+    } else if (fn->isOnce()) {
+      return appendOperator("XO");
     } else if (fn->isNoEscape()) {
       return appendOperator("XE");
     }

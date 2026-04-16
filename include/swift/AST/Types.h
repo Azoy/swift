@@ -406,8 +406,8 @@ class alignas(1 << TypeAlignInBits) TypeBase
   }
 
 protected:
-  enum { NumAFTExtInfoBits = 16 };
-  enum { NumSILExtInfoBits = 14 };
+  enum { NumAFTExtInfoBits = 17 };
+  enum { NumSILExtInfoBits = 15 };
 
   // clang-format off
   union { uint64_t OpaqueBits;
@@ -1551,6 +1551,22 @@ public:
   /// Two types satisfy a same-shape requirement if their reduced shapes are
   /// equal as canonical types.
   CanType getReducedShape();
+
+  /// Whether a parameter of this type is assumed to have a default ownership
+  /// convention.
+  ///
+  /// For all copyable types this is true. Noncopyable types do not have a
+  /// default convention and must annotate parameters as 'consuming', 'borrowing',
+  /// or 'inout'.
+  ///
+  /// Special noncopyable types like @once functions are assumed to always be
+  /// passed as 'consuming'.
+  bool hasDefaultOwnership();
+
+  /// Returns the default ownership convention for this type. For most types,
+  /// this just returns "Default", but some types are assumed to always be
+  /// passed as "Owned".
+  ValueOwnership getDefaultOwnership();
 
   SWIFT_DEBUG_DUMP;
   void dump(raw_ostream &os, unsigned indent = 0) const;
@@ -4028,6 +4044,8 @@ public:
     return getExtInfo().getDifferentiabilityKind();
   }
 
+  bool isOnce() const { return getExtInfo().isOnce(); }
+
   /// Returns a new function type exactly like this one but with the ExtInfo
   /// replaced.
   AnyFunctionType *withExtInfo(ExtInfo info) const;
@@ -5488,6 +5506,7 @@ public:
   bool isSendable() const { return getExtInfo().isSendable(); }
   bool isUnimplementable() const { return getExtInfo().isUnimplementable(); }
   bool isAsync() const { return getExtInfo().isAsync(); }
+  bool isOnce() const { return getExtInfo().isOnce(); }
   bool hasErasedIsolation() const { return getExtInfo().hasErasedIsolation(); }
   SILFunctionTypeIsolation getIsolation() const {
     return getExtInfo().getIsolation();

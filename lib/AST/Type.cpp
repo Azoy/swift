@@ -5417,3 +5417,20 @@ TypeBase::getMatchingParamKind() {
   
   return GenericTypeParamKind::Type;
 }
+
+bool TypeBase::hasDefaultOwnership() {
+  if (isCopyable())
+    return true;
+
+  if (is<AnyFunctionType>())
+    return true;
+
+  return false;
+}
+
+ValueOwnership TypeBase::getDefaultOwnership() {
+  if (is<AnyFunctionType>() && !isCopyable())
+    return ValueOwnership::Owned;
+
+  return ValueOwnership::Default;
+}

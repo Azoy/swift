@@ -3098,6 +3098,7 @@ struct BridgedASTType {
   BRIDGED_INLINE bool isNoEscapeFunction() const;
   BRIDGED_INLINE bool isThickFunction() const;
   BRIDGED_INLINE bool isAsyncFunction() const;
+  BRIDGED_INLINE bool isOnceFunction() const;
   BRIDGED_INLINE bool isCalleeConsumedFunction() const;
   BRIDGED_INLINE bool isBuiltinInteger() const;
   BRIDGED_INLINE bool isBuiltinFloat() const;

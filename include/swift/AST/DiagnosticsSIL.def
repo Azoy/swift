@@ -1319,5 +1319,14 @@ ERROR(invalid_multiple_return_borrow_accessor, none,
 ERROR(unsupported_borrow_abstraction, none,
       "cannot witness borrow requirement for result type %0",
       (Type))
+
+/// Once closures
+ERROR(once_closure_called_more_than_once, none,
+      "@once closure called more than once", ())
+NOTE(once_closure_first_call, none,
+     "first called here", ())
+ERROR(once_closure_not_called, none,
+      "@once closure not called; must be called exactly once", ())
+
 #define UNDEFINE_DIAGNOSTIC_MACROS
 #include "DefineDiagnosticMacros.h"

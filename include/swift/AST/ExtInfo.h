@@ -523,8 +523,8 @@ class ASTExtInfoBuilder {
   // If bits are added or removed, then TypeBase::NumAFTExtInfoBits
   // and NumMaskBits must be updated, and they must match.
   //
-  //   |representation|noEscape|concurrent|async|throws|isolation|differentiability| SendingResult |
-  //   |    0 .. 3    |    4   |    5     |  6  |   7  | 8 .. 10 |     11 .. 13    |         14    |
+  //   |representation|noEscape|concurrent|async|throws|isolation|differentiability|SendingResult|inout_result|once|
+  //   |    0 .. 3    |    4   |    5     |  6  |   7  | 8 .. 10 |     11 .. 13    |      14     |     15     | 16 |
   //
   enum : unsigned {
     RepresentationMask = 0xF << 0,
@@ -538,7 +538,8 @@ class ASTExtInfoBuilder {
     DifferentiabilityMask = 0x7 << DifferentiabilityMaskOffset,
     SendingResultMask = 1 << 14,
     InOutResultMask = 1 << 15,
-    NumMaskBits = 16
+    OnceMask = 1 << 16,
+    NumMaskBits = 17
   };
 
   static_assert(FunctionTypeIsolation::Mask == 0x7, "update mask manually");
@@ -572,35 +573,38 @@ class ASTExtInfoBuilder {
 
 public:
   /// An ExtInfoBuilder for a typical Swift function: @convention(swift),
-  /// @escaping, non-throwing, non-differentiable.
+  /// @escaping, non-throwing, non-differentiable, non-once.
   ASTExtInfoBuilder()
       : ASTExtInfoBuilder(Representation::Swift, false, false, Type(),
                           DifferentiabilityKind::NonDifferentiable, nullptr,
                           FunctionTypeIsolation::forNonIsolated(),
-                          {} /* LifetimeDependenceInfo */,
-                          false /*sendingResult*/) {}
+                          /* LifetimeDependenceInfo */ {},
+                          /*sendingResult*/ false,
+                          /* isOnce */ false) {}
 
   // Constructor for polymorphic type.
   ASTExtInfoBuilder(Representation rep, bool throws, Type thrownError)
       : ASTExtInfoBuilder(rep, false, throws, thrownError,
                           DifferentiabilityKind::NonDifferentiable, nullptr,
                           FunctionTypeIsolation::forNonIsolated(),
-                          {} /* LifetimeDependenceInfo */,
-                          false /*sendingResult*/) {}
+                          /* LifetimeDependenceInfo */ {},
+                          /*sendingResult*/ false,
+                          /* isOnce */ false) {}
 
   // Constructor with almost no defaults.
   ASTExtInfoBuilder(Representation rep, bool isNoEscape, bool throws,
                     Type thrownError, DifferentiabilityKind diffKind,
                     const clang::Type *type, FunctionTypeIsolation isolation,
                     ArrayRef<LifetimeDependenceInfo> lifetimeDependencies,
-                    bool sendingResult)
+                    bool sendingResult, bool isOnce)
       : ASTExtInfoBuilder(
             ((unsigned)rep) | (isNoEscape ? NoEscapeMask : 0) |
                 (throws ? ThrowsMask : 0) |
                 (((unsigned)diffKind << DifferentiabilityMaskOffset) &
                  DifferentiabilityMask) |
                 (unsigned(isolation.getKind()) << IsolationMaskOffset) |
-                (sendingResult ? SendingResultMask : 0),
+                (sendingResult ? SendingResultMask : 0) |
+                (isOnce ? OnceMask : 0),
             ClangTypeInfo(type), isolation.getOpaqueType(), thrownError,
             /*sendableDependentType*/ Type(), lifetimeDependencies) {}
 
@@ -623,6 +627,8 @@ public:
   constexpr bool isThrowing() const { return bits & ThrowsMask; }
 
   constexpr bool hasSendingResult() const { return bits & SendingResultMask; }
+
+  constexpr bool isOnce() const { return bits & OnceMask; }
 
   constexpr DifferentiabilityKind getDifferentiabilityKind() const {
     return DifferentiabilityKind((bits & DifferentiabilityMask) >>
@@ -736,6 +742,13 @@ public:
     return ASTExtInfoBuilder(
         throws ? (bits | ThrowsMask) : (bits & ~ThrowsMask), clangTypeInfo,
         globalActor, thrownError, sendableDependentType, lifetimeDependencies);
+  }
+
+  [[nodiscard]]
+  ASTExtInfoBuilder withOnce(bool once = true) const {
+    return ASTExtInfoBuilder(once ? (bits | OnceMask) : (bits & ~OnceMask),
+                             clangTypeInfo, globalActor, thrownError,
+                             sendableDependentType, lifetimeDependencies);
   }
 
   [[nodiscard]]
@@ -890,6 +903,8 @@ public:
 
   constexpr bool hasSendingResult() const { return builder.hasSendingResult(); }
 
+  constexpr bool isOnce() const { return builder.isOnce(); }
+
   constexpr DifferentiabilityKind getDifferentiabilityKind() const {
     return builder.getDifferentiabilityKind();
   }
@@ -966,6 +981,14 @@ public:
   [[nodiscard]]
   ASTExtInfo withAsync(bool async = true) const {
     return builder.withAsync(async).build();
+  }
+
+  /// Helper method for changing only the once field.
+  ///
+  /// Prefer using \c ASTExtInfoBuilder::withOnce for changing.
+  [[nodiscard]]
+  ASTExtInfo withOnce(bool once = true) const {
+    return builder.withOnce(once).build();
   }
 
   [[nodiscard]]
@@ -1063,8 +1086,8 @@ class SILExtInfoBuilder {
 
   //   |representation|pseudogeneric| noescape | concurrent | async
   //   |    0 .. 4    |      5      |     6    |     7      |   8
-  //   |differentiability|unimplementable|
-  //   |     9 .. 11     |      12       |
+  //   |differentiability|unimplementable|erased_isolation|once|
+  //   |     9 .. 11     |      12       |       13       | 14 |
   //
   enum : unsigned {
     RepresentationMask = 0x1F << 0,
@@ -1076,7 +1099,8 @@ class SILExtInfoBuilder {
     DifferentiabilityMask = 0x7 << DifferentiabilityMaskOffset,
     UnimplementableMask = 1 << 12,
     ErasedIsolationMask = 1 << 13,
-    NumMaskBits = 14
+    OnceMask = 1 << 14,
+    NumMaskBits = 15
   };
 
   unsigned bits; // Naturally sized for speed.
@@ -1096,12 +1120,14 @@ class SILExtInfoBuilder {
   static unsigned makeBits(Representation rep, bool isPseudogeneric,
                            bool isNoEscape, bool isSendable, bool isAsync,
                            bool isUnimplementable,
+                           bool isOnce,
                            SILFunctionTypeIsolation isolation,
                            DifferentiabilityKind diffKind) {
     return ((unsigned)rep) | (isPseudogeneric ? PseudogenericMask : 0) |
            (isNoEscape ? NoEscapeMask : 0) | (isSendable ? SendableMask : 0) |
            (isAsync ? AsyncMask : 0) |
            (isUnimplementable ? UnimplementableMask : 0) |
+           (isOnce ? OnceMask : 0) |
            (isolation.isErased() ? ErasedIsolationMask : 0) |
            (((unsigned)diffKind << DifferentiabilityMaskOffset) &
             DifferentiabilityMask);
@@ -1109,21 +1135,21 @@ class SILExtInfoBuilder {
 
 public:
   /// An ExtInfoBuilder for a typical Swift function: thick, @escaping,
-  /// non-pseudogeneric, non-differentiable.
+  /// non-pseudogeneric, non-differentiable, non-once.
   SILExtInfoBuilder()
       : SILExtInfoBuilder(
             makeBits(SILFunctionTypeRepresentation::Thick, false, false, false,
-                     false, false, SILFunctionTypeIsolation::forUnknown(),
+                     false, false, false, SILFunctionTypeIsolation::forUnknown(),
                      DifferentiabilityKind::NonDifferentiable),
             ClangTypeInfo(nullptr), /*LifetimeDependenceInfo*/ {}) {}
 
   SILExtInfoBuilder(Representation rep, bool isPseudogeneric, bool isNoEscape,
                     bool isSendable, bool isAsync, bool isUnimplementable,
-                    SILFunctionTypeIsolation isolation,
+                    bool isOnce, SILFunctionTypeIsolation isolation,
                     DifferentiabilityKind diffKind, const clang::Type *type,
                     ArrayRef<LifetimeDependenceInfo> lifetimeDependenceInfo)
       : SILExtInfoBuilder(makeBits(rep, isPseudogeneric, isNoEscape, isSendable,
-                                   isAsync, isUnimplementable, isolation,
+                                   isAsync, isUnimplementable, isOnce, isolation,
                                    diffKind),
                           ClangTypeInfo(type), lifetimeDependenceInfo) {}
 
@@ -1132,6 +1158,7 @@ public:
       : SILExtInfoBuilder(makeBits(info.getSILRepresentation(), isPseudogeneric,
                                    info.isNoEscape(), info.isSendable(),
                                    info.isAsync(), /*unimplementable*/ false,
+                                   info.isOnce(),
                                    info.getIsolation().isErased()
                                        ? SILFunctionTypeIsolation::forErased()
                                        : SILFunctionTypeIsolation::forUnknown(),
@@ -1163,6 +1190,8 @@ public:
   constexpr bool isSendable() const { return bits & SendableMask; }
 
   constexpr bool isAsync() const { return bits & AsyncMask; }
+
+  constexpr bool isOnce() const { return bits & OnceMask; }
 
   constexpr DifferentiabilityKind getDifferentiabilityKind() const {
     return DifferentiabilityKind((bits & DifferentiabilityMask) >>
@@ -1274,6 +1303,12 @@ public:
   }
 
   [[nodiscard]]
+  SILExtInfoBuilder withOnce(bool isOnce = true) const {
+    return SILExtInfoBuilder(isOnce ? (bits | OnceMask) : (bits & ~OnceMask),
+                             clangTypeInfo, lifetimeDependencies);
+  }
+
+  [[nodiscard]]
   SILExtInfoBuilder withErasedIsolation(bool erased = true) const {
     return SILExtInfoBuilder(erased ? (bits | ErasedIsolationMask)
                                     : (bits & ~ErasedIsolationMask),
@@ -1373,7 +1408,7 @@ public:
   static SILExtInfo getThin() {
     return SILExtInfoBuilder(
                SILExtInfoBuilder::Representation::Thin, false, false, false,
-               false, false, SILFunctionTypeIsolation::forUnknown(),
+               false, false, false, SILFunctionTypeIsolation::forUnknown(),
                DifferentiabilityKind::NonDifferentiable, nullptr, {})
         .build();
   }
@@ -1400,6 +1435,8 @@ public:
   constexpr bool isSendable() const { return builder.isSendable(); }
 
   constexpr bool isAsync() const { return builder.isAsync(); }
+
+  constexpr bool isOnce() const { return builder.isOnce(); }
 
   constexpr bool isUnimplementable() const {
     return builder.isUnimplementable();
@@ -1456,6 +1493,10 @@ public:
 
   SILExtInfo withUnimplementable(bool isUnimplementable = true) const {
     return builder.withUnimplementable(isUnimplementable).build();
+  }
+
+  SILExtInfo withOnce(bool isOnce = true) const {
+    return builder.withOnce(isOnce).build();
   }
 
   /// \p lifetimeDependencies should be arena allocated and not a temporary

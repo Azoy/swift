@@ -4215,6 +4215,8 @@ public:
       if (auto fType = Ty->getAs<AnyFunctionType>()) {
         printFlag(!fType->getExtInfo().isNoEscape(), "escaping",
                   ClosureModifierColor);
+        printFlag(fType->getExtInfo().isOnce(), "once",
+                  ClosureModifierColor);
         if (auto sendableTy = fType->getSendableDependentType()) {
           printFieldQuoted(sendableTy.getString(),
                            Label::always("sendable_dep"),
@@ -6640,6 +6642,7 @@ namespace {
           printField(representation, Label::always("representation"));
         }
         printFlag(!T->isNoEscape(), "escaping");
+        printFlag(T->isOnce(), "once");
         if (!T->getSendableDependentType())
           printFlag(T->isSendable(), "Sendable");
         printFlag(T->isAsync(), "async");
