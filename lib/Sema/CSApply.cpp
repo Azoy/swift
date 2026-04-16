@@ -3522,6 +3522,68 @@ namespace {
           .fixItInsert(UDE->getStartLoc(), namePlusDot);
     }
 
+    // This converts an expression that starts like:
+    //      x.bar()
+    // into something that looks like:
+    //      x.deref.bar()
+    Expr *buildDeref(Expr *expr, Expr *base, SelectedOverload selected,
+                     ConstraintLocatorBuilder memberLocator, SourceLoc dotLoc,
+                     DeclNameLoc nameLoc, bool implicit) {
+      auto deref = selected.choice.getDerefConformance();
+
+      auto targetTy = selected.choice.getDecl()->getDeclContext()
+                                               ->getSelfNominalTypeDecl()
+                                               ->getDeclaredType();
+
+      auto fn = deref.getWitnessByName(ctx.getIdentifier("deref"));
+      fn.getDecl()->dump();
+      auto fnTy = fn.getDecl()->getInterfaceType()->castTo<GenericFunctionType>();
+      auto substFnTy = fnTy->substGenericArgs(fn.getSubstitutions());
+
+      auto derefDeclRef = new (ctx) DeclRefExpr(fn, nameLoc, implicit,
+                                                AccessSemantics::Ordinary,
+                                                substFnTy);
+      cs.setType(derefDeclRef, substFnTy);
+
+      auto fnResultTy = substFnTy->castTo<AnyFunctionType>()->getResult();
+      auto self = Argument::unlabeled(base);
+      auto dotSyntaxCall = DotSyntaxCallExpr::create(ctx, derefDeclRef,
+                                                     dotLoc,
+                                                     self, fnResultTy);
+      cs.setType(dotSyntaxCall, fnResultTy);
+
+      auto borrowTy = fnResultTy->castTo<AnyFunctionType>()->getResult();
+      auto derefCall = CallExpr::createImplicitEmpty(ctx, dotSyntaxCall);
+      cs.setType(derefCall, borrowTy);
+
+      auto borrowDecl = cast<StructDecl>(borrowTy->getAnyNominal());
+      auto borrowedTy = borrowTy->castTo<BoundGenericType>()->getGenericArgs()[0];
+      auto borrowSubscript =
+          borrowDecl->lookupDirect(DeclBaseName::createSubscript())[0];
+      // auto subs = SubstitutionMap::get(borrowSubscript->getAsGenericContext()
+      //                                                 ->getGenericSignature(),
+      //                                  targetTy, {});
+      auto subscriptDeclRef = ConcreteDeclRef(borrowSubscript,
+                                              fn.getSubstitutions());
+      auto subscript = SubscriptExpr::create(ctx, derefCall,
+                                          ArgumentList::createImplicit(ctx, {}),
+                                             subscriptDeclRef, implicit);
+      cs.setType(subscript, borrowedTy);
+
+      if (isa<SubscriptDecl>(selected.choice.getDecl())) {
+        auto originalSubscript = cast<SubscriptExpr>(expr);
+
+        return buildSubscript(subscript, originalSubscript->getArgs(),
+                              cs.getConstraintLocator(expr), memberLocator,
+                              implicit, originalSubscript->getAccessSemantics(),
+                              selected);
+      }
+
+      return buildMemberRef(subscript, dotLoc, selected, nameLoc,
+                            cs.getConstraintLocator(expr), memberLocator,
+                            implicit, AccessSemantics::Ordinary);
+    }
+
     Expr *applyMemberRefExpr(Expr *expr, Expr *base, SourceLoc dotLoc,
                              DeclNameLoc nameLoc, bool implicit) {
       // If we have a constructor member, handle it as a constructor.
@@ -3641,6 +3703,11 @@ namespace {
       case OverloadChoiceKind::KeyPathDynamicMemberLookup: {
         return buildDynamicMemberLookupRef(
             expr, base, dotLoc, nameLoc.getStartLoc(), selected, memberLocator);
+      }
+
+      case OverloadChoiceKind::Deref: {
+        return buildDeref(expr, base, selected, memberLocator, dotLoc, nameLoc,
+                          implicit);
       }
       }
 
@@ -3822,6 +3889,12 @@ namespace {
         return buildDynamicMemberLookupRef(
             expr, expr->getBase(), expr->getArgs()->getStartLoc(), SourceLoc(),
             overload, memberLocator);
+      }
+
+      if (overload.choice.getKind() == OverloadChoiceKind::Deref) {
+        return buildDeref(expr, expr->getBase(), overload, memberLocator,
+                          expr->getArgs()->getStartLoc(),
+                          DeclNameLoc(expr->getLoc()), expr->isImplicit());
       }
 
       return buildSubscript(expr->getBase(), expr->getArgs(),

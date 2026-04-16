@@ -176,6 +176,8 @@ private func canPromote(allocBox: AllocBoxInst) -> (promotableArguments: [Functi
           // We need to check if the captured argument is escaping via the partial_apply.
           worklist.pushIfNotVisited(partialApply)
         }
+      case let markDependence as MarkDependenceInst where markDependence.dependenceKind == .NonEscaping:
+        break
       default:
         return nil
       }
@@ -239,6 +241,8 @@ private struct FunctionSpecializations {
         (user as! SingleValueInstruction).replace(with: box, context)
       case let apply as ApplySite:
         specialize(apply: apply, context)
+      case let markDependence as MarkDependenceInst:
+        markDependence.setOperand(at: 1, to: stack, context)
       default:
         fatalError("unhandled box user")
       }

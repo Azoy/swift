@@ -62,3 +62,15 @@ extension Borrow where Value: ~Copyable {
     }
   }
 }
+
+@available(SwiftStdlib 6.4, *)
+extension Borrow: Deref where Value: ~Copyable {
+  public typealias Target = Value
+
+  @_alwaysEmitIntoClient
+  @_lifetime(copy self)
+  @_transparent
+  public func deref() -> Self {
+    self
+  }
+}

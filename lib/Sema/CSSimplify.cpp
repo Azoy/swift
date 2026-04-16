@@ -10957,6 +10957,34 @@ performMemberLookup(ConstraintKind constraintKind, DeclNameRef memberName,
     }
   }
 
+  if (constraintKind == ConstraintKind::ValueMember &&
+      result.ViableCandidates.empty()) {
+    auto deref = Context.getProtocol(KnownProtocolKind::Deref);
+
+    if (auto conf = lookupConformance(baseTy, deref)) {
+      auto target = conf.getTypeWitness(deref->getAssociatedTypeMembers()[0]);
+
+      target->dump();
+
+      auto derefResult = performMemberLookup(constraintKind, memberName, target,
+                                             functionRefInfo, memberLocator,
+                                             includeInaccessibleMembers);
+
+      for (auto viable : derefResult.ViableCandidates) {
+        auto choice = OverloadChoice::getDeref(viable.getBaseType(),
+                                               viable.getDecl(),
+                                               conf,
+                                               viable.getFunctionRefInfo());
+        result.addViable(choice);
+      }
+
+      for (auto i : indices(derefResult.UnviableCandidates)) {
+        result.addUnviable(derefResult.UnviableCandidates[i],
+                           derefResult.UnviableReasons[i]);
+      }
+    }
+  }
+
   // If we're about to fail lookup because there are no viable candidates
   // or if all of the candidates come from conditional conformances (which
   // might not be applicable), and we are looking for members in a type with

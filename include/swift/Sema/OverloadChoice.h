@@ -63,6 +63,8 @@ enum class OverloadChoiceKind : int {
   /// have the value of this enumerator, index one will have the value of this
   /// enumerator + 1, and so on. Thus, this enumerator must always be last.
   TupleIndex,
+  /// The member is looked up using `Deref.deref()[]`.
+  Deref,
 };
 
 /// The kind of implicitly unwrapped optional for an overload reference.
@@ -95,7 +97,7 @@ class OverloadChoice {
     IsFallbackDeclViaUnwrappedOptional = 0x03,
     /// Indicates that this declaration was dynamic, turning a
     /// "Decl" kind into "DeclViaDynamic" kind.
-    IsDeclViaDynamic = 0x07,
+    IsDeclViaDynamic = 0x04,
   };
 
   /// The base type to be used when referencing the declaration
@@ -121,6 +123,10 @@ class OverloadChoice {
   /// looked up, as well as 1 bit tag which identifies whether this
   /// choice represents a key-path based dynamic lookup.
   llvm::PointerIntPair<Identifier, 1, unsigned> DynamicMember;
+
+  /// If this OverloadChoice represents a Deref result, then this holds the
+  /// conformance for the 'baseTy: Deref'.
+  ProtocolConformanceRef DerefConformance;
 
   /// This holds the kind of function reference.
   /// FIXME: This needs three bits. Can we pack them somewhere?
@@ -235,6 +241,17 @@ public:
     return result;
   }
 
+  static OverloadChoice getDeref(Type base, ValueDecl *value,
+                                 ProtocolConformanceRef derefConf,
+                                 FunctionRefInfo functionRefInfo) {
+    OverloadChoice result;
+    result.BaseAndDeclKind.setPointer(base);
+    result.DeclOrKind = value;
+    result.DerefConformance = derefConf;
+    result.TheFunctionRefInfo = functionRefInfo;
+    return result;
+  }
+
   /// Retrieve the base type used to refer to the declaration.
   Type getBaseType() const {
     return BaseAndDeclKind.getPointer();
@@ -246,6 +263,10 @@ public:
       return DynamicMember.getInt()
                  ? OverloadChoiceKind::KeyPathDynamicMemberLookup
                  : OverloadChoiceKind::DynamicMemberLookup;
+    }
+
+    if (DerefConformance) {
+      return OverloadChoiceKind::Deref;
     }
 
     if (isa<ValueDecl *>(DeclOrKind)) {
@@ -273,6 +294,7 @@ public:
     case OverloadChoiceKind::DeclViaUnwrappedOptional:
     case OverloadChoiceKind::DynamicMemberLookup:
     case OverloadChoiceKind::KeyPathDynamicMemberLookup:
+    case OverloadChoiceKind::Deref:
       return true;
     case OverloadChoiceKind::TupleIndex:
     case OverloadChoiceKind::MaterializePack:
@@ -330,6 +352,10 @@ public:
   /// Retrieves an opaque choice that ignores the base type.
   void *getOpaqueChoiceSimple() const {
     return DeclOrKind.getOpaqueValue();
+  }
+
+  ProtocolConformanceRef getDerefConformance() const {
+    return DerefConformance;
   }
 
   FunctionRefInfo getFunctionRefInfo() const {

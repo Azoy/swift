@@ -96,6 +96,8 @@ swift::ide::getSelectedOverloadInfo(const Solution &S,
     // TupleIndex isn't a function call and is not relevant for argument
     // completion because it doesn't take arguments.
     break;
+  case OverloadChoiceKind::Deref:
+    llvm_unreachable("fixme");
   }
 
   return Result;

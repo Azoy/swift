@@ -1184,6 +1184,13 @@ void OverloadChoice::dump(Type adjustedOpenedType, SourceManager *sm,
   case OverloadChoiceKind::ExtractFunctionIsolation:
     out << "extract isolation from " << getBaseType()->getString(PO);
     break;
+  case OverloadChoiceKind::Deref:
+    out << "deref ";
+    getDecl()->dumpRef(out);
+    out << " as " << getBaseType()->getString(PO) << ".";
+    out << getDecl()->getBaseName() << ": "
+        << adjustedOpenedType->getString(PO);
+    break;
   }
 }
 
@@ -1495,6 +1502,13 @@ void ConstraintSystem::print(raw_ostream &out) const {
       case OverloadChoiceKind::ExtractFunctionIsolation:
         out << "extract isolation from "
             << choice.getBaseType()->getString(PO);
+        break;
+
+      case OverloadChoiceKind::Deref:
+        out << "deref from " << choice.getBaseType()->getString(PO);
+        out << choice.getDecl()->getBaseName() << ": "
+            << resolved.boundType->getString(PO) << " == "
+            << resolved.adjustedOpenedType->getString(PO);
         break;
       }
       out << " for ";
