@@ -2926,6 +2926,7 @@ void AttributeChecker::visitConstInitializedAttr(ConstInitializedAttr *attr) {
 static bool isBuiltinOperator(StringRef name, DeclAttribute *attr) {
   return ((isa<PrefixAttr>(attr)  && name == "&") ||   // lvalue to inout
           (isa<PostfixAttr>(attr) && name == "!") ||   // optional unwrapping
+          (isa<PrefixAttr>(attr) && name == "*")  ||   // dereference
           // FIXME: Not actually a builtin operator, but should probably
           // be allowed and accounted for in Sema?
           (isa<PrefixAttr>(attr)  && name == "?") ||

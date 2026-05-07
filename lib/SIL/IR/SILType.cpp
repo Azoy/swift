@@ -93,6 +93,11 @@ SILType SILType::getBuiltinWordType(const ASTContext &C) {
   return getPrimitiveObjectType(CanType(BuiltinIntegerType::getWordType(C)));
 }
 
+SILType SILType::getBuiltinBorrowType(SILType referentTy) {
+  return getPrimitiveObjectType(
+      CanType(BuiltinBorrowType::get(referentTy.getASTType())));
+}
+
 SILType SILType::getOptionalType(SILType type) {
   return getPrimitiveType(type.getASTType().wrapInOptionalType(),
                           type.getCategory())
@@ -1411,6 +1416,16 @@ bool SILType::mayHaveCustomDeinit(const SILFunction &function) const {
     hasTypeParameter() ? function.mapTypeIntoEnvironment(*this) : *this;
   auto properties = function.getTypeProperties(contextType);
   return properties.mayHaveCustomDeinit();
+}
+
+bool SILType::isBorrowedByAddress(const SILFunction &fn) const {
+  if (isAddressableForDeps(fn))
+    return true;
+
+  if (!SILModuleConventions(fn.getModule()).useLoweredAddresses())
+    return false;
+
+  return !isLoadable(fn);
 }
 
 namespace swift::test {

@@ -3453,16 +3453,7 @@ LValue SILGenLValue::visitApplyExpr(ApplyExpr *e, SGFAccessKind accessKind,
     } else {
       auto loweredReferentTy = SGF.getLoweredType(e->getType());
 
-      bool addressReferent;
-
-      if (loweredReferentTy.isAddressableForDeps(SGF.F)) {
-        addressReferent = true;
-      } else {
-        addressReferent = SGF.useLoweredAddresses()
-          && loweredReferentTy.isAddressOnly(SGF.F);
-      }
-
-      if (addressReferent) {
+      if (loweredReferentTy.isBorrowedByAddress(SGF.F)) {
         deref = ManagedValue::forBorrowedAddressRValue(
                  SGF.B.createDereferenceAddrBorrow(e, borrowValue.getValue()));
       } else {

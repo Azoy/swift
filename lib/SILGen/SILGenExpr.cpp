@@ -17,11 +17,13 @@
 #include "Conversion.h"
 #include "Initialization.h"
 #include "LValue.h"
+#include "ManagedValue.h"
 #include "RValue.h"
 #include "ResultPlan.h"
 #include "SGFContext.h"
 #include "SILGen.h"
 #include "SILGenDynamicCast.h"
+#include "SILGenFunction.h"
 #include "SILGenFunctionBuilder.h"
 #include "Scope.h"
 #include "SwitchEnumBuilder.h"
@@ -58,6 +60,7 @@
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/ConvertUTF.h"
+#include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/SaveAndRestore.h"
 #include "llvm/Support/raw_ostream.h"
@@ -622,6 +625,7 @@ namespace {
     RValue visitMacroExpansionExpr(MacroExpansionExpr *E, SGFContext C);
     RValue visitCurrentContextIsolationExpr(CurrentContextIsolationExpr *E, SGFContext C);
     RValue visitTypeValueExpr(TypeValueExpr *E, SGFContext C);
+    RValue visitDereferenceExpr(DereferenceExpr *E, SGFContext C);
   };
 } // end anonymous namespace
 
@@ -7541,6 +7545,94 @@ RValue RValueEmitter::visitTypeValueExpr(TypeValueExpr *E, SGFContext C) {
 
   return RValue(SGF, E, ManagedValue::forObjectRValueWithoutOwnership(
     SGF.B.createTypeValue(E, SGF.getLoweredType(E->getType()), paramType)));
+}
+
+RValue RValueEmitter::visitDereferenceExpr(DereferenceExpr *E, SGFContext C) {
+  // Get the borrow value.
+  auto refLValue = SGF.emitLValue(E->getSubExpr(),
+                                  SGFAccessKind::BorrowedObjectRead);
+  auto ref = SGF.emitBorrowedLValue(E, std::move(refLValue));
+
+  auto loweredReferentTy = SGF.getLoweredType(E->getType());
+  ManagedValue deref;
+  bool isMutable = false;
+
+  if (ref.getType().getStructOrBoundGenericStruct() ==
+      SGF.getASTContext().getRefDecl()) {
+    // Drill down to the 'Builtin.Borrow' that is stored within a 'Swift.Ref'.
+    auto refDecl = SGF.getASTContext().getRefDecl();
+    auto builtinBorrowField = refDecl->getStoredProperties()[0];
+
+    // If the reference is not loadable, then it's generic in some way that
+    // requires the ref to persist in memory.
+    if (!ref.getType().isLoadable(SGF.F)) {
+      auto builtinBorrow = SGF.B.createStructElementAddr(E, ref.getValue(),
+                                                         builtinBorrowField);
+  
+      deref = ManagedValue::forBorrowedAddressRValue(
+          SGF.B.createDereferenceBorrowAddr(E, builtinBorrow));
+    } else {
+      // Otherwise, the reference is always loadable. Load it if we happen to
+      // have an addressed ref.
+      if (ref.getType().isAddress()) {
+        ref = SGF.emitLoad(E, ref.getValue(), SGF.getTypeLowering(ref.getType()),
+                           C, IsNotTake);
+      }
+      
+      auto builtinBorrow = SGF.B.createStructExtract(E, ref.getValue(),
+                                                     builtinBorrowField);
+  
+      if (loweredReferentTy.isBorrowedByAddress(SGF.F)) {
+        deref = ManagedValue::forBorrowedAddressRValue(
+            SGF.B.createDereferenceAddrBorrow(E, builtinBorrow));
+      } else {
+        deref = ManagedValue::forBorrowedObjectRValue(
+            SGF.B.createDereferenceBorrow(E, builtinBorrow));
+      }
+    }
+  } else if (ref.getType().getStructOrBoundGenericStruct() ==
+             SGF.getASTContext().getMutableRefDecl()) {
+    isMutable = true;
+
+    // Load the MutableRef from memory if it's not already loaded.
+    if (ref.getType().isAddress()) {
+      ref = SGF.emitManagedLoadBorrow(E, ref.getValue());
+    }
+
+    // Drill into MutableRef to get the underlying Builtin.RawPointer. We will
+    // pointer_to_address this value to get our referent.
+    auto mutableRefDecl = SGF.getASTContext().getMutableRefDecl();
+    auto pointerField = mutableRefDecl->getStoredProperties()[0];
+    auto pointer = SGF.B.createStructExtract(E, ref.getValue(), pointerField);
+
+    auto ump = SGF.getASTContext().getUnsafeMutablePointerDecl();
+    auto rawPointerField = ump->getStoredProperties()[0];
+    auto rawPointer = SGF.B.createStructExtract(E, pointer, rawPointerField);
+
+    auto addr = SGF.B.createPointerToAddress(E, rawPointer,
+                                             loweredReferentTy.getAddressType(),
+                                             /* isStrict */ true);
+
+    deref = ManagedValue::forFormalAccessedAddress(addr, SGFAccessKind::Write);
+  } else {
+    llvm_unreachable("Dereferencing a value with an unknown type");
+  }
+
+  // We need to indicate to the move checker that the value returned from the
+  // dereference cannot be moved out of its original borrow.
+  if (loweredReferentTy.isMoveOnly()) {
+    auto checkKind =
+      MarkUnresolvedNonCopyableValueInst::CheckKind::NoConsumeOrAssign;
+
+    if (isMutable) {
+      checkKind =
+        MarkUnresolvedNonCopyableValueInst::CheckKind::AssignableButNotConsumable;
+    }
+
+    deref = SGF.B.createMarkUnresolvedNonCopyableValueInst(E, deref, checkKind);
+  }
+
+  return RValue(SGF, E, deref);
 }
 
 ManagedValue

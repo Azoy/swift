@@ -29,6 +29,7 @@
 #include "swift/AST/SubstitutionMap.h"
 #include "swift/AST/TypeCheckRequests.h"
 #include "swift/Basic/Assertions.h"
+#include "swift/Sema/Constraint.h"
 #include "swift/Sema/ConstraintGraph.h"
 #include "swift/Sema/ConstraintSystem.h"
 #include "swift/Sema/IDETypeChecking.h"
@@ -3621,6 +3622,42 @@ namespace {
             expr, ConstraintLocator::ApplyFunction));
 
       return resultType;
+    }
+
+    Type visitDereferenceExpr(DereferenceExpr *expr) {
+      // The address-of operator produces an explicit inout T from an lvalue T.
+      // We model this with the constraint
+      //
+      //     S < lvalue T
+      //
+      // where T is a fresh type variable.
+      auto referent = CS.createTypeVariable(CS.getConstraintLocator(expr),
+                                            TVO_CanBindToNoEscape |
+                                            TVO_CanBindToInOut);
+
+      auto refDecl = CS.getASTContext().getRefDecl();
+      auto subs = SubstitutionMap::get(refDecl->getGenericSignature(),
+                                       {referent},
+                                       LookUpConformanceInModule());
+      auto ref = refDecl->getDeclaredInterfaceType().subst(subs);
+      auto refConstraint = Constraint::create(CS, ConstraintKind::Bind,
+                                              CS.getType(expr->getSubExpr()), ref,
+                                              CS.getConstraintLocator(expr));
+
+      auto mutableRefDecl = CS.getASTContext().getMutableRefDecl();
+      subs = SubstitutionMap::get(mutableRefDecl->getGenericSignature(),
+                                  {referent},
+                                  LookUpConformanceInModule());
+      auto mutableRef = mutableRefDecl->getDeclaredInterfaceType().subst(subs);
+      auto mutableRefConstraint = Constraint::create(CS, ConstraintKind::Equal,
+                                              CS.getType(expr->getSubExpr()),
+                                              mutableRef,
+                                              CS.getConstraintLocator(expr));
+
+      CS.addDisjunctionConstraint({refConstraint, mutableRefConstraint},
+                                  CS.getConstraintLocator(expr));
+      
+      return referent;
     }
 
     static bool isTriggerFallbackDiagnosticBuiltin(UnresolvedDotExpr *UDE,

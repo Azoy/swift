@@ -240,6 +240,7 @@ static bool sameOverloadChoice(const OverloadChoice &x,
   case OverloadChoiceKind::DeclViaUnwrappedOptional:
   case OverloadChoiceKind::DynamicMemberLookup:
   case OverloadChoiceKind::KeyPathDynamicMemberLookup:
+  case OverloadChoiceKind::DeclViaBorrowDeref:
     return sameDecl(x.getDecl(), y.getDecl());
 
   case OverloadChoiceKind::TupleIndex:
@@ -1248,14 +1249,16 @@ SolutionCompareResult ConstraintSystem::compareSolutions(
       if ((choice1.getKind() == OverloadChoiceKind::Decl) &&
           (choice2.getKind() == OverloadChoiceKind::DeclViaDynamic ||
            choice2.getKind() == OverloadChoiceKind::DeclViaBridge ||
-           choice2.getKind() == OverloadChoiceKind::DeclViaUnwrappedOptional)) {
+           choice2.getKind() == OverloadChoiceKind::DeclViaUnwrappedOptional ||
+           choice2.getKind() == OverloadChoiceKind::DeclViaBorrowDeref)) {
         score1 += weight;
         continue;
       }
 
       if ((choice1.getKind() == OverloadChoiceKind::DeclViaDynamic ||
            choice1.getKind() == OverloadChoiceKind::DeclViaBridge ||
-           choice1.getKind() == OverloadChoiceKind::DeclViaUnwrappedOptional) &&
+           choice1.getKind() == OverloadChoiceKind::DeclViaUnwrappedOptional ||
+           choice1.getKind() == OverloadChoiceKind::DeclViaBorrowDeref) &&
           choice2.getKind() == OverloadChoiceKind::Decl) {
         score2 += weight;
         continue;
@@ -1304,6 +1307,7 @@ SolutionCompareResult ConstraintSystem::compareSolutions(
     case OverloadChoiceKind::DeclViaUnwrappedOptional:
     case OverloadChoiceKind::DynamicMemberLookup:
     case OverloadChoiceKind::KeyPathDynamicMemberLookup:
+    case OverloadChoiceKind::DeclViaBorrowDeref:
       break;
     }
 

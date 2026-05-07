@@ -22,6 +22,7 @@
 #include "swift/Basic/Assertions.h"
 #include "swift/Basic/Defer.h"
 #include "swift/Basic/EditorPlaceholder.h"
+#include "swift/Basic/SourceLoc.h"
 #include "swift/Basic/StringExtras.h"
 #include "swift/Parse/IDEInspectionCallbacks.h"
 #include "swift/Parse/Parser.h"
@@ -656,6 +657,18 @@ ParserResult<Expr> Parser::parseExprUnary(Diag<> Message, bool isExprBasic) {
       return nullptr;
     return makeParserResult(
         new (Context) InOutExpr(Loc, SubExpr.get(), Type()));
+  }
+
+  case tok::star_prefix: {
+    SourceLoc StarLoc = consumeToken(tok::star_prefix);
+
+    ParserResult<Expr> SubExpr = parseExprUnary(Message, isExprBasic);
+    if (SubExpr.hasCodeCompletion())
+      return makeParserCodeCompletionResult<Expr>(SubExpr.getPtrOrNull());
+    if (SubExpr.isNull())
+      return nullptr;
+    return makeParserResult(new (Context) DereferenceExpr(SubExpr.get(), StarLoc,
+                                                        /* dotLoc */ SourceLoc()));
   }
 
   case tok::backslash:

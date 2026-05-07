@@ -42,6 +42,7 @@
 #include "swift/AST/TypeCheckRequests.h"
 #include "swift/Basic/Assertions.h"
 #include "swift/Basic/Defer.h"
+#include "swift/Basic/SourceLoc.h"
 #include "swift/Basic/StringExtras.h"
 #include "swift/Sema/ConstraintSystem.h"
 #include "swift/Sema/SolutionResult.h"
@@ -2157,6 +2158,35 @@ namespace {
       return finishApply(apply, adjustedOpenedType, locator, memberLocator);
     }
 
+    // This converts an expression that starts like:
+    //      x.bar()
+    // into something that looks like:
+    //      (*x).bar()
+    Expr *buildBorrowDeref(Expr *expr, Expr *base, SourceLoc dotLoc,
+                           SelectedOverload overload, DeclNameLoc memberLoc,
+                           ConstraintLocatorBuilder locator,
+                           ConstraintLocatorBuilder memberLocator, bool implicit,
+                           AccessSemantics semantics) {
+      auto borrowTy = base->getType()->getRValueType()->castTo<BoundGenericType>();
+      auto referentTy = borrowTy->getGenericArgs()[0];
+
+      auto deref = new (ctx) DereferenceExpr(base, /* starLoc */ SourceLoc(),
+                                             dotLoc);
+      cs.setType(deref, referentTy);
+
+      if (isa<SubscriptDecl>(overload.choice.getDecl())) {
+        auto originalSubscript = cast<SubscriptExpr>(expr);
+
+        return buildSubscript(deref, originalSubscript->getArgs(),
+                              locator, memberLocator, implicit,
+                              originalSubscript->getAccessSemantics(),
+                              overload);
+      }
+
+      return buildMemberRef(deref, dotLoc, overload, memberLoc, locator,
+                            memberLocator, implicit, semantics);
+    }
+
     /// Convert the given literal expression via a protocol pair.
     ///
     /// This routine handles the two-step literal conversion process used
@@ -3404,6 +3434,10 @@ namespace {
       return coerceToType(result, resultTy, cs.getConstraintLocator(expr));
     }
 
+    Expr *visitDereferenceExpr(DereferenceExpr *expr) {
+      return simplifyExprType(expr);
+    }
+
   private:
     /// A list of "suspicious" optional injections.
     SmallVector<InjectIntoOptionalExpr *, 4> SuspiciousOptionalInjections;
@@ -3580,6 +3614,11 @@ namespace {
         return buildMemberRef(base, dotLoc, selected, nameLoc,
                               cs.getConstraintLocator(expr), memberLocator,
                               implicit, AccessSemantics::Ordinary);
+
+      case OverloadChoiceKind::DeclViaBorrowDeref:
+        return buildBorrowDeref(nullptr, base, dotLoc, selected, nameLoc,
+                                cs.getConstraintLocator(expr), memberLocator,
+                                implicit, AccessSemantics::Ordinary);
 
       case OverloadChoiceKind::TupleIndex: {
         Type toType = simplifyType(cs.getType(expr));
@@ -3822,6 +3861,13 @@ namespace {
         return buildDynamicMemberLookupRef(
             expr, expr->getBase(), expr->getArgs()->getStartLoc(), SourceLoc(),
             overload, memberLocator);
+      }
+
+      if (overload.choice.getKind() == OverloadChoiceKind::DeclViaBorrowDeref) {
+        return buildBorrowDeref(expr, expr->getBase(), expr->getLoc(), overload,
+                                DeclNameLoc(expr->getLoc()), memberLocator,
+                                memberLocator, expr->isImplicit(),
+                                expr->getAccessSemantics());
       }
 
       return buildSubscript(expr->getBase(), expr->getArgs(),

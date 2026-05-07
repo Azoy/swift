@@ -2229,16 +2229,6 @@ static ManagedValue emitBuiltinTaskAddPriorityEscalationHandler(
   return ManagedValue::forRValueWithoutOwnership(b);
 }
 
-static bool isBorrowedByAddress(SILGenFunction &SGF, SILType loweredTy) {
-  if (loweredTy.isAddressableForDeps(SGF.F)) {
-    return true;
-  }
-  if (!SGF.useLoweredAddresses())
-    return false;
-
-  return !loweredTy.isLoadable(SGF.F);
-}
-
 static ManagedValue emitBorrowObject(
   SILGenFunction &SGF, SILLocation loc, SILType loweredBorrowTy,
   ArgumentSource &&arg) {
@@ -2288,7 +2278,7 @@ static ManagedValue emitBuiltinMakeBorrow(SILGenFunction &SGF,
   auto loweredArgTy = SGF.getLoweredType(argTy);
   auto loweredBorrowTy = SILType::getPrimitiveObjectType(
        BuiltinBorrowType::get(loweredArgTy.getASTType()));
-  if (!isBorrowedByAddress(SGF, loweredArgTy)) {
+  if (!loweredArgTy.isBorrowedByAddress(SGF.F)) {
     return emitBorrowObject(SGF, loc, loweredBorrowTy, std::move(args[0]));
   }
   // Form an address referent by prefering the addressable representation

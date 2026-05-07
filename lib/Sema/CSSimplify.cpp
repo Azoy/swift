@@ -10963,6 +10963,29 @@ performMemberLookup(ConstraintKind constraintKind, DeclNameRef memberName,
     }
   }
 
+  if (constraintKind == ConstraintKind::ValueMember &&
+      result.ViableCandidates.empty() &&
+      (baseObjTy->isRef() || baseObjTy->isMutableRef())) {
+    auto refTy = baseObjTy->castTo<BoundGenericType>();
+    auto referentTy = refTy->getGenericArgs()[0];
+
+    auto lookupResult = performMemberLookup(constraintKind, memberName, referentTy,
+                                            functionRefInfo, memberLocator,
+                                            includeInaccessibleMembers);
+
+    for (auto viable : lookupResult.ViableCandidates) {
+      auto choice = OverloadChoice::getBorrowDeref(viable.getBaseType(),
+                                                   viable.getDecl(),
+                                                   viable.getFunctionRefInfo());
+      result.addViable(choice);
+    }
+
+    for (auto i : indices(lookupResult.UnviableCandidates)) {
+      result.addUnviable(lookupResult.UnviableCandidates[i],
+                         lookupResult.UnviableReasons[i]);
+    }
+  }
+
   // If we're about to fail lookup because there are no viable candidates
   // or if all of the candidates come from conditional conformances (which
   // might not be applicable), and we are looking for members in a type with

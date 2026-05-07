@@ -935,6 +935,10 @@ void Lexer::lexOperatorIdentifier() {
       if (leftBound == rightBound || leftBound)
         break;
       return formToken(tok::amp_prefix, TokStart);
+    case '*':
+      if (leftBound == rightBound || leftBound)
+        break;
+      return formToken(tok::star_prefix, TokStart);
     case '.': {
       if (leftBound == rightBound)
         return formToken(tok::period, TokStart);

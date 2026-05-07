@@ -59,6 +59,8 @@ enum class OverloadChoiceKind : int {
   /// The overload choice extracts the isolation of a dynamically isolated
   /// function value.
   ExtractFunctionIsolation,
+  /// The overload choice needs to dereference a borrow or mutable borrow.
+  DeclViaBorrowDeref,
   /// The overload choice indexes into a tuple. Index zero will
   /// have the value of this enumerator, index one will have the value of this
   /// enumerator + 1, and so on. Thus, this enumerator must always be last.
@@ -95,7 +97,10 @@ class OverloadChoice {
     IsFallbackDeclViaUnwrappedOptional = 0x03,
     /// Indicates that this declaration was dynamic, turning a
     /// "Decl" kind into "DeclViaDynamic" kind.
-    IsDeclViaDynamic = 0x07,
+    IsDeclViaDynamic = 0x04,
+    /// Indicates that this declaration was resolved by derefencing `Borrow` or
+    /// `Inout`, turning a "Decl" kind into "DeclViaBorrowDeref".
+    IsDeclViaBorrowDeref = 0x05
   };
 
   /// The base type to be used when referencing the declaration
@@ -220,6 +225,15 @@ public:
     return result;
   }
 
+  static OverloadChoice getBorrowDeref(Type base, ValueDecl *value,
+                                       FunctionRefInfo functionRefInfo) {
+    ASSERT(!base->hasTypeParameter());
+
+    OverloadChoice result(base, value, functionRefInfo);
+    result.BaseAndDeclKind.setInt(IsDeclViaBorrowDeref);
+    return result;
+  }
+
   /// Retrieve an overload choice for a declaration that was found via
   /// dynamic member lookup. The `ValueDecl` is a `subscript(dynamicMember:)`
   /// method.
@@ -255,6 +269,7 @@ public:
       case IsDeclViaUnwrappedOptional:
       case IsFallbackDeclViaUnwrappedOptional:
         return OverloadChoiceKind::DeclViaUnwrappedOptional;
+      case IsDeclViaBorrowDeref: return OverloadChoiceKind::DeclViaBorrowDeref;
       default: return OverloadChoiceKind::Decl;
       }
     }
@@ -273,6 +288,7 @@ public:
     case OverloadChoiceKind::DeclViaUnwrappedOptional:
     case OverloadChoiceKind::DynamicMemberLookup:
     case OverloadChoiceKind::KeyPathDynamicMemberLookup:
+    case OverloadChoiceKind::DeclViaBorrowDeref:
       return true;
     case OverloadChoiceKind::TupleIndex:
     case OverloadChoiceKind::MaterializePack:

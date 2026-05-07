@@ -4667,6 +4667,12 @@ public:
 
     printFoot();
   }
+
+  void visitDereferenceExpr(DereferenceExpr *E, Label label) {
+    printCommon(E, "dereference_expr", label);
+    printRec(E->getSubExpr(), Label::optional("borrow_expr"));
+    printFoot();
+  }
 };
 
 } // end anonymous namespace

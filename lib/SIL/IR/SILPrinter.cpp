@@ -915,9 +915,9 @@ public:
   //===--------------------------------------------------------------------===//
   // Big entrypoints.
   void print(const SILFunction *F) {
-    if (SILPrintLoopHeaders) {
-      findLoopHeaders(*const_cast<SILFunction *>(F), loopHeaders);
-    }
+    // if (SILPrintLoopHeaders) {
+    //   findLoopHeaders(*const_cast<SILFunction *>(F), loopHeaders);
+    // }
 
     // If we are asked to emit sorted SIL, print out our BBs in RPOT order.
     if (Ctx.sortSIL()) {

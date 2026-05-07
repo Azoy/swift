@@ -33,6 +33,7 @@
 #include "swift/Basic/AccessControls.h"
 #include "swift/Basic/Debug.h"
 #include "swift/Basic/InlineBitfield.h"
+#include "swift/Basic/SourceLoc.h"
 #include "llvm/Support/TrailingObjects.h"
 #include <optional>
 #include <utility>
@@ -6727,6 +6728,39 @@ public:
   }
   static bool classof(const FreestandingMacroExpansion *expansion) {
     return expansion->getFreestandingMacroKind() == FreestandingMacroKind::Expr;
+  }
+};
+
+class DereferenceExpr : public Expr {
+  Expr *SubExpr;
+  SourceLoc StarLoc;
+  SourceLoc DotLoc;
+
+public:
+  DereferenceExpr(Expr *subExpr, SourceLoc starLoc, SourceLoc dotLoc)
+      : Expr(ExprKind::Dereference, /*isImplicit=*/ false), SubExpr(subExpr),
+        StarLoc(starLoc), DotLoc(dotLoc) {}
+
+  Expr *getSubExpr() const { return SubExpr; }
+  void setSubExpr(Expr *e) { SubExpr = e; }
+
+  SourceLoc getLoc() const {
+    if (StarLoc) {
+      return StarLoc;
+    }
+
+    return DotLoc;
+  }
+  SourceRange getSourceRange() const {
+    if (StarLoc) {
+      return SourceRange(StarLoc, SubExpr->getEndLoc());
+    }
+
+    return SourceRange(SubExpr->getStartLoc(), DotLoc);
+  }
+
+  static bool classof(const Expr *E) {
+    return E->getKind() == ExprKind::Dereference;
   }
 };
 
