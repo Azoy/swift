@@ -10969,6 +10969,12 @@ performMemberLookup(ConstraintKind constraintKind, DeclNameRef memberName,
     auto refTy = baseObjTy->castTo<BoundGenericType>();
     auto referentTy = refTy->getGenericArgs()[0];
 
+    // We only produce @lvalue results for dereferencing 'MutableRef'. Other
+    // reads/borrowing operations don't require lvalues.
+    if (baseObjTy->isMutableRef()) {
+      referentTy = LValueType::get(referentTy);
+    }
+
     auto lookupResult = performMemberLookup(constraintKind, memberName, referentTy,
                                             functionRefInfo, memberLocator,
                                             includeInaccessibleMembers);

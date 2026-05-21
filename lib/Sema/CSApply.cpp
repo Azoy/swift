@@ -40,6 +40,7 @@
 #include "swift/AST/SourceFile.h"
 #include "swift/AST/SubstitutionMap.h"
 #include "swift/AST/TypeCheckRequests.h"
+#include "swift/AST/Types.h"
 #include "swift/Basic/Assertions.h"
 #include "swift/Basic/Defer.h"
 #include "swift/Basic/SourceLoc.h"
@@ -2169,6 +2170,12 @@ namespace {
                            AccessSemantics semantics) {
       auto borrowTy = base->getType()->getRValueType()->castTo<BoundGenericType>();
       auto referentTy = borrowTy->getGenericArgs()[0];
+
+      // We only produce @lvalue results for dereferencing 'MutableRef'. Other
+      // reads/borrowing operations don't require lvalues.
+      if (borrowTy->isMutableRef()) {
+        referentTy = LValueType::get(referentTy);
+      }
 
       auto deref = new (ctx) DereferenceExpr(base, /* starLoc */ SourceLoc(),
                                              dotLoc);

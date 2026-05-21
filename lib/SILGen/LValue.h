@@ -109,6 +109,7 @@ public:
     PhysicalKeyPathApplicationKind, // applying a key path
     BorrowValueKind,            // load_borrow the base rvalue for a projection
     BorrowMutateKind,           // borrow and mutate accessor
+    DereferenceKind,            // dereference_expr
 
     // Logical LValue kinds
     GetterSetterKind,           // property or subscript getter/setter

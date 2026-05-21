@@ -7548,91 +7548,40 @@ RValue RValueEmitter::visitTypeValueExpr(TypeValueExpr *E, SGFContext C) {
 }
 
 RValue RValueEmitter::visitDereferenceExpr(DereferenceExpr *E, SGFContext C) {
-  // Get the borrow value.
-  auto refLValue = SGF.emitLValue(E->getSubExpr(),
-                                  SGFAccessKind::BorrowedObjectRead);
-  auto ref = SGF.emitBorrowedLValue(E, std::move(refLValue));
-
-  auto loweredReferentTy = SGF.getLoweredType(E->getType());
-  ManagedValue deref;
-  bool isMutable = false;
-
-  if (ref.getType().getStructOrBoundGenericStruct() ==
-      SGF.getASTContext().getRefDecl()) {
-    // Drill down to the 'Builtin.Borrow' that is stored within a 'Swift.Ref'.
-    auto refDecl = SGF.getASTContext().getRefDecl();
-    auto builtinBorrowField = refDecl->getStoredProperties()[0];
-
-    // If the reference is not loadable, then it's generic in some way that
-    // requires the ref to persist in memory.
-    if (!ref.getType().isLoadable(SGF.F)) {
-      auto builtinBorrow = SGF.B.createStructElementAddr(E, ref.getValue(),
-                                                         builtinBorrowField);
-  
-      deref = ManagedValue::forBorrowedAddressRValue(
-          SGF.B.createDereferenceBorrowAddr(E, builtinBorrow));
-    } else {
-      // Otherwise, the reference is always loadable. Load it if we happen to
-      // have an addressed ref.
-      if (ref.getType().isAddress()) {
-        ref = SGF.emitLoad(E, ref.getValue(), SGF.getTypeLowering(ref.getType()),
-                           C, IsNotTake);
-      }
-      
-      auto builtinBorrow = SGF.B.createStructExtract(E, ref.getValue(),
-                                                     builtinBorrowField);
-  
-      if (loweredReferentTy.isBorrowedByAddress(SGF.F)) {
-        deref = ManagedValue::forBorrowedAddressRValue(
-            SGF.B.createDereferenceAddrBorrow(E, builtinBorrow));
-      } else {
-        deref = ManagedValue::forBorrowedObjectRValue(
-            SGF.B.createDereferenceBorrow(E, builtinBorrow));
-      }
-    }
-  } else if (ref.getType().getStructOrBoundGenericStruct() ==
-             SGF.getASTContext().getMutableRefDecl()) {
-    isMutable = true;
-
-    // Load the MutableRef from memory if it's not already loaded.
-    if (ref.getType().isAddress()) {
-      ref = SGF.emitManagedLoadBorrow(E, ref.getValue());
-    }
-
-    // Drill into MutableRef to get the underlying Builtin.RawPointer. We will
-    // pointer_to_address this value to get our referent.
-    auto mutableRefDecl = SGF.getASTContext().getMutableRefDecl();
-    auto pointerField = mutableRefDecl->getStoredProperties()[0];
-    auto pointer = SGF.B.createStructExtract(E, ref.getValue(), pointerField);
-
-    auto ump = SGF.getASTContext().getUnsafeMutablePointerDecl();
-    auto rawPointerField = ump->getStoredProperties()[0];
-    auto rawPointer = SGF.B.createStructExtract(E, pointer, rawPointerField);
-
-    auto addr = SGF.B.createPointerToAddress(E, rawPointer,
-                                             loweredReferentTy.getAddressType(),
-                                             /* isStrict */ true);
-
-    deref = ManagedValue::forFormalAccessedAddress(addr, SGFAccessKind::Write);
-  } else {
-    llvm_unreachable("Dereferencing a value with an unknown type");
+  // If the result of this dereference is an @lvalue, then we know the base
+  // reference is 'MutableRef'. These always produce an address lvalue.
+  if (E->getType()->is<LValueType>()) {
+    auto lv = SGF.emitLValue(E, SGFAccessKind::ReadWrite);
+    return RValue(SGF, E, SGF.emitAddressOfLValue(E, std::move(lv)));
   }
 
-  // We need to indicate to the move checker that the value returned from the
-  // dereference cannot be moved out of its original borrow.
-  if (loweredReferentTy.isMoveOnly()) {
-    auto checkKind =
-      MarkUnresolvedNonCopyableValueInst::CheckKind::NoConsumeOrAssign;
+  auto refLv = SGF.emitLValue(E->getSubExpr(), SGFAccessKind::BorrowedObjectRead);
+  auto ref = SGF.emitLoadOfLValue(E->getSubExpr(), std::move(refLv), C);
+  ref.dump();
 
-    if (isMutable) {
-      checkKind =
-        MarkUnresolvedNonCopyableValueInst::CheckKind::AssignableButNotConsumable;
-    }
+  // Otherwise, we're dereferencing a regular 'Ref' who needs to 
+  // If the reference is address only, then it's generic in some way that
+  // requires the ref to persist in memory.
+  // if (refTy.isAddressOnly(SGF.F)) {
+  //   deref = ManagedValue::forBorrowedAddressRValue(
+  //       SGF.B.createDereferenceBorrowAddr(loc, base.getValue()));
+  // } else {
+  //   // Otherwise, the reference is always loadable. Load it if we happen to
+  //   // have an addressed ref.
+  //   if (refTy.isAddress()) {
+  //     base = SGF.emitLoad(loc, base.getValue(), SGF.getTypeLowering(refTy),
+  //                        SGFContext(), IsNotTake);
+  //   }
 
-    deref = SGF.B.createMarkUnresolvedNonCopyableValueInst(E, deref, checkKind);
-  }
-
-  return RValue(SGF, E, deref);
+  //   if (loweredReferentTy.isBorrowedByAddress(SGF.F)) {
+  //     deref = ManagedValue::forBorrowedAddressRValue(
+  //         SGF.B.createDereferenceAddrBorrow(loc, base.getValue()));
+  //   } else {
+  //     deref = ManagedValue::forBorrowedObjectRValue(
+  //         SGF.B.createDereferenceBorrow(loc, base.getValue()));
+  //   }
+  // }
+  llvm_unreachable("idk man");
 }
 
 ManagedValue

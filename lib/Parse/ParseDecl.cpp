@@ -9191,7 +9191,8 @@ ParserResult<FuncDecl> Parser::parseDeclFunc(SourceLoc StaticLoc,
   // Parse function name.
   Identifier SimpleName;
   SourceLoc NameLoc;
-  if (Tok.isAnyOperator() || Tok.isAny(tok::exclaim_postfix, tok::amp_prefix)) {
+  if (Tok.isAnyOperator() ||
+      Tok.isAny(tok::exclaim_postfix, tok::amp_prefix, tok::star_prefix)) {
     // If the name is an operator token that ends in '<' and the following token
     // is an identifier or 'let', split the '<' off as a separate token. This
     // allows things like 'func ==<T>(x:T, y:T) {}' to parse as '==' with

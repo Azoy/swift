@@ -28,6 +28,7 @@
 #include "swift/AST/PrettyStackTrace.h"
 #include "swift/AST/SubstitutionMap.h"
 #include "swift/AST/TypeCheckRequests.h"
+#include "swift/AST/Types.h"
 #include "swift/Basic/Assertions.h"
 #include "swift/Sema/Constraint.h"
 #include "swift/Sema/ConstraintGraph.h"
@@ -3651,13 +3652,13 @@ namespace {
       auto mutableRef = mutableRefDecl->getDeclaredInterfaceType().subst(subs);
       auto mutableRefConstraint = Constraint::create(CS, ConstraintKind::Equal,
                                               CS.getType(expr->getSubExpr()),
-                                              mutableRef,
+                                              LValueType::get(mutableRef),
                                               CS.getConstraintLocator(expr));
 
       CS.addDisjunctionConstraint({refConstraint, mutableRefConstraint},
                                   CS.getConstraintLocator(expr));
-      
-      return referent;
+
+      return LValueType::get(referent);
     }
 
     static bool isTriggerFallbackDiagnosticBuiltin(UnresolvedDotExpr *UDE,

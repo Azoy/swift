@@ -2482,6 +2482,12 @@ static void rewriteFunction(StructLoweringState &pass,
           Loc, dbaInstr->getOperand());
       break;
     }
+    case SILInstructionKind::DereferenceAddrBorrowInst: {
+      auto dabInstr = cast<DereferenceAddrBorrowInst>(instr);
+      newInstr = resultTyBuilder.createDereferenceAddrBorrow(
+          Loc, dabInstr->getOperand());
+      break;
+    }
     default:
       llvm_unreachable("Unhandled aggrTy instr");
     }

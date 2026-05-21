@@ -23,6 +23,7 @@
 #include "LValue.h"
 #include "ManagedValue.h"
 #include "RValue.h"
+#include "SGFContext.h"
 #include "SILGen.h"
 #include "SILGenFunction.h"
 #include "Scope.h"
@@ -33,7 +34,9 @@
 #include "swift/AST/Expr.h"
 #include "swift/AST/GenericEnvironment.h"
 #include "swift/AST/PropertyWrappers.h"
+#include "swift/AST/StorageImpl.h"
 #include "swift/AST/TypeCheckRequests.h"
+#include "swift/AST/Types.h"
 #include "swift/Basic/Assertions.h"
 #include "swift/SIL/Consumption.h"
 #include "swift/SIL/InstructionUtils.h"
@@ -41,10 +44,14 @@
 #include "swift/SIL/PrettyStackTrace.h"
 #include "swift/SIL/SILArgument.h"
 #include "swift/SIL/SILInstruction.h"
+#include "swift/SIL/SILLocation.h"
 #include "swift/SIL/SILUndef.h"
+#include "swift/SIL/SILValue.h"
 #include "swift/SIL/TypeLowering.h"
 #include "llvm/ADT/STLExtras.h"
+#include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
+#include <optional>
 using namespace swift;
 using namespace Lowering;
 
@@ -372,6 +379,8 @@ public:
   LValue visitDotSyntaxBaseIgnoredExpr(DotSyntaxBaseIgnoredExpr *e,
                                        SGFAccessKind accessKind,
                                        LValueOptions options);
+  LValue visitDereferenceExpr(DereferenceExpr *e, SGFAccessKind accessKind,
+                              LValueOptions options);
 };
 
 /// Read this component.
@@ -1300,6 +1309,97 @@ namespace {
 
     void dump(raw_ostream &OS, unsigned indent) const override {
       OS.indent(indent) << "BorrowValueComponent\n";
+    }
+  };
+
+  class DereferenceComponent : public PhysicalPathComponent {
+  public:
+    DereferenceComponent(LValueTypeData typeData)
+        : PhysicalPathComponent(typeData, DereferenceKind, std::nullopt) {}
+
+    virtual bool isLoadingPure() const override { return true; }
+
+    ManagedValue project(SILGenFunction &SGF, SILLocation loc,
+                         ManagedValue base) && override {
+      auto refTy = base.getType();
+      Type referentTy;
+
+      if (refTy.is<BuiltinBorrowType>()) {
+        referentTy = refTy.castTo<BuiltinBorrowType>()->getReferentType();
+      } else {
+        ASSERT(refTy.getASTType()->isUnsafeMutablePointer());
+        referentTy = refTy.castTo<BoundGenericType>()->getGenericArgs()[0];
+      }
+
+      auto loweredReferentTy = SGF.getLoweredType(referentTy);
+      ManagedValue deref;
+      bool isMutable = false;
+
+      if (refTy.is<BuiltinBorrowType>()) {
+        // If the reference is address only, then it's generic in some way that
+        // requires the ref to persist in memory.
+        if (refTy.isAddressOnly(SGF.F)) {
+          deref = ManagedValue::forBorrowedAddressRValue(
+              SGF.B.createDereferenceBorrowAddr(loc, base.getValue()));
+        } else {
+          // Otherwise, the reference is always loadable. Load it if we happen to
+          // have an addressed ref.
+          if (refTy.isAddress()) {
+            base = SGF.emitLoad(loc, base.getValue(), SGF.getTypeLowering(refTy),
+                               SGFContext(), IsNotTake);
+          }
+
+          if (loweredReferentTy.isBorrowedByAddress(SGF.F)) {
+            deref = ManagedValue::forBorrowedAddressRValue(
+                SGF.B.createDereferenceAddrBorrow(loc, base.getValue()));
+          } else {
+            deref = ManagedValue::forBorrowedObjectRValue(
+                SGF.B.createDereferenceBorrow(loc, base.getValue()));
+          }
+        }
+      } else if (refTy.getStructOrBoundGenericStruct() ==
+                 SGF.getASTContext().getUnsafeMutablePointerDecl()) {
+        isMutable = true;
+
+        // Load the pointer from memory if it's not already loaded.
+        if (base.getType().isAddress()) {
+          base = SGF.emitLoad(loc, base.getValue(),
+                              SGF.getTypeLowering(refTy),
+                              SGFContext(), IsNotTake);
+        }
+
+        auto addr = SGF.B.createPointerToAddress(loc, base.getValue(),
+                                                 loweredReferentTy.getAddressType(),
+                                                 /* isStrict */ true);
+    
+        deref = ManagedValue::forFormalAccessedAddress(addr, SGFAccessKind::Write);
+      } else {
+        llvm_unreachable("Dereferencing a value with an unknown type");
+      }
+
+      SGF.F.dump();
+
+      llvm::errs() << deref.getOwnershipKind().asString() << "\n";
+      
+      // We need to indicate to the move checker that the value returned from the
+      // dereference cannot be moved out of its original borrow.
+      // if (loweredReferentTy.isMoveOnly()) {
+      //   auto checkKind =
+      //     MarkUnresolvedNonCopyableValueInst::CheckKind::NoConsumeOrAssign;
+    
+      //   if (isMutable) {
+      //     checkKind =
+      //       MarkUnresolvedNonCopyableValueInst::CheckKind::AssignableButNotConsumable;
+      //   }
+    
+      //   deref = SGF.B.createMarkUnresolvedNonCopyableValueInst(loc, deref, checkKind);
+      // }
+
+      return deref;
+    }
+
+    void dump(raw_ostream &OS, unsigned indent) const override {
+      OS.indent(indent) << "DereferenceComponent\n";
     }
   };
 } // end anonymous namespace
@@ -4993,6 +5093,24 @@ LValue SILGenLValue::visitABISafeConversionExpr(ABISafeConversionExpr *e,
   lval.add<UncheckedConversionComponent>(typeData, subExprType);
 
   return lval;
+}
+
+LValue SILGenLValue::visitDereferenceExpr(DereferenceExpr *e,
+                                          SGFAccessKind accessKind,
+                                          LValueOptions options) {
+  auto ref = visitRec(e->getSubExpr(), accessKind, options);
+  auto refTy = ref.getTypeOfRValue().getASTType();
+  auto borrowField = ref.getTypeOfRValue().getFieldDecl(0);
+  auto borrowTy = borrowField->getInterfaceType()
+      .subst(refTy->getContextSubstitutionMap())
+      ->getCanonicalType();
+  ref.addMemberVarComponent(SGF, e, borrowField,
+                            refTy->getContextSubstitutionMap(), options,
+                            /* isSuper */ false, accessKind,
+                            AccessStrategy::getStorage(),
+                            borrowTy);
+  ref.add<DereferenceComponent>(getValueTypeData(SGF, accessKind, e));
+  return ref;
 }
 
 /// Emit an lvalue that refers to the given property.  This is

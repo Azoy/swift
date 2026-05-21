@@ -1095,6 +1095,13 @@ addressBeginsInitialized(MarkUnresolvedNonCopyableValueInst *address) {
     }
   }
 
+  if (isa<DereferenceAddrBorrowInst>(stripAccessMarkers(operand))) {
+    LLVM_DEBUG(llvm::dbgs()
+               << "Found dereference_addr_borrow use... "
+                  "adding mark_unresolved_non_copyable_value as init!\n");
+    return true;
+  }
+  
   // Check if our address is from a ref_element_addr. In such a case, we treat
   // the mark_unresolved_non_copyable_value as the initialization.
   if (isa<RefElementAddrInst>(stripAccessMarkers(operand))) {
