@@ -2195,6 +2195,7 @@ Type ConstraintSystem::getEffectiveOverloadType(ConstraintLocator *locator,
   case OverloadChoiceKind::TupleIndex:
   case OverloadChoiceKind::MaterializePack:
   case OverloadChoiceKind::ExtractFunctionIsolation:
+  case OverloadChoiceKind::DeclViaBorrowDeref:
     return Type();
   }
 
@@ -2399,6 +2400,7 @@ void ConstraintSystem::bindOverloadType(const SelectedOverload &overload,
   case OverloadChoiceKind::MaterializePack:
   case OverloadChoiceKind::ExtractFunctionIsolation:
   case OverloadChoiceKind::KeyPathApplication:
+  case OverloadChoiceKind::DeclViaBorrowDeref:
     bindTypeOrIUO(openedType);
     return;
   case OverloadChoiceKind::DeclViaDynamic: {
@@ -2976,7 +2978,8 @@ void ConstraintSystem::resolveOverload(OverloadChoice choice, DeclContext *useDC
   case OverloadChoiceKind::DeclViaDynamic:
   case OverloadChoiceKind::DeclViaUnwrappedOptional:
   case OverloadChoiceKind::DynamicMemberLookup:
-  case OverloadChoiceKind::KeyPathDynamicMemberLookup: {
+  case OverloadChoiceKind::KeyPathDynamicMemberLookup:
+  case OverloadChoiceKind::DeclViaBorrowDeref: {
     Type openedType, thrownErrorType;
 
     if (preparedOverload) {

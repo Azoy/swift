@@ -54,17 +54,3 @@ extension Ref: @unchecked Sendable where Value: Sendable & ~Copyable {}
 
 @available(StdlibDeploymentTarget 6.4, *)
 extension Ref: BitwiseCopyable {}
-
-@available(StdlibDeploymentTarget 6.4, *)
-extension Ref where Value: ~Copyable {
-  /// Dereferences the constant reference allowing for in-place reads to the
-  /// underlying value.
-  @available(StdlibDeploymentTarget 6.4, *)
-  @export(implementation)
-  @_transparent
-  public var value: Value {
-    borrow {
-      Builtin.dereferenceBorrow(builtin)
-    }
-  }
-}

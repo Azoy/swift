@@ -17,11 +17,13 @@
 #include "Conversion.h"
 #include "Initialization.h"
 #include "LValue.h"
+#include "ManagedValue.h"
 #include "RValue.h"
 #include "ResultPlan.h"
 #include "SGFContext.h"
 #include "SILGen.h"
 #include "SILGenDynamicCast.h"
+#include "SILGenFunction.h"
 #include "SILGenFunctionBuilder.h"
 #include "Scope.h"
 #include "SwitchEnumBuilder.h"
@@ -59,6 +61,7 @@
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/ConvertUTF.h"
+#include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/SaveAndRestore.h"
 #include "llvm/Support/raw_ostream.h"
@@ -623,6 +626,7 @@ namespace {
     RValue visitMacroExpansionExpr(MacroExpansionExpr *E, SGFContext C);
     RValue visitCurrentContextIsolationExpr(CurrentContextIsolationExpr *E, SGFContext C);
     RValue visitTypeValueExpr(TypeValueExpr *E, SGFContext C);
+    RValue visitDereferenceExpr(DereferenceExpr *E, SGFContext C);
   };
 } // end anonymous namespace
 
@@ -7624,6 +7628,43 @@ RValue RValueEmitter::visitTypeValueExpr(TypeValueExpr *E, SGFContext C) {
 
   return RValue(SGF, E, ManagedValue::forObjectRValueWithoutOwnership(
     SGF.B.createTypeValue(E, SGF.getLoweredType(E->getType()), paramType)));
+}
+
+RValue RValueEmitter::visitDereferenceExpr(DereferenceExpr *E, SGFContext C) {
+  // If the result of this dereference is an @lvalue, then we know the base
+  // reference is 'MutableRef'. These always produce an address lvalue.
+  if (E->getType()->is<LValueType>()) {
+    auto lv = SGF.emitLValue(E, SGFAccessKind::ReadWrite);
+    return RValue(SGF, E, SGF.emitAddressOfLValue(E, std::move(lv)));
+  }
+
+  auto refLv = SGF.emitLValue(E->getSubExpr(), SGFAccessKind::BorrowedObjectRead);
+  auto ref = SGF.emitLoadOfLValue(E->getSubExpr(), std::move(refLv), C);
+  ref.dump();
+
+  // Otherwise, we're dereferencing a regular 'Ref' who needs to 
+  // If the reference is address only, then it's generic in some way that
+  // requires the ref to persist in memory.
+  // if (refTy.isAddressOnly(SGF.F)) {
+  //   deref = ManagedValue::forBorrowedAddressRValue(
+  //       SGF.B.createDereferenceBorrowAddr(loc, base.getValue()));
+  // } else {
+  //   // Otherwise, the reference is always loadable. Load it if we happen to
+  //   // have an addressed ref.
+  //   if (refTy.isAddress()) {
+  //     base = SGF.emitLoad(loc, base.getValue(), SGF.getTypeLowering(refTy),
+  //                        SGFContext(), IsNotTake);
+  //   }
+
+  //   if (loweredReferentTy.isBorrowedByAddress(SGF.F)) {
+  //     deref = ManagedValue::forBorrowedAddressRValue(
+  //         SGF.B.createDereferenceAddrBorrow(loc, base.getValue()));
+  //   } else {
+  //     deref = ManagedValue::forBorrowedObjectRValue(
+  //         SGF.B.createDereferenceBorrow(loc, base.getValue()));
+  //   }
+  // }
+  llvm_unreachable("idk man");
 }
 
 ManagedValue

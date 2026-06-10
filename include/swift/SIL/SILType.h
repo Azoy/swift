@@ -1011,6 +1011,10 @@ public:
     return !isNoEscapeFunction() && isEscapable(function);
   }
 
+  /// Whether the given type's representation within a `Builtin.Borrow` is an
+  /// address or not.
+  bool isBorrowedByAddress(const SILFunction &fn) const;
+
   /// Return the expected concurrency diagnostic behavior for this SILType.
   ///
   /// This allows one to know if the type is marked with preconcurrency and thus
@@ -1040,6 +1044,8 @@ public:
                                      const ASTContext &C);
   /// Get the builtin word type as a SILType;
   static SILType getBuiltinWordType(const ASTContext &C);
+  /// Get the builtin borrow type with the given referent as a SILType.
+  static SILType getBuiltinBorrowType(SILType referentTy);
 
   /// Given a value type, return an optional type wrapping it.
   static SILType getOptionalType(SILType valueType);

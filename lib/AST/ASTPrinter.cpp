@@ -6046,6 +6046,10 @@ void PrintAST::visitTypeValueExpr(TypeValueExpr *expr) {
   expr->getType()->print(Printer, Options);
 }
 
+void PrintAST::visitDereferenceExpr(DereferenceExpr *expr) {
+  Printer << "dereference idk man";
+}
+
 void PrintAST::visitOpaqueStmt(OpaqueStmt *stmt) {}
 
 void PrintAST::visitBraceStmt(BraceStmt *stmt) {

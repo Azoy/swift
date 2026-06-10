@@ -10,6 +10,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "swift/AST/Type.h"
+#include "swift/SIL/SILInstruction.h"
+#include "swift/SIL/SILValue.h"
+#include <cstddef>
 #define DEBUG_TYPE "sil-variable-name-inference"
 
 #include "swift/Basic/Assertions.h"
@@ -771,6 +775,30 @@ SILValue VariableNameInferrer::findDebugInfoProvidingValueHelper(
       }
     }
 
+    auto derefLoadable = dyn_cast<DereferenceBorrowInst>(searchValue);
+    auto derefAddress = dyn_cast<DereferenceAddrBorrowInst>(searchValue);
+
+    if (derefLoadable || derefAddress) {
+      SILValue operand;
+
+      if (derefLoadable) {
+        operand = derefLoadable->getOperand();
+      } else {
+        operand = derefAddress->getOperand();
+      }
+      
+      if (auto structExtract = dyn_cast<StructExtractInst>(operand)) {
+        auto &ctx = structExtract->getFunction()->getASTContext();
+
+        // Dereferences from 'Ref' decl should ignore the '.builtin' stored
+        // property and directly reference the 'Ref' variable name.
+        if (structExtract->getStructDecl() == ctx.getRefDecl()) {
+          searchValue = structExtract->getOperand();
+          continue;
+        }
+      }
+    }
+    
     // Otherwise, try to see if we have a single value instruction we can look
     // through.
     if (isa<BeginBorrowInst>(searchValue) || isa<LoadInst>(searchValue) ||
@@ -796,7 +824,10 @@ SILValue VariableNameInferrer::findDebugInfoProvidingValueHelper(
         // looking through it the inferrer gives up and the diagnostic falls back
         // to the generic "unknown pattern" catch-all.
         isa<InitExistentialRefInst>(searchValue) ||
-        isa<InitExistentialAddrInst>(searchValue)) {
+        isa<InitExistentialAddrInst>(searchValue) ||
+
+        isa<DereferenceBorrowInst>(searchValue) ||
+        isa<DereferenceAddrBorrowInst>(searchValue)) {
       searchValue = cast<SingleValueInstruction>(searchValue)->getOperand(0);
       continue;
     }
