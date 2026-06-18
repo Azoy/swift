@@ -520,6 +520,13 @@ void ImplicitlyUnwrappedOptionalTypeRepr::printImpl(ASTPrinter &Printer,
   Printer << "!";
 }
 
+void PointerTypeRepr::printImpl(ASTPrinter &Printer,
+                                const PrintOptions &Opts,
+                                NonRecursivePrintOptions nrOpts) const {
+  printTypeRepr(Base, Printer, Opts);
+  Printer << "*";
+}
+
 TupleTypeRepr::TupleTypeRepr(ArrayRef<TupleTypeReprElement> Elements,
                              SourceRange Parens)
     : TypeRepr(TypeReprKind::Tuple), Parens(Parens) {

@@ -1519,11 +1519,19 @@ public:
   ParserResult<TypeRepr>
   parseTypeImplicitlyUnwrappedOptional(ParserResult<TypeRepr> Base);
 
+  ParserResult<TypeRepr> parseTypePointer(ParserResult<TypeRepr> Base);
+
   bool isOptionalToken(const Token &T) const;
   SourceLoc consumeOptionalToken();
   
   bool isImplicitlyUnwrappedOptionalToken(const Token &T) const;
   SourceLoc consumeImplicitlyUnwrappedOptionalToken();
+
+  bool isPointerToken(const Token &T) const;
+  SourceLoc consumePointerToken();
+
+  bool isRefToken(const Token &T) const;
+  SourceLoc consumeRefToken();
 
   //===--------------------------------------------------------------------===//
   // Pattern Parsing

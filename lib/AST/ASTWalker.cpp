@@ -2325,6 +2325,10 @@ bool Traversal::visitImplicitlyUnwrappedOptionalTypeRepr(ImplicitlyUnwrappedOpti
   return doIt(T->getBase());
 }
 
+bool Traversal::visitPointerTypeRepr(PointerTypeRepr *T) {
+  return doIt(T->getBase());
+}
+
 bool Traversal::visitVarargTypeRepr(VarargTypeRepr *T) {
   return doIt(T->getElementType());
 }

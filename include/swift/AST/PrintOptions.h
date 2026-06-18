@@ -674,6 +674,9 @@ public:
   /// Whether to always desugar optional types from `base_type?` to `Optional<base_type>`
   bool AlwaysDesugarOptionalTypes = false;
 
+  /// Whether to always desugar pointer types from `base_type*` to `UnsafePointer<base_type>`
+  bool AlwaysDesugarPointerTypes = false;
+
   /// Whether to always print explicit `Pack{...}` around pack
   /// types.
   ///

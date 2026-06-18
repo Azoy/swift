@@ -1009,6 +1009,18 @@ case TypeKind::Id:
       return OptionalType::get(baseTy);
     }
 
+    case TypeKind::Pointer: {
+      auto pointer = cast<PointerType>(base);
+      auto baseTy = doIt(pointer->getBaseType(), pos);
+      if (!baseTy)
+        return Type();
+
+      if (baseTy.getPointer() == pointer->getBaseType().getPointer())
+        return t;
+
+      return PointerType::get(baseTy);
+    }
+
     case TypeKind::VariadicSequence: {
       auto seq = cast<VariadicSequenceType>(base);
       auto baseTy = doIt(seq->getBaseType(), pos);

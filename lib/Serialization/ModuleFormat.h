@@ -58,7 +58,7 @@ const uint16_t SWIFTMODULE_VERSION_MAJOR = 0;
 /// describe what change you made. The content of this comment isn't important;
 /// it just ensures a conflict if two people change the module format.
 /// Don't worry about adhering to the 80-column limit for this line.
-const uint16_t SWIFTMODULE_VERSION_MINOR = 1006; // debug reconstruction blocks
+const uint16_t SWIFTMODULE_VERSION_MINOR = 1007; // pointer type
 
 /// A standard hash seed used for all string hashes in a serialized module.
 ///
@@ -1576,6 +1576,7 @@ namespace decls_block {
 
   SYNTAX_SUGAR_TYPE_LAYOUT(ArraySliceTypeLayout, ARRAY_SLICE_TYPE);
   SYNTAX_SUGAR_TYPE_LAYOUT(OptionalTypeLayout, OPTIONAL_TYPE);
+  SYNTAX_SUGAR_TYPE_LAYOUT(PointerTypeLayout, POINTER_TYPE);
   SYNTAX_SUGAR_TYPE_LAYOUT(VariadicSequenceTypeLayout, VARIADIC_SEQUENCE_TYPE);
   SYNTAX_SUGAR_TYPE_LAYOUT(ExistentialTypeLayout, EXISTENTIAL_TYPE);
 

@@ -2261,6 +2261,9 @@ Type SugarType::getSinglyDesugaredTypeSlow() {
   case TypeKind::Dictionary:
     implDecl = Context->getDictionaryDecl();
     break;
+  case TypeKind::Pointer:
+    implDecl = Context->getUnsafePointerDecl();
+    break;
   }
   if (!implDecl) {
     return ErrorType::get(*Context);

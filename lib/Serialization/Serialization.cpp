@@ -6319,6 +6319,11 @@ public:
     serializeSimpleWrapper<OptionalTypeLayout>(optionalTy->getBaseType());
   }
 
+  void visitPointerType(const PointerType *pointerTy) {
+    using namespace decls_block;
+    serializeSimpleWrapper<PointerTypeLayout>(pointerTy->getBaseType());
+  }
+
   void
   visitProtocolCompositionType(const ProtocolCompositionType *composition) {
     using namespace decls_block;
@@ -6616,6 +6621,7 @@ void Serializer::writeAllDeclsAndTypes() {
   registerDeclTypeAbbr<ReferenceStorageTypeLayout>();
   registerDeclTypeAbbr<UnboundGenericTypeLayout>();
   registerDeclTypeAbbr<OptionalTypeLayout>();
+  registerDeclTypeAbbr<PointerTypeLayout>();
   registerDeclTypeAbbr<DynamicSelfTypeLayout>();
   registerDeclTypeAbbr<PackExpansionTypeLayout>();
   registerDeclTypeAbbr<PackElementTypeLayout>();

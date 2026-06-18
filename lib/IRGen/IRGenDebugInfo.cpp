@@ -2482,6 +2482,7 @@ private:
     case TypeKind::ArraySlice:
     case TypeKind::InlineArray:
     case TypeKind::Optional:
+    case TypeKind::Pointer:
     case TypeKind::VariadicSequence: {
       auto *SyntaxSugarTy = cast<SyntaxSugarType>(BaseTy);
       auto *CanTy = SyntaxSugarTy->getSinglyDesugaredType();

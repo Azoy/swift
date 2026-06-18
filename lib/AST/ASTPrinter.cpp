@@ -7800,6 +7800,17 @@ public:
     }
   }
 
+  void visitPointerType(PointerType *T,
+                        NonRecursivePrintOptions nrOptions) {
+    if (Options.AlwaysDesugarPointerTypes) {
+      visit(T->getDesugaredType(), nrOptions);
+      return;
+    }
+
+    printWithParensIfNotSimple(T->getBaseType());
+    Printer << "*";
+  }
+
   void visitVariadicSequenceType(VariadicSequenceType *T,
                                  NonRecursivePrintOptions nrOptions) {
     if (Options.PrintForSIL) {

@@ -715,6 +715,8 @@ private:
   NeverNullType resolveImplicitlyUnwrappedOptionalType(
       ImplicitlyUnwrappedOptionalTypeRepr *repr, TypeResolutionOptions options,
       bool isDirect);
+  NeverNullType resolvePointerType(PointerTypeRepr *repr,
+                                   TypeResolutionOptions options);
   NeverNullType resolveVarargType(VarargTypeRepr *repr,
                                   TypeResolutionOptions options);
   NeverNullType resolvePackType(PackTypeRepr *repr,
@@ -2988,6 +2990,9 @@ NeverNullType TypeResolver::resolveType(TypeRepr *repr,
     auto iuoRepr = cast<ImplicitlyUnwrappedOptionalTypeRepr>(repr);
     return resolveImplicitlyUnwrappedOptionalType(iuoRepr, options, isDirect);
   }
+
+  case TypeReprKind::Pointer:
+    return resolvePointerType(cast<PointerTypeRepr>(repr), options);
 
   case TypeReprKind::Vararg:
     return resolveVarargType(cast<VarargTypeRepr>(repr), options);
@@ -6219,6 +6224,41 @@ NeverNullType TypeResolver::resolveImplicitlyUnwrappedOptionalType(
   return uncheckedOptionalTy;
 }
 
+NeverNullType TypeResolver::resolvePointerType(PointerTypeRepr *repr,
+                                               TypeResolutionOptions options) {
+  ASTContext &ctx = getASTContext();
+  auto baseTy = resolveType(repr->getBase(), options.withoutContext());
+
+  if (baseTy->hasError()) {
+    return ErrorType::get(ctx);
+  }
+
+  // If the standard library isn't loaded, we ought to let the user know
+  // something has gone terribly wrong, since the rest of the compiler is going
+  // to assume it can canonicalize T* to UnsafePointer<T>.
+  {
+    // Check that we can validly substitute the baseTy into a pointer. We do not
+    // actually resolve to that valid pointer type, as we want to return the
+    // sugared Type node PointerType instead!
+    auto *ptrDecl = ctx.getUnsafePointerDecl();
+    if (!ptrDecl) {
+      diagnose(repr->getStarLoc(), diag::sugar_type_not_found, 0);
+      return ErrorType::get(ctx);
+    }
+
+    Type genericArgs[1] = {baseTy};
+    auto ptrTy =
+        resolution.applyUnboundGenericArguments(ptrDecl, /*parentTy=*/nullptr,
+                                                repr->getStarLoc(),
+                                                genericArgs);
+    if (ptrTy->hasError()) {
+      return ErrorType::get(ctx);
+    }
+  }
+
+  return PointerType::get(baseTy);
+}
+
 NeverNullType TypeResolver::resolveVarargType(VarargTypeRepr *repr,
                                               TypeResolutionOptions options) {
   auto element = resolveType(repr->getElementType(), options);
@@ -7052,6 +7092,7 @@ private:
     case TypeReprKind::LifetimeDependent:
     case TypeReprKind::GenericArgumentExpr:
     case TypeReprKind::NonisolatedNonsending:
+    case TypeReprKind::Pointer:
       return false;
     }
   }

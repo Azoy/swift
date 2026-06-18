@@ -8262,6 +8262,18 @@ Expected<Type> DESERIALIZE_TYPE(OPTIONAL_TYPE)(
   return OptionalType::get(baseTy.get());
 }
 
+Expected<Type> DESERIALIZE_TYPE(POINTER_TYPE)(
+    ModuleFile &MF, SmallVectorImpl<uint64_t> &scratch, StringRef blobData) {
+  TypeID baseID;
+  decls_block::PointerTypeLayout::readRecord(scratch, baseID);
+
+  auto baseTy = MF.getTypeChecked(baseID);
+  if (!baseTy)
+    return baseTy.takeError();
+
+  return PointerType::get(baseTy.get());
+}
+
 Expected<Type> DESERIALIZE_TYPE(VARIADIC_SEQUENCE_TYPE)(
     ModuleFile &MF, SmallVectorImpl<uint64_t> &scratch, StringRef blobData) {
   TypeID baseID;

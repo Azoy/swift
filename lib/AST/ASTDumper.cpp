@@ -4918,6 +4918,12 @@ public:
     printFoot();
   }
 
+  void visitPointerTypeRepr(PointerTypeRepr *T, Label label) {
+    printCommon("type_pointer", label);
+    printRec(T->getBase(), Label::optional("base"));
+    printFoot();
+  }
+
   void visitOpaqueReturnTypeRepr(OpaqueReturnTypeRepr *T, Label label) {
     printCommon("type_opaque_return", label);
     printRec(T->getConstraint(), Label::optional("constraint"));
@@ -6798,6 +6804,12 @@ namespace {
 
     void visitOptionalType(OptionalType *T, Label label) {
       printCommon("optional_type", label);
+      printRec(T->getBaseType(), Label::optional("base_type"));
+      printFoot();
+    }
+
+    void visitPointerType(PointerType *T, Label label) {
+      printCommon("pointer_type", label);
       printRec(T->getBaseType(), Label::optional("base_type"));
       printFoot();
     }

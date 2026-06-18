@@ -6634,6 +6634,22 @@ public:
   }
 };
 
+/// The type T*, which is always sugar for a library type.
+class PointerType : public UnarySyntaxSugarType {
+  PointerType(const ASTContext &ctx,Type base,
+               RecursiveTypeProperties properties)
+    : UnarySyntaxSugarType(TypeKind::Pointer, ctx, base, properties) {}
+
+public:
+  /// Return a uniqued pointer type with the specified base type.
+  static PointerType *get(Type baseTy);
+
+  // Implement isa/cast/dyncast/etc.
+  static bool classof(const TypeBase *T) {
+    return T->getKind() == TypeKind::Pointer;
+  }
+};
+
 /// The dictionary type [K : V], which is syntactic sugar for Dictionary<K, V>.
 ///
 /// Example:

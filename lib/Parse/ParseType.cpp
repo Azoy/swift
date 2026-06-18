@@ -317,6 +317,10 @@ ParserResult<TypeRepr> Parser::parseTypeSimple(
         ty = parseTypeImplicitlyUnwrappedOptional(ty);
         continue;
       }
+      if (isPointerToken(Tok)) {
+        ty = parseTypePointer(ty);
+        continue;
+      }
       // Parse legacy array types for migration.
       if (Tok.is(tok::l_square) && reason != ParseTypeReason::CustomAttribute) {
         ty = parseTypeArray(ty);
@@ -1570,6 +1574,21 @@ bool Parser::isImplicitlyUnwrappedOptionalToken(const Token &T) const {
   return false;
 }
 
+bool Parser::isPointerToken(const Token &T) const {
+  // A postfix '*' by itself is obviously a pointer.
+  if (T.is(tok::star_postfix))
+    return true;
+  // A postfix or bound infix operator token that begins with '*' can be
+  // a pointer too.
+  if (T.is(tok::oper_postfix) || T.is(tok::oper_binary_unspaced)) {
+    // We'll munch off the '*', so long as it is left-bound with
+    // the type (i.e., parsed as a postfix or unspaced binary operator).
+    return T.getText().starts_with("*");
+  }
+
+  return false;
+}
+
 SourceLoc Parser::consumeOptionalToken() {
   assert(isOptionalToken(Tok) && "not a '?' token?!");
   return consumeStartingCharacterOfCurrentToken(tok::question_postfix);
@@ -1579,6 +1598,11 @@ SourceLoc Parser::consumeImplicitlyUnwrappedOptionalToken() {
   assert(isImplicitlyUnwrappedOptionalToken(Tok) && "not a '!' token?!");
   // If the text of the token is just '!', grab the next token.
   return consumeStartingCharacterOfCurrentToken(tok::exclaim_postfix);
+}
+
+SourceLoc Parser::consumePointerToken() {
+  ASSERT(isPointerToken(Tok) && "not a '*' token?!");
+  return consumeStartingCharacterOfCurrentToken(tok::star_postfix);
 }
 
 /// Parse a single optional suffix, given that we are looking at the
@@ -1598,6 +1622,13 @@ Parser::parseTypeImplicitlyUnwrappedOptional(ParserResult<TypeRepr> base) {
   auto TyR =
       new (Context) ImplicitlyUnwrappedOptionalTypeRepr(base.get(), exclamationLoc);
   return makeParserResult(ParserStatus(base), TyR);
+}
+
+ParserResult<TypeRepr>
+Parser::parseTypePointer(ParserResult<TypeRepr> base) {
+  SourceLoc starLoc = consumePointerToken();
+  auto tyr = new (Context) PointerTypeRepr(base.get(), starLoc);
+  return makeParserResult(ParserStatus(base), tyr);
 }
 
 ParserResult<TypeRepr> Parser::parseTypeOrValue() {

@@ -767,6 +767,39 @@ private:
   friend class TypeRepr;
 };
 
+/// A pointer type.
+/// \code
+///   Foo*
+/// \endcode
+class PointerTypeRepr : public TypeRepr {
+  TypeRepr *Base;
+  SourceLoc StarLoc;
+
+public:
+  PointerTypeRepr(TypeRepr *Base, SourceLoc Star)
+    : TypeRepr(TypeReprKind::Pointer), Base(Base), StarLoc(Star) {
+  }
+
+  TypeRepr *getBase() const { return Base; }
+  SourceLoc getStarLoc() const { return StarLoc; }
+
+  static bool classof(const TypeRepr *T) {
+    return T->getKind() == TypeReprKind::Pointer;
+  }
+
+private:
+  SourceLoc getStartLocImpl() const { return Base->getStartLoc(); }
+  SourceLoc getEndLocImpl() const {
+    return StarLoc.isValid() ? StarLoc : Base->getEndLoc();
+  }
+  SourceLoc getLocImpl() const {
+    return StarLoc.isValid() ? StarLoc : Base->getLoc();
+  }
+  void printImpl(ASTPrinter &Printer, const PrintOptions &opts,
+                 NonRecursivePrintOptions nrOpts) const;
+  friend class TypeRepr;
+};
+
 /// A parsed element within a tuple type.
 struct TupleTypeReprElement {
   Identifier Name;
@@ -1731,6 +1764,7 @@ inline bool TypeRepr::isSimple() const {
   case TypeReprKind::LifetimeDependent:
   case TypeReprKind::GenericArgumentExpr:
   case TypeReprKind::NonisolatedNonsending:
+  case TypeReprKind::Pointer:
     return true;
   }
   llvm_unreachable("bad TypeRepr kind");

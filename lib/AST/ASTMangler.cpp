@@ -1629,6 +1629,12 @@ void ASTMangler::appendType(Type type, GenericSignature sig,
       appendOperator("XSq");
       return;
 
+    case TypeKind::Pointer:
+      ASSERT(DWARFMangling && "sugared types are only legal for the debugger");
+      appendType(cast<PointerType>(tybase)->getBaseType(), sig, forDecl);
+      appendOperator("XSP");
+      return;
+
     case TypeKind::Dictionary:
       assert(DWARFMangling && "sugared types are only legal for the debugger");
       appendType(cast<DictionaryType>(tybase)->getKeyType(), sig, forDecl);
