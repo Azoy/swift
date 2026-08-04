@@ -53,26 +53,100 @@
 @usableFromInline
 internal struct _RigidArray<Element: ~Copyable>: ~Copyable {
   @usableFromInline
-  internal var _storage: UnsafeMutableBufferPointer<Element>
-
-  @usableFromInline
-  internal var _count: Int
+  internal var _ptr: UnsafeMutableRawPointer
 
   @export(implementation)
   deinit {
-    unsafe _storage.extracting(0 ..< _count).deinitialize()
-    unsafe _storage.deallocate()
-  }
-  
-  @export(implementation)
-  internal init(_storage: UnsafeMutableBufferPointer<Element>, count: Int) {
-    unsafe self._storage = _storage
-    self._count = count
+    if unsafe _ptr == _emptyRigidArrayPtr {
+      return
+    }
+
+    unsafe _elementPtr.deinitialize(count: _count)
+    unsafe _ptr.deallocate()
   }
 }
 
 @available(SwiftStdlib 6.4, *)
 extension _RigidArray: @unchecked Sendable where Element: Sendable & ~Copyable {}
+
+public let _emptyRigidArray = (count: 0, capacity: 0)
+
+@export(implementation)
+@_transparent
+public var _emptyRigidArrayPtr: UnsafeRawPointer {
+  UnsafeRawPointer(Builtin.addressOfBorrow(_emptyRigidArray))
+}
+
+@available(SwiftStdlib 6.4, *)
+extension _RigidArray where Element: ~Copyable {
+  @available(SwiftStdlib 6.4, *)
+  @export(implementation)
+  @_transparent
+  static var _alignment: Int {
+    Swift.max(MemoryLayout<Int>.alignment, MemoryLayout<Element>.alignment)
+  }
+
+  // Note: This includes any potential padding bytes that may occur.
+  @available(SwiftStdlib 6.4, *)
+  @export(implementation)
+  @_transparent
+  static var _headerSize: Int {
+    let alignMask = Self._alignment &- 1
+    let header = MemoryLayout<Int>.size &* 2
+
+    return (header &+ alignMask) & ~alignMask
+  }
+
+  @available(SwiftStdlib 6.4, *)
+  @usableFromInline
+  internal static func _allocate(capacity: Int) -> UnsafeMutableRawPointer {
+    let elementSize = MemoryLayout<Element>.stride &* capacity
+    // _headerSize already handles any padding bytes we may need here.
+    let size = Self._headerSize &+ elementSize
+
+    let ptr = UnsafeMutableRawPointer.allocate(
+      byteCount: size,
+      alignment: Self._alignment
+    )
+
+    // Update the capacity field to however much we just allocated.
+    unsafe (ptr + MemoryLayout<Int>.size).storeBytes(of: capacity, as: Int.self)
+
+    return unsafe ptr
+  }
+
+  @available(SwiftStdlib 6.4, *)
+  @export(implementation)
+  @_transparent
+  internal var _count: Int {
+    get {
+      unsafe _assumeNonNegative(_ptr.load(as: Int.self))
+    }
+
+    set {
+      if unsafe _ptr != _emptyRigidArrayPtr {
+        unsafe _ptr.storeBytes(of: newValue, as: Int.self)
+      }
+    }
+  }
+
+  @available(SwiftStdlib 6.4, *)
+  @export(implementation)
+  @_transparent
+  internal var _elementPtr: UnsafeMutablePointer<Element> {
+    unsafe (_ptr + Self._headerSize).assumingMemoryBound(to: Element.self)
+  }
+
+  @available(SwiftStdlib 6.4, *)
+  @export(implementation)
+  @_transparent
+  internal var _storage: UnsafeMutableBufferPointer<Element> {
+    unsafe UnsafeMutableBufferPointer<Element>(
+      _uncheckedStart: _elementPtr,
+      count: capacity
+    )
+  }
+}
 
 @available(SwiftStdlib 6.4, *)
 extension _RigidArray where Element: ~Copyable {
@@ -83,7 +157,7 @@ extension _RigidArray where Element: ~Copyable {
   @export(implementation)
   @_transparent
   internal var capacity: Int {
-    _assumeNonNegative(unsafe _storage.count)
+    unsafe _assumeNonNegative((_ptr + MemoryLayout<Int>.size).load(as: Int.self))
   }
 
   /// The number of additional elements that can be added to this array without
@@ -247,12 +321,24 @@ extension _RigidArray where Element: ~Copyable {
   @export(implementation)
   internal mutating func setCapacity(_ newCapacity: Int) {
     guard newCapacity != capacity else { return }
-    let newStorage: UnsafeMutableBufferPointer<Element> = .allocate(
-      capacity: Swift.max(newCapacity, count))
-    let i = unsafe newStorage.moveInitialize(fromContentsOf: _items)
-    _internalInvariant(i == count)
-    unsafe _storage.deallocate()
-    unsafe _storage = newStorage
+
+    let count = _count
+    let newPtr = unsafe Self._allocate(capacity: Swift.max(newCapacity, count))
+
+    if count > 0 {
+      unsafe (newPtr + Self._headerSize).moveInitializeMemory(
+        as: Element.self,
+        from: _elementPtr,
+        count: count
+      )
+    }
+
+    if capacity > 0 {
+      unsafe _ptr.deallocate()
+    }
+
+    unsafe _ptr = newPtr
+    _count = count
   }
 
   /// Ensure that the array has capacity to store the specified number of

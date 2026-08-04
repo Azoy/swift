@@ -19,8 +19,7 @@ extension _RigidArray where Element: ~Copyable {
   @export(implementation)
   @_transparent
   internal init() {
-    unsafe _storage = .init(start: nil, count: 0)
-    _count = 0
+    unsafe _ptr = UnsafeMutableRawPointer(mutating: _emptyRigidArrayPtr)
   }
   
   /// Initializes a new rigid array with the specified capacity and no elements.
@@ -29,11 +28,10 @@ extension _RigidArray where Element: ~Copyable {
   internal init(capacity: Int) {
     _precondition(capacity >= 0, "Array capacity must be nonnegative")
     if capacity > 0 {
-      unsafe _storage = .allocate(capacity: capacity)
+      unsafe _ptr = Self._allocate(capacity: capacity)
     } else {
-      unsafe _storage = .init(start: nil, count: 0)
+      unsafe _ptr = UnsafeMutableRawPointer(mutating: _emptyRigidArrayPtr)
     }
-    _count = 0
   }
 }
 
