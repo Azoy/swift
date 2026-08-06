@@ -1385,7 +1385,7 @@ bool SILType::isBorrowedByAddress(const SILFunction &fn) const {
   if (isAddressableForDeps(fn))
     return true;
 
-  if (!SILModuleConventions(fn.getModule()).useLoweredAddresses())
+  if (!SILAddressConventions::forFunction(fn).useLoweredAddresses())
     return false;
 
   return !isLoadable(fn);

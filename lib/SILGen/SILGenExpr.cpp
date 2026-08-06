@@ -7638,33 +7638,44 @@ RValue RValueEmitter::visitDereferenceExpr(DereferenceExpr *E, SGFContext C) {
     return RValue(SGF, E, SGF.emitAddressOfLValue(E, std::move(lv)));
   }
 
-  auto refLv = SGF.emitLValue(E->getSubExpr(), SGFAccessKind::BorrowedObjectRead);
-  auto ref = SGF.emitLoadOfLValue(E->getSubExpr(), std::move(refLv), C);
-  ref.dump();
+  auto ref = SGF.emitRValueAsSingleValue(E->getSubExpr());
+  auto refTy = ref.getType();
+  auto referentTy = refTy.getASTType()
+      ->castTo<BoundGenericStructType>()
+      ->getGenericArgs()[0];
+  auto loweredReferentTy = SGF.getLoweredType(referentTy);
 
-  // Otherwise, we're dereferencing a regular 'Ref' who needs to 
-  // If the reference is address only, then it's generic in some way that
-  // requires the ref to persist in memory.
-  // if (refTy.isAddressOnly(SGF.F)) {
-  //   deref = ManagedValue::forBorrowedAddressRValue(
-  //       SGF.B.createDereferenceBorrowAddr(loc, base.getValue()));
-  // } else {
-  //   // Otherwise, the reference is always loadable. Load it if we happen to
-  //   // have an addressed ref.
-  //   if (refTy.isAddress()) {
-  //     base = SGF.emitLoad(loc, base.getValue(), SGF.getTypeLowering(refTy),
-  //                        SGFContext(), IsNotTake);
-  //   }
+  auto refDecl = SGF.getASTContext().getRefDecl();
+  auto borrowProperty = refDecl->getStoredProperties()[0];
 
-  //   if (loweredReferentTy.isBorrowedByAddress(SGF.F)) {
-  //     deref = ManagedValue::forBorrowedAddressRValue(
-  //         SGF.B.createDereferenceAddrBorrow(loc, base.getValue()));
-  //   } else {
-  //     deref = ManagedValue::forBorrowedObjectRValue(
-  //         SGF.B.createDereferenceBorrow(loc, base.getValue()));
-  //   }
-  // }
-  llvm_unreachable("idk man");
+  if (refTy.isAddressOnly(SGF.F)) {
+    auto borrow = SGF.B.createStructElementAddr(E, ref.getLValueAddress(),
+                                                borrowProperty);
+
+    auto deref = ManagedValue::forBorrowedAddressRValue(
+        SGF.B.createDereferenceBorrowAddr(E, borrow));
+    return RValue(SGF, E, deref);
+  }
+
+  if (refTy.isAddress()) {
+    ref = SGF.emitLoad(E, ref.getValue(), SGF.getTypeLowering(refTy), C,
+                       IsNotTake);
+  }
+
+  auto borrow = SGF.B.createStructExtract(E, ref, borrowProperty);
+  ManagedValue deref;
+  
+  if (loweredReferentTy.isBorrowedByAddress(SGF.F)) {
+    deref = ManagedValue::forBorrowedAddressRValue(
+        SGF.B.createDereferenceAddrBorrow(E, borrow.getValue()));
+  } else {
+    deref = ManagedValue::forBorrowedRValue(
+        SGF.B.createDereferenceBorrow(E, borrow.getValue()));
+  }
+
+  SGF.F.dump();
+
+  return RValue(SGF, E, deref);
 }
 
 ManagedValue
