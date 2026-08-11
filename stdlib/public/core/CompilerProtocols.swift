@@ -396,7 +396,8 @@ public protocol ExpressibleByBooleanLiteral {
   init(booleanLiteral value: BooleanLiteralType)
 }
 
-public protocol _ExpressibleByBuiltinUnicodeScalarLiteral {
+public protocol _ExpressibleByBuiltinUnicodeScalarLiteral: ~Escapable {
+  @_lifetime(immortal)
   init(_builtinUnicodeScalarLiteral value: Builtin.Int32)
 }
 
@@ -417,26 +418,29 @@ public protocol _ExpressibleByBuiltinUnicodeScalarLiteral {
 ///
 /// To add `ExpressibleByUnicodeScalarLiteral` conformance to your custom type,
 /// implement the required initializer.
-public protocol ExpressibleByUnicodeScalarLiteral {
+public protocol ExpressibleByUnicodeScalarLiteral: ~Escapable {
   /// A type that represents a Unicode scalar literal.
   ///
   /// Valid types for `UnicodeScalarLiteralType` are `Unicode.Scalar`,
   /// `Character`, `String`, and `StaticString`.
-  associatedtype UnicodeScalarLiteralType: _ExpressibleByBuiltinUnicodeScalarLiteral
+  associatedtype UnicodeScalarLiteralType: _ExpressibleByBuiltinUnicodeScalarLiteral & ~Escapable
 
   /// Creates an instance initialized to the given value.
   ///
   /// - Parameter value: The value of the new instance.
+  @_lifetime(immortal)
   init(unicodeScalarLiteral value: UnicodeScalarLiteralType)
 }
 
 public protocol _ExpressibleByBuiltinExtendedGraphemeClusterLiteral
-  : _ExpressibleByBuiltinUnicodeScalarLiteral {
+  : ~Escapable, _ExpressibleByBuiltinUnicodeScalarLiteral {
 
+  @_lifetime(immortal)
   init(
     _builtinExtendedGraphemeClusterLiteral start: Builtin.RawPointer,
     utf8CodeUnitCount: Builtin.Word,
-    isASCII: Builtin.Int1)
+    isASCII: Builtin.Int1
+  )
 }
 
 /// A type that can be initialized with a string literal containing a single
@@ -463,18 +467,19 @@ public protocol _ExpressibleByBuiltinExtendedGraphemeClusterLiteral
 /// To add `ExpressibleByExtendedGraphemeClusterLiteral` conformance to your
 /// custom type, implement the required initializer.
 public protocol ExpressibleByExtendedGraphemeClusterLiteral
-  : ExpressibleByUnicodeScalarLiteral {
+  : ~Escapable, ExpressibleByUnicodeScalarLiteral {
 
   /// A type that represents an extended grapheme cluster literal.
   ///
   /// Valid types for `ExtendedGraphemeClusterLiteralType` are `Character`,
   /// `String`, and `StaticString`.
   associatedtype ExtendedGraphemeClusterLiteralType
-    : _ExpressibleByBuiltinExtendedGraphemeClusterLiteral
+    : _ExpressibleByBuiltinExtendedGraphemeClusterLiteral & ~Escapable
   
   /// Creates an instance initialized to the given value.
   ///
   /// - Parameter value: The value of the new instance.
+  @_lifetime(immortal)
   init(extendedGraphemeClusterLiteral value: ExtendedGraphemeClusterLiteralType)
 }
 
@@ -488,12 +493,14 @@ extension ExpressibleByExtendedGraphemeClusterLiteral
 }
 
 public protocol _ExpressibleByBuiltinStringLiteral
-  : _ExpressibleByBuiltinExtendedGraphemeClusterLiteral {
+  : ~Escapable, _ExpressibleByBuiltinExtendedGraphemeClusterLiteral {
 
+  @_lifetime(immortal)
   init(
     _builtinStringLiteral start: Builtin.RawPointer,
     utf8CodeUnitCount: Builtin.Word,
-    isASCII: Builtin.Int1)
+    isASCII: Builtin.Int1
+  )
 }
 
 /// A type that can be initialized with a string literal.
@@ -510,16 +517,17 @@ public protocol _ExpressibleByBuiltinStringLiteral
 /// To add `ExpressibleByStringLiteral` conformance to your custom type,
 /// implement the required initializer.
 public protocol ExpressibleByStringLiteral
-  : ExpressibleByExtendedGraphemeClusterLiteral {
+  : ~Escapable, ExpressibleByExtendedGraphemeClusterLiteral {
   
   /// A type that represents a string literal.
   ///
   /// Valid types for `StringLiteralType` are `String` and `StaticString`.
-  associatedtype StringLiteralType: _ExpressibleByBuiltinStringLiteral
+  associatedtype StringLiteralType: _ExpressibleByBuiltinStringLiteral & ~Escapable
   
   /// Creates an instance initialized to the given string value.
   ///
   /// - Parameter value: The value of the new instance.
+  @_lifetime(immortal)
   init(stringLiteral value: StringLiteralType)
 }
 

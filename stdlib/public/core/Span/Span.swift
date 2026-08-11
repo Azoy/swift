@@ -1133,3 +1133,77 @@ extension Span where Element: Hashable & ~Copyable {
     }
   }
 }
+
+#if !SPAN_COMPATIBILITY_STUB
+
+@available(SwiftStdlib 6.5, *)
+extension Span<UInt8>: _ExpressibleByBuiltinUnicodeScalarLiteral {
+  @export(implementation)
+  @_lifetime(immortal)
+  @_transparent
+  public init(_builtinUnicodeScalarLiteral value: Builtin.Int32) {
+    Builtin.unreachable()
+  }
+}
+
+@available(SwiftStdlib 6.5, *)
+extension Span<UInt8>: _ExpressibleByBuiltinExtendedGraphemeClusterLiteral {
+  @export(implementation)
+  @_lifetime(immortal)
+  @_transparent
+  public init(
+    _builtinExtendedGraphemeClusterLiteral start: Builtin.RawPointer,
+    utf8CodeUnitCount: Builtin.Word,
+    isASCII: Builtin.Int1
+  ) {
+    unsafe _pointer = UnsafeRawPointer(start)
+    _count = Int(utf8CodeUnitCount)
+  }
+}
+
+@available(SwiftStdlib 6.5, *)
+extension Span<UInt8>: _ExpressibleByBuiltinStringLiteral {
+  @export(implementation)
+  @_lifetime(immortal)
+  @_transparent
+  public init(
+    _builtinStringLiteral start: Builtin.RawPointer,
+    utf8CodeUnitCount: Builtin.Word,
+    isASCII: Builtin.Int1
+  ) {
+    unsafe _pointer = UnsafeRawPointer(start)
+    _count = Int(utf8CodeUnitCount)
+  }
+}
+
+@available(SwiftStdlib 6.5, *)
+extension Span<UInt8>: ExpressibleByUnicodeScalarLiteral {
+  @export(implementation)
+  @_lifetime(immortal)
+  @_transparent
+  public init(unicodeScalarLiteral value: Self) {
+    Builtin.unreachable()
+  }
+}
+
+@available(SwiftStdlib 6.5, *)
+extension Span<UInt8>: ExpressibleByExtendedGraphemeClusterLiteral {
+  @export(implementation)
+  @_lifetime(immortal)
+  @_transparent
+  public init(extendedGraphemeClusterLiteral value: Self) {
+    self = unsafe _overrideLifetime(value, copying: ())
+  }
+}
+
+@available(SwiftStdlib 6.5, *)
+extension Span<UInt8>: ExpressibleByStringLiteral {
+  @export(implementation)
+  @_lifetime(immortal)
+  @_transparent
+  public init(stringLiteral value: Self) {
+    self = unsafe _overrideLifetime(value, copying: ())
+  }
+}
+
+#endif // !SPAN_COMPATIBILITY_STUB
