@@ -941,6 +941,14 @@ static ValueDecl *getLoadOperation(ASTContext &ctx, Identifier id) {
                             _typeparam(0));
 }
 
+static ValueDecl *getLoadVolatileOperation(ASTContext &ctx, Identifier id) {
+return getBuiltinFunction(ctx, id, _thin,
+                          _generics(_unrestricted,
+                                    _conformsTo(_typeparam(0), _bitwiseCopyable)),
+                          _parameters(_rawPointer),
+                          _typeparam(0));
+}
+
 static ValueDecl *getTakeOperation(ASTContext &ctx, Identifier id) {
   return getBuiltinFunction(ctx, id, _thin,
                             _generics(_unrestricted),
@@ -951,6 +959,15 @@ static ValueDecl *getTakeOperation(ASTContext &ctx, Identifier id) {
 static ValueDecl *getStoreOperation(ASTContext &ctx, Identifier id) {
   return getBuiltinFunction(ctx, id, _thin,
                             _generics(_unrestricted),
+                            _parameters(_owned(_typeparam(0)),
+                                        _rawPointer),
+                            _void);
+}
+
+static ValueDecl *getStoreVolatileOperation(ASTContext &ctx, Identifier id) {
+  return getBuiltinFunction(ctx, id, _thin,
+                            _generics(_unrestricted,
+                                      _conformsTo(_typeparam(0), _bitwiseCopyable)),
                             _parameters(_owned(_typeparam(0)),
                                         _rawPointer),
                             _void);
@@ -3361,6 +3378,9 @@ ValueDecl *swift::getBuiltinValueDecl(ASTContext &Context, Identifier Id) {
     if (!Types.empty()) return nullptr;
     return getLoadOperation(Context, Id);
 
+  case BuiltinValueKind::LoadVolatile:
+    return getLoadVolatileOperation(Context, Id);
+
   case BuiltinValueKind::Take:
     if (!Types.empty()) return nullptr;
     return getTakeOperation(Context, Id);
@@ -3375,6 +3395,9 @@ ValueDecl *swift::getBuiltinValueDecl(ASTContext &Context, Identifier Id) {
   case BuiltinValueKind::StoreRaw:
     if (!Types.empty()) return nullptr;
     return getStoreOperation(Context, Id);
+
+  case BuiltinValueKind::StoreVolatile:
+    return getStoreVolatileOperation(Context, Id);
 
   case BuiltinValueKind::DestroyArray:
     if (!Types.empty()) return nullptr;

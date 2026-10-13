@@ -181,6 +181,7 @@ UNINTERESTING_FEATURE(BuiltinAllocRawTyped)
 UNINTERESTING_FEATURE(BuiltinTypedAllocationID)
 UNINTERESTING_FEATURE(MutateAndConsumeInDeinit)
 UNINTERESTING_FEATURE(Cells)
+UNINTERESTING_FEATURE(BuiltinVolatile)
 
 static bool usesFeatureSubscriptParametersWithOwnership(Decl *decl) {
   auto *SD = dyn_cast<SubscriptDecl>(decl);

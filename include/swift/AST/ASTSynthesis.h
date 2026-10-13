@@ -42,6 +42,7 @@ enum SingletonTypeSynthesizer {
   _any,
   _bridgeObject,
   _copyable,
+  _bitwiseCopyable,
   _error,
   _executor, // the 'BuiltinExecutor' type
   _escapable,
@@ -115,6 +116,9 @@ inline Type synthesizeType(SynthesisContext &SC,
         ->getDeclaredInterfaceType();
   case _unconstrainedAny:
     return SC.Context.getUnconstrainedAnyExistentialType();
+  case _bitwiseCopyable:
+    return SC.Context.getProtocol(KnownProtocolKind::BitwiseCopyable)
+        ->getDeclaredInterfaceType();
   }
 }
 

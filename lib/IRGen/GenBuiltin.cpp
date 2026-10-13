@@ -1703,6 +1703,24 @@ void irgen::emitBuiltinCall(IRGenFunction &IGF, const BuiltinInfo &Builtin,
     return;
   }
 
+  case BuiltinValueKind::LoadVolatile: {
+    auto addr = args.claimNext();
+    auto &resultTI = cast<LoadableTypeInfo>(IGF.getTypeInfo(resultType));
+
+    auto load = IGF.Builder.CreateLoad(addr, resultTI.getStorageType(),
+                                       resultTI.getBestKnownAlignment());
+    load->setVolatile(true);
+
+    out.add(load);
+    IGF.CurFn->dump();
+    return;
+  }
+
+  case BuiltinValueKind::StoreVolatile: {
+    IGF.CurFn->dump();
+    llvm_unreachable("idk man");
+  }
+
   case BuiltinValueKind::TaskRemovePriorityEscalationHandler:
   case BuiltinValueKind::TaskRemoveCancellationHandler: {
     auto rawPointer = args.claimNext();

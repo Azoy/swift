@@ -921,6 +921,12 @@ BUILTIN_MISC_OPERATION(AssumeAlignment, "assumeAlignment", "n", Special)
 /// (Builtin.RawPointer, Builtin.Word) -> Builtin.RawPointer
 BUILTIN_MISC_OPERATION(Dereferenceable, "dereferenceable", "n", Special)
 
+/// LoadVolatile has type <T: BitwiseCopyable> (Builtin.RawPointer) -> T.
+BUILTIN_MISC_OPERATION(LoadVolatile, "loadVolatile", "", Special)
+
+/// StoreVolatile has type <T: BitwiseCopyable> (Builtin.RawPointer, T) -> ().
+BUILTIN_MISC_OPERATION(StoreVolatile, "storeVolatile", "", Special)
+
 // BUILTIN_MISC_OPERATION_WITH_SILGEN - Miscellaneous operations that are
 // specially emitted during SIL generation.
 //

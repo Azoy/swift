@@ -709,6 +709,8 @@ CONSTANT_OWNERSHIP_BUILTIN(None, InjectEnumTag)
 CONSTANT_OWNERSHIP_BUILTIN(Owned, DistributedActorAsAnyActor)
 CONSTANT_OWNERSHIP_BUILTIN(Guaranteed, ExtractFunctionIsolation) // unreachable
 CONSTANT_OWNERSHIP_BUILTIN(None, AddressOfRawLayout)
+CONSTANT_OWNERSHIP_BUILTIN(None, LoadVolatile)
+CONSTANT_OWNERSHIP_BUILTIN(None, StoreVolatile)
 
 CONSTANT_OWNERSHIP_BUILTIN(None, TaskAddCancellationHandler)
 CONSTANT_OWNERSHIP_BUILTIN(None, TaskAddCancellationHandlerWithReason)
