@@ -1696,7 +1696,17 @@ void irgen::emitBuiltinCall(IRGenFunction &IGF, const BuiltinInfo &Builtin,
   case BuiltinValueKind::AddressOfRawLayout: {
     auto addr = args.claimNext();
     auto value = IGF.Builder.CreateBitCast(addr, IGF.IGM.Int8PtrTy);
-    out.add(value);
+
+    // Add a use of empty inline assembly for this pointer value. This is to
+    // prevent the LLVM optimizer from using the result of this address through
+    // any projections, etc.
+    llvm::FunctionType *asmFnTy =
+      llvm::FunctionType::get(IGF.IGM.Int8PtrTy, {IGF.IGM.Int8PtrTy},
+                              false /* = isVarArg */);
+    llvm::InlineAsm *inlineAsm =
+      llvm::InlineAsm::get(asmFnTy, "", "r", true /* = SideEffects */);
+    auto asmCall = IGF.Builder.CreateAsmCall(inlineAsm, value);
+    out.add(asmCall);
     return;
   }
 
